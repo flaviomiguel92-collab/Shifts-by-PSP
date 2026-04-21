@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useDataStore } from '../../src/store/dataStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
+import { ShiftsSummary } from '../../src/components/ShiftsSummary';
+import { ImprovementsInfo } from '../../src/components/ImprovementsInfo';
 import { 
   ShiftType, 
   SHIFT_LABELS, 
@@ -417,6 +419,9 @@ export default function CalendarScreen() {
           )}
         </View>
 
+        {/* Shifts Summary */}
+        <ShiftsSummary shifts={shifts} month={currentMonth} />
+
         {/* Calendar */}
         <View style={styles.calendarCard}>
           <View style={styles.calendarHeader}>
@@ -463,6 +468,10 @@ export default function CalendarScreen() {
                   key={dateStr}
                   style={[
                     styles.dayCell,
+                    shift && {
+                      backgroundColor: getShiftDisplayColor(shift.shift_type),
+                      opacity: 0.8,
+                    },
                     isToday && styles.todayCell,
                     hasGratification && styles.hasGratificationCell,
                     isCycleStart && styles.cycleStartCell,
@@ -476,16 +485,14 @@ export default function CalendarScreen() {
                     isToday && styles.todayText,
                     holiday && styles.holidayText,
                     isCycleStart && styles.cycleStartText,
+                    shift && styles.shiftDayText,
                   ]}>
                     {format(day, 'd')}
                   </Text>
 
                   {shift ? (
-                    <View style={[
-                      styles.shiftBadge,
-                      { backgroundColor: getShiftDisplayColor(shift.shift_type) }
-                    ]}>
-                      <Text style={styles.shiftBadgeText} numberOfLines={1}>
+                    <View style={styles.shiftNameBadge}>
+                      <Text style={styles.shiftNameText} numberOfLines={1}>
                         {getShiftDisplayName(shift.shift_type)}
                         {shift.shift_type === 'excesso' && shift.excess_hours ? ` ${shift.excess_hours}h` : ''}
                       </Text>
@@ -535,6 +542,9 @@ export default function CalendarScreen() {
           </View>
           <Text style={styles.legendHint}>Toca num dia para ver detalhes e editar</Text>
         </View>
+
+        {/* Improvements Info */}
+        <ImprovementsInfo />
       </ScrollView>
 
       {/* Day Detail Modal */}
@@ -885,6 +895,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 2,
   },
+  shiftDayText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
   todayText: {
     color: '#3B82F6',
     fontWeight: '700',
@@ -902,6 +916,19 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     maxWidth: '95%',
+  },
+  shiftNameBadge: {
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    borderRadius: 2,
+    maxWidth: '95%',
+    marginTop: 2,
+  },
+  shiftNameText: {
+    fontSize: 7,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   shiftBadgeText: {
     fontSize: 8,
