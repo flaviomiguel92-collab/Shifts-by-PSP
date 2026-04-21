@@ -17,7 +17,6 @@ import { format } from 'date-fns';
 import { useDataStore } from '../../src/store/dataStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
-import { ImprovementsInfo } from '../../src/components/ImprovementsInfo';
 import { 
   ShiftType, 
   SHIFT_LABELS, 
@@ -542,9 +541,6 @@ export default function CalendarScreen() {
           </View>
           <Text style={styles.legendHint}>Toca num dia para ver detalhes e editar</Text>
         </View>
-
-        {/* Improvements Info */}
-        <ImprovementsInfo />
       </ScrollView>
 
       {/* Day Detail Modal */}
