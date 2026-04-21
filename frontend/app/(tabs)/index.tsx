@@ -15,26 +15,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useDataStore } from '../../src/store/dataStore';
-import { HeaderWithBack } from '../../src/components/HeaderWithBack';
-import { ShiftsSummary } from '../../src/components/ShiftsSummary';
-import { 
-  ShiftType, 
-  SHIFT_LABELS, 
-  SHIFT_COLORS, 
-  Shift, 
-  Gratification, 
-  GRATIFICATION_COLORS, 
-  GRATIFICATION_LABELS,
-  GratificationType 
-} from '../../src/types';
+import { ShiftType, SHIFT_LABELS, Shift, Gratification } from '../../src/types';
 import { formatMonth, getCalendarDays, dateToString, WEEKDAYS, getNextMonth, getPrevMonth, formatDate } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
-import { storage } from '../../src/utils/storage';
 import { ShiftModal } from '../../src/components/ShiftModal';
 import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
-
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end';
 
@@ -69,7 +55,10 @@ export default function CalendarScreen() {
   const [showDayDetailModal, setShowDayDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
-  const [selectedGratification, setSelectedGratification] = useState<Gratification | null>(null);
+
+  // Expand/Collapse states
+  const [expandedQuickSection, setExpandedQuickSection] = useState(true);
+  const [expandedCyclesSection, setExpandedCyclesSection] = useState(false);
 
   const year = parseInt(currentMonth.split('-')[0]);
   const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);
@@ -97,6 +86,7 @@ export default function CalendarScreen() {
   useEffect(() => {
     fetchShifts(currentMonth);
     fetchGratifications(currentMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMonth]);
 
   const onRefresh = async () => {
@@ -217,7 +207,7 @@ export default function CalendarScreen() {
       await fetchShifts(currentMonth);
       setShowShiftModal(false);
       setShowDayDetailModal(false);
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível guardar o turno');
     }
   };
@@ -229,7 +219,7 @@ export default function CalendarScreen() {
       await fetchShifts(currentMonth);
       setShowShiftModal(false);
       setShowDayDetailModal(false);
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível eliminar o turno');
     }
   };
@@ -246,36 +236,11 @@ export default function CalendarScreen() {
     }
   };
 
-  const handleCycleSelect = (cycle: ShiftType[]) => {
-    // Legacy helper (kept for call sites, but cycles are now objects)
-    setEditMode('cycle_start');
-    setSelectedCycle({ id: 'legacy', name: 'legacy', pattern: cycle });
-    setCycleStartDate(null);
-    setSelectedShiftType(null);
-  };
-
   const cancelEditMode = () => {
     setEditMode('none');
     setSelectedShiftType(null);
     setSelectedCycle(null);
     setCycleStartDate(null);
-  };
-
-  const shiftCounts = useMemo(() => {
-    const monthShifts = shifts.filter((s) => typeof s?.date === 'string' && s.date.startsWith(currentMonth));
-    const counts: Record<string, number> = {};
-    monthShifts.forEach((s) => {
-      const key = s.shift_type;
-      if (!key) return;
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    return counts;
-  }, [shifts, currentMonth]);
-
-  // Check if date is in cycle range
-  const isInCycleRange = (dateStr: string) => {
-    if (!cycleStartDate || editMode !== 'cycle_end') return false;
-    return dateStr >= cycleStartDate;
   };
 
   const getShiftDisplayName = (shiftType: string) => {
@@ -300,16 +265,36 @@ export default function CalendarScreen() {
     );
   }
 
+  // Format current month for badge
+  const monthBadgeText = format(new Date(currentMonth + '-01'), 'MMM yyyy').toUpperCase();
+
+  // Shift counts for summary chips
+  const monthShifts = shifts.filter((s) => typeof s?.date === 'string' && s.date.startsWith(currentMonth));
+  const chipCounts = {
+    noite: monthShifts.filter(s => s.shift_type === 'noite').length,
+    manha: monthShifts.filter(s => s.shift_type === 'manha').length,
+    tarde: monthShifts.filter(s => s.shift_type === 'tarde').length,
+    folga: monthShifts.filter(s => s.shift_type === 'folga').length,
+  };
+
+  const shiftColors = {
+    noite: '#3B82F6',
+    manha: '#10B981',
+    tarde: '#F59E0B',
+    folga: '#8B5CF6',
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <HeaderWithBack title="Turnos" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Turnos</Text>
-        {editMode !== 'none' && (
-          <TouchableOpacity style={styles.cancelBtn} onPress={cancelEditMode}>
-            <Text style={styles.cancelBtnText}>Cancelar</Text>
-          </TouchableOpacity>
-        )}
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>Turnos</Text>
+        <View style={styles.monthBadge}>
+          <Text style={styles.monthBadgeText}>{monthBadgeText}</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -320,106 +305,155 @@ export default function CalendarScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" />
         }
       >
-        {/* Quick Selection Bar */}
-        <View style={styles.quickBar}>
-          <Text style={styles.quickBarTitle}>Seleção Rápida - clica no turno e depois nos dias</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-<View style={styles.quickButtons}>
-  {shiftTypes.map((shift) => (
-    <TouchableOpacity
-      key={shift.name}
-      style={[
-        styles.quickBtn,
-        { borderColor: shift.color },
-        editMode === 'quick' && selectedShiftType === shift.name && {
-          backgroundColor: shift.color,
-        },
-      ]}
-      onPress={() => handleQuickSelect(shift.name)}
-    >
-      <Text
-        style={[
-          styles.quickBtnText,
-          {
-            color:
-              editMode === 'quick' && selectedShiftType === shift.name
-                ? '#FFF'
-                : shift.color,
-          },
-        ]}
-      >
-        {shift.name}
-      </Text>
-    </TouchableOpacity>
-  ))}
-</View>
-          </ScrollView>
-          {editMode === 'quick' && selectedShiftType && (
-            <Text style={styles.modeHint}>
-              ✓ Toca nos dias para aplicar "{getShiftDisplayName(selectedShiftType)}"
-            </Text>
-          )}
+        {/* Month Summary Chips */}
+        <View style={styles.chipsContainer}>
+          <View style={[styles.chip, styles.chipNoite]}>
+            <View style={[styles.chipBar, { backgroundColor: '#3B82F6' }]} />
+            <Text style={styles.chipNumber}>{chipCounts.noite}</Text>
+            <Text style={styles.chipLabel}>Noite</Text>
+          </View>
+          <View style={[styles.chip, styles.chipManha]}>
+            <View style={[styles.chipBar, { backgroundColor: '#10B981' }]} />
+            <Text style={styles.chipNumber}>{chipCounts.manha}</Text>
+            <Text style={styles.chipLabel}>Manhã</Text>
+          </View>
+          <View style={[styles.chip, styles.chipTarde]}>
+            <View style={[styles.chipBar, { backgroundColor: '#F59E0B' }]} />
+            <Text style={styles.chipNumber}>{chipCounts.tarde}</Text>
+            <Text style={styles.chipLabel}>Tarde</Text>
+          </View>
+          <View style={[styles.chip, styles.chipFolga]}>
+            <View style={[styles.chipBar, { backgroundColor: '#8B5CF6' }]} />
+            <Text style={styles.chipNumber}>{chipCounts.folga}</Text>
+            <Text style={styles.chipLabel}>Folga</Text>
+          </View>
         </View>
 
-        {/* Cycles Bar */}
-        <View style={styles.cyclesBar}>
-          <Text style={styles.quickBarTitle}>Ciclos - seleciona, depois toca no dia inicial e final</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.cycleButtons}>
-              <TouchableOpacity
-                style={[styles.cycleBtn, { backgroundColor: '#10B981' }]}
-                onPress={() => {
-                  setShowCycleModal(true);
-                  cancelEditMode();
-                }}
-              >
-                <Text style={[styles.cycleBtnText, { color: '#FFFFFF' }]}>+ Novo</Text>
-              </TouchableOpacity>
+        {/* Quick Selection + Cycles Side by Side */}
+        <View style={styles.sectionRow}>
+          {/* Quick Selection */}
+          <View style={styles.sectionColumn}>
+            <TouchableOpacity 
+              style={styles.sectionHeader}
+              onPress={() => setExpandedQuickSection(!expandedQuickSection)}
+            >
+              <View style={styles.sectionHeaderContent}>
+                <Text style={styles.sectionTitle}>Seleção Rápida</Text>
+                <Text style={styles.sectionEmoji}>⚡</Text>
+              </View>
+              <Ionicons 
+                name={expandedQuickSection ? "chevron-down" : "chevron-right"} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+            </TouchableOpacity>
+            {expandedQuickSection && (
+              <View style={styles.sectionContent}>
+                <View style={styles.quickGrid}>
+                  {['noite', 'manha', 'tarde', 'folga'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.quickGridBtn,
+                        { backgroundColor: shiftColors[type as keyof typeof shiftColors] + '20' },
+                        editMode === 'quick' && selectedShiftType === type && {
+                          backgroundColor: shiftColors[type as keyof typeof shiftColors],
+                        },
+                      ]}
+                      onPress={() => handleQuickSelect(type)}
+                    >
+                      <Text style={[
+                        styles.quickGridBtnText,
+                        editMode === 'quick' && selectedShiftType === type && {
+                          color: '#FFFFFF',
+                        },
+                      ]}>
+                        {getShiftDisplayName(type)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
 
-              {cycles.map((cycle) => (
-                <TouchableOpacity
-                  key={cycle.id}
-                  style={[
-                    styles.cycleBtn,
-                    selectedCycle?.id === cycle.id && styles.cycleBtnActive,
-                  ]}
-                  onPress={() => {
-                    if (selectedCycle?.id === cycle.id) {
-                      setSelectedCycle(null);
-                      setCycleStartDate(null);
-                      setEditMode('none');
-                    } else {
-                      setEditMode('cycle_start');
-                      setSelectedCycle({ id: cycle.id, name: cycle.name, pattern: cycle.pattern });
-                      setCycleStartDate(null);
-                      setSelectedShiftType(null);
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.cycleBtnText,
-                    selectedCycle?.id === cycle.id && styles.cycleBtnTextActive,
-                  ]}>
-                    {cycle.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-          {editMode === 'cycle_start' && (
-            <Text style={styles.modeHint}>
-              ✓ Ciclo selecionado! Agora toca no DIA INICIAL
-            </Text>
-          )}
-          {editMode === 'cycle_end' && cycleStartDate && (
-            <Text style={styles.modeHintGreen}>
-              ✓ Início: {format(new Date(cycleStartDate + 'T12:00:00'), 'dd/MM')} - Agora toca no DIA FINAL
-            </Text>
-          )}
+          {/* Divider */}
+          <View style={styles.sectionDivider} />
+
+          {/* Cycles */}
+          <View style={styles.sectionColumn}>
+            <TouchableOpacity 
+              style={styles.sectionHeader}
+              onPress={() => setExpandedCyclesSection(!expandedCyclesSection)}
+            >
+              <View style={styles.sectionHeaderContent}>
+                <Text style={styles.sectionTitle}>Ciclos</Text>
+                <Text style={styles.sectionEmoji}>🔄</Text>
+              </View>
+              <Ionicons 
+                name={expandedCyclesSection ? "chevron-down" : "chevron-right"} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+            </TouchableOpacity>
+            {expandedCyclesSection && (
+              <View style={styles.sectionContent}>
+                <View style={styles.quickGrid}>
+                  <TouchableOpacity
+                    style={[styles.quickGridBtn, { backgroundColor: '#10B981' }]}
+                    onPress={() => {
+                      setShowCycleModal(true);
+                      cancelEditMode();
+                    }}
+                  >
+                    <Text style={[styles.quickGridBtnText, { color: '#FFFFFF' }]}>
+                      + Novo ciclo
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.quickGridBtn, { backgroundColor: '#6B7280' }]}
+                  >
+                    <Text style={[styles.quickGridBtnText, { color: '#FFFFFF' }]}>
+                      Ciclo Normal
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {cycles.length > 0 && (
+                  <View style={{ marginTop: 12, gap: 8 }}>
+                    {cycles.map((cycle) => (
+                      <TouchableOpacity
+                        key={cycle.id}
+                        style={[
+                          styles.cycleItemBtn,
+                          selectedCycle?.id === cycle.id && styles.cycleItemBtnActive,
+                        ]}
+                        onPress={() => {
+                          if (selectedCycle?.id === cycle.id) {
+                            setSelectedCycle(null);
+                            setCycleStartDate(null);
+                            setEditMode('none');
+                          } else {
+                            setEditMode('cycle_start');
+                            setSelectedCycle({ id: cycle.id, name: cycle.name, pattern: cycle.pattern });
+                            setCycleStartDate(null);
+                            setSelectedShiftType(null);
+                          }
+                        }}
+                      >
+                        <Text style={[
+                          styles.cycleItemBtnText,
+                          selectedCycle?.id === cycle.id && styles.cycleItemBtnTextActive,
+                        ]}>
+                          {cycle.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
         </View>
-
-        {/* Shifts Summary */}
-        <ShiftsSummary shifts={shifts} month={currentMonth} />
 
         {/* Calendar */}
         <View style={styles.calendarCard}>
@@ -457,51 +491,35 @@ export default function CalendarScreen() {
               const shift = getShiftForDay(dateStr);
               const gratification = getGratificationForDay(dateStr);
               const isToday = dateStr === today;
-              const holiday = holidaysMap.get(dateStr);
-              const hasGratification = !!gratification;
-              const isCycleStart = cycleStartDate === dateStr;
-              const inCycleRange = isInCycleRange(dateStr);
+              const hasExtra = !!gratification;
+
+              const shiftColor = shift ? (shiftColors[shift.shift_type as keyof typeof shiftColors] || '#6B7280') : null;
 
               return (
                 <TouchableOpacity
                   key={dateStr}
                   style={[
                     styles.dayCell,
-                    shift && {
-                      backgroundColor: getShiftDisplayColor(shift.shift_type),
-                      opacity: 0.8,
-                    },
+                    shift && { backgroundColor: shiftColor },
                     isToday && styles.todayCell,
-                    hasGratification && styles.hasGratificationCell,
-                    isCycleStart && styles.cycleStartCell,
-                    inCycleRange && styles.inCycleRangeCell,
                     editMode !== 'none' && styles.selectableCell,
                   ]}
                   onPress={() => handleDayPress(dateStr)}
                 >
-                  <Text style={[
-                    styles.dayText,
-                    isToday && styles.todayText,
-                    holiday && styles.holidayText,
-                    isCycleStart && styles.cycleStartText,
-                    shift && styles.shiftDayText,
-                  ]}>
-                    {format(day, 'd')}
-                  </Text>
-
-                  {shift ? (
-                    <View style={styles.shiftNameBadge}>
-                      <Text style={styles.shiftNameText} numberOfLines={1}>
-                        {getShiftDisplayName(shift.shift_type)}
-                        {shift.shift_type === 'excesso' && shift.excess_hours ? ` ${shift.excess_hours}h` : ''}
-                      </Text>
-                    </View>
-                  ) : holiday ? (
-                    <View style={styles.holidayBadge}>
-                      <Text style={styles.holidayBadgeText}>Feriado</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.emptyBadge} />
+                  <View style={styles.dayCellContent}>
+                    <Text style={[
+                      styles.dayNumber,
+                      isToday && styles.todayNumber,
+                      shift && styles.shiftDayNumber,
+                    ]}>
+                      {format(day, 'd')}
+                    </Text>
+                    {hasExtra && <View style={styles.extraDot} />}
+                  </View>
+                  {shift && (
+                    <Text style={styles.dayShiftType} numberOfLines={1}>
+                      {SHIFT_LABELS[shift.shift_type as ShiftType]}
+                    </Text>
                   )}
                 </TouchableOpacity>
               );
@@ -509,43 +527,30 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-{/* Summary */}
-<View style={styles.summaryCard}>
-  <Text style={styles.summaryTitle}>Resumo do Mês</Text>
-  <View style={styles.summaryGrid}>
-    {Object.keys(shiftCounts).length === 0 ? (
-      <Text style={styles.noDataText}>Ainda não existem turnos neste mês.</Text>
-    ) : (
-    Object.keys(shiftCounts).map((type) => (
-      <View key={type} style={styles.summaryItem}>
-        <View
-          style={[
-            styles.summaryDot,
-            {
-              backgroundColor: getShiftDisplayColor(type),
-            },
-          ]}
-        />
-        <Text style={styles.summaryLabel}>{getShiftDisplayName(type)}</Text>
-        <Text style={styles.summaryCount}>{shiftCounts[type]}</Text>
-      </View>
-    )))}
-  </View>
-</View>
-
         {/* Legend */}
-        <View style={styles.legendCard}>
-          <View style={styles.legendItem}>
-            <View style={styles.legendCircle} />
-            <Text style={styles.legendText}>= Dia com extra registado</Text>
+        <View style={styles.legendContainer}>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+            <Text style={styles.legendLabel}>Noite</Text>
           </View>
-          <Text style={styles.legendHint}>Toca num dia para ver detalhes e editar</Text>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+            <Text style={styles.legendLabel}>Manhã</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
+            <Text style={styles.legendLabel}>Tarde</Text>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} />
+            <Text style={styles.legendLabel}>Folga</Text>
+          </View>
         </View>
       </ScrollView>
 
       {/* Day Detail Modal */}
       <Modal visible={showDayDetailModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <SafeAreaView style={styles.modalOverlay}>
           <View style={styles.dayDetailModal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -660,7 +665,7 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* Shift Edit Modal */}
@@ -700,7 +705,7 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#0e0f14',
   },
   loadingContainer: {
     flex: 1,
@@ -717,140 +722,226 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
-  header: {
+
+  // Top Bar
+  topBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 10,
-    paddingBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  cancelBtn: {
-    backgroundColor: '#EF4444',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 16,
+    backgroundColor: '#161820',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
-  cancelBtnText: {
-    color: '#FFFFFF',
+  backButton: {
+    padding: 8,
+  },
+  topBarTitle: {
+    flex: 1,
+    fontSize: 20,
     fontWeight: '600',
-    fontSize: 14,
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontFamily: 'DM Sans',
   },
+  monthBadge: {
+    backgroundColor: '#1e2028',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  monthBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#D1D5DB',
+    fontFamily: 'DM Mono',
+  },
+
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 150,
+    paddingBottom: 100,
   },
-  quickBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#1F2937',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  quickBarTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 10,
-  },
-  quickButtons: {
+
+  // Month Summary Chips
+  chipsContainer: {
     flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    gap: 12,
+  },
+  chip: {
+    flex: 1,
+    backgroundColor: '#161820',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  chipBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  chipNoite: {},
+  chipManha: {},
+  chipTarde: {},
+  chipFolga: {},
+  chipNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: 'DM Mono',
+    marginTop: 4,
+  },
+  chipLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginTop: 4,
+    fontFamily: 'DM Sans',
+  },
+
+  // Quick Selection + Cycles Section
+  sectionRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginVertical: 16,
+    backgroundColor: '#161820',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    overflow: 'hidden',
+  },
+  sectionColumn: {
+    flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
+  },
+  sectionHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  quickBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 2,
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'DM Sans',
   },
-  quickBtnText: {
+  sectionEmoji: {
+    fontSize: 16,
+  },
+  sectionContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickGridBtn: {
+    width: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center',
+  },
+  quickGridBtnText: {
     fontSize: 13,
     fontWeight: '600',
+    color: '#D1D5DB',
+    fontFamily: 'DM Sans',
   },
-  modeHint: {
-    fontSize: 12,
-    color: '#F59E0B',
-    marginTop: 10,
-    fontWeight: '600',
-  },
-  modeHintGreen: {
-    fontSize: 12,
-    color: '#10B981',
-    marginTop: 10,
-    fontWeight: '600',
-  },
-  cyclesBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#1F2937',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  cycleButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  cycleBtn: {
+  cycleItemBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#374151',
+    backgroundColor: '#1e2028',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
-  cycleBtnActive: {
+  cycleItemBtnActive: {
     backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
   },
-  cycleBtnText: {
+  cycleItemBtnText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#9CA3AF',
+    textAlign: 'center',
+    fontFamily: 'DM Sans',
   },
-  cycleBtnTextActive: {
+  cycleItemBtnTextActive: {
     color: '#FFFFFF',
   },
+  sectionDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+
+  // Calendar
   calendarCard: {
-    backgroundColor: '#1F2937',
-    borderRadius: 16,
-    padding: 12,
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginVertical: 16,
+    backgroundColor: '#161820',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    padding: 12,
   },
   calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
   navButton: {
     padding: 8,
   },
   monthTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
     textTransform: 'capitalize',
+    fontFamily: 'DM Sans',
   },
   weekdays: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   weekdayCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   weekdayText: {
     fontSize: 11,
     fontWeight: '600',
     color: '#6B7280',
+    fontFamily: 'DM Sans',
   },
   daysGrid: {
     flexDirection: 'row',
@@ -858,175 +949,104 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: '14.28%',
+    aspectRatio: 1,
     alignItems: 'center',
-    paddingVertical: 4,
-    minHeight: 60,
+    justifyContent: 'center',
     borderRadius: 8,
-  },
-  todayCell: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-  },
-  hasGratificationCell: {
-    borderWidth: 2,
-    borderColor: '#10B981',
-    borderRadius: 8,
-    margin: 1,
-  },
-  cycleStartCell: {
-    backgroundColor: 'rgba(245, 158, 11, 0.3)',
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-  },
-  inCycleRangeCell: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  selectableCell: {
+    marginBottom: 4,
+    backgroundColor: '#1e2028',
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    margin: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
-  dayText: {
+  dayCellContent: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  dayNumber: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 2,
+    color: '#9CA3AF',
+    fontFamily: 'DM Mono',
   },
-  shiftDayText: {
+  shiftDayNumber: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
-  todayText: {
+  todayCell: {
+    borderColor: '#3B82F6',
+    borderWidth: 2,
+  },
+  todayNumber: {
     color: '#3B82F6',
-    fontWeight: '700',
   },
-  holidayText: {
-    color: '#EF4444',
-    fontWeight: '700',
+  selectableCell: {
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
-  cycleStartText: {
-    color: '#F59E0B',
-    fontWeight: '700',
-  },
-  shiftBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-    maxWidth: '95%',
-  },
-  shiftNameBadge: {
-    paddingHorizontal: 2,
-    paddingVertical: 1,
-    borderRadius: 2,
-    maxWidth: '95%',
+  dayShiftType: {
+    fontSize: 7,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'DM Sans',
     marginTop: 2,
   },
-  shiftNameText: {
-    fontSize: 7,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
+  extraDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
   },
-  shiftBadgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  holidayBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  holidayBadgeText: {
-    fontSize: 7,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-  emptyBadge: {
-    height: 18,
-  },
-  summaryCard: {
-    marginHorizontal: 16,
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    marginBottom: 12,
-  },
-  summaryGrid: {
+
+  // Legend
+  legendContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-around',
+    marginHorizontal: 16,
+    marginVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#161820',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
-  summaryItem: {
+  legendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
     gap: 6,
   },
-  summaryDot: {
+  legendDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  summaryLabel: {
-    fontSize: 12,
+  legendLabel: {
+    fontSize: 11,
     color: '#D1D5DB',
+    fontFamily: 'DM Sans',
   },
-  summaryCount: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  legendCard: {
-    marginHorizontal: 16,
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  legendCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#10B981',
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  legendHint: {
-    fontSize: 10,
-    color: '#4B5563',
-    marginTop: 8,
-  },
-  // Modal styles
+
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   dayDetailModal: {
-    backgroundColor: '#1F2937',
+    backgroundColor: '#161820',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1034,7 +1054,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
   modalTitle: {
     fontSize: 16,
@@ -1042,6 +1062,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textTransform: 'capitalize',
     flex: 1,
+    fontFamily: 'DM Sans',
   },
   modalContent: {
     padding: 20,
@@ -1054,12 +1075,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#9CA3AF',
     marginBottom: 12,
+    fontFamily: 'DM Sans',
   },
   shiftDetailCard: {
-    backgroundColor: '#111827',
+    backgroundColor: '#1e2028',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   shiftDetailBadge: {
     alignSelf: 'flex-start',
@@ -1072,28 +1096,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+    fontFamily: 'DM Sans',
   },
   shiftTime: {
     fontSize: 14,
     color: '#D1D5DB',
     marginTop: 4,
+    fontFamily: 'DM Mono',
   },
   excessHoursText: {
     fontSize: 14,
     color: '#EF4444',
     marginTop: 8,
     fontWeight: '600',
+    fontFamily: 'DM Sans',
   },
   noteText: {
     fontSize: 13,
     color: '#9CA3AF',
     marginTop: 8,
     fontStyle: 'italic',
+    fontFamily: 'DM Sans',
   },
   noDataText: {
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 12,
+    fontFamily: 'DM Sans',
   },
   editButton: {
     flexDirection: 'row',
@@ -1108,12 +1137,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: 'DM Sans',
   },
   gratDetailCard: {
-    backgroundColor: '#111827',
+    backgroundColor: '#1e2028',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   gratHeader: {
     flexDirection: 'row',
@@ -1129,15 +1161,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: 'DM Sans',
   },
   gratValue: {
     fontSize: 24,
     fontWeight: '800',
     color: '#10B981',
+    fontFamily: 'DM Mono',
   },
   hintText: {
     fontSize: 12,
     color: '#6B7280',
+    fontFamily: 'DM Sans',
   },
   deleteBtn: {
     flexDirection: 'row',
@@ -1156,5 +1191,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#EF4444',
+    fontFamily: 'DM Sans',
   },
 });
