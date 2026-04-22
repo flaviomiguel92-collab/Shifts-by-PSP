@@ -44,15 +44,22 @@ def resolve_office_bin() -> str:
         found_in_path = shutil.which(configured_bin)
         if found_in_path:
             return found_in_path
-
-        raise RuntimeError(
-            "Conversão para PDF indisponível: variável LIBREOFFICE_BIN configurada, "
-            f"mas o binário não foi encontrado ({configured_bin})."
-        )
+        
+        # Se o caminho configurado não existe, tenta procurar no PATH
+        print(f"LIBREOFFICE_BIN configurado ({configured_bin}) não encontrado. Procurando no PATH...")
 
     office_bin = shutil.which("soffice") or shutil.which("libreoffice")
     if office_bin:
         return office_bin
+
+    linux_candidates = [
+        Path("/usr/bin/soffice"),
+        Path("/usr/lib/libreoffice/program/soffice"),
+        Path("/snap/bin/libreoffice"),
+    ]
+    for candidate in linux_candidates:
+        if candidate.exists():
+            return str(candidate)
 
     windows_candidates = [
         Path(os.environ.get("ProgramFiles", "")) / "LibreOffice" / "program" / "soffice.exe",
