@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: shift-olama-backend
+    runtime: docker
+    rootDir: backend
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8000

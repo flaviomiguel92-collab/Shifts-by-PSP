@@ -5,6 +5,7 @@ import base64
 import os
 import shutil
 import subprocess
+import sys
 import zipfile
 from docxtpl import DocxTemplate
 
@@ -53,6 +54,16 @@ def resolve_office_bin() -> str:
     if office_bin:
         return office_bin
 
+    windows_candidates = [
+        Path(os.environ.get("ProgramFiles", "")) / "LibreOffice" / "program" / "soffice.exe",
+        Path(os.environ.get("ProgramFiles(x86)", "")) / "LibreOffice" / "program" / "soffice.exe",
+        Path("C:/Program Files/LibreOffice/program/soffice.exe"),
+        Path("C:/Program Files (x86)/LibreOffice/program/soffice.exe"),
+    ]
+    for candidate in windows_candidates:
+        if str(candidate).strip() and candidate.exists():
+            return str(candidate)
+
     raise RuntimeError(
         "Conversão para PDF indisponível: LibreOffice (soffice) não instalado no servidor. "
         "Instale LibreOffice no ambiente de deploy ou configure LIBREOFFICE_BIN com o caminho do binário."
@@ -60,25 +71,54 @@ def resolve_office_bin() -> str:
 
 
 def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
-    office_bin = resolve_office_bin()
+    office_bin = None
+    try:
+        office_bin = resolve_office_bin()
+    except RuntimeError:
+        office_bin = None
 
-    command = [
-        office_bin,
-        "--headless",
-        "--convert-to",
-        "pdf",
-        "--outdir",
-        str(output_dir),
-        str(docx_path),
-    ]
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"Falha na conversão DOCX->PDF: {result.stderr or result.stdout}")
+    if office_bin:
+        command = [
+            office_bin,
+            "--headless",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            str(output_dir),
+            str(docx_path),
+        ]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"Falha na conversão DOCX->PDF: {result.stderr or result.stdout}")
 
-    pdf_path = output_dir / f"{docx_path.stem}.pdf"
-    if not pdf_path.exists():
-        raise RuntimeError("Conversão concluída sem gerar ficheiro PDF.")
-    return pdf_path
+        pdf_path = output_dir / f"{docx_path.stem}.pdf"
+        if pdf_path.exists():
+            return pdf_path
+
+    if sys.platform.startswith("win"):
+        try:
+            from docx2pdf import convert as docx2pdf_convert
+        except ImportError as exc:
+            raise RuntimeError(
+                "Conversão para PDF indisponível: LibreOffice não encontrado e o pacote docx2pdf não está instalado."
+            ) from exc
+
+        try:
+            # Usa o Microsoft Word no Windows como fallback.
+            docx2pdf_convert(str(docx_path), str(output_dir))
+        except Exception as exc:
+            raise RuntimeError(
+                "Falha na conversão DOCX->PDF com Word (docx2pdf). Verifique se o Microsoft Word está instalado."
+            ) from exc
+
+        pdf_path = output_dir / f"{docx_path.stem}.pdf"
+        if pdf_path.exists():
+            return pdf_path
+
+    raise RuntimeError(
+        "Conversão para PDF indisponível: instale LibreOffice (soffice) no servidor "
+        "ou use Windows com Microsoft Word + docx2pdf."
+    )
 
 
 def generate_pdf_base64(template_path: Path, context: Dict[str, Any], output_name: str) -> str:
