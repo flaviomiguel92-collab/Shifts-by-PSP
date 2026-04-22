@@ -9,4 +9,4 @@ services:
       - key: PORT
         value: 8000
       - key: LIBREOFFICE_BIN
-        value: /usr/bin/soffice
+        value: soffice
