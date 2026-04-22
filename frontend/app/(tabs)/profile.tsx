@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, SafeAreaView, Platform } from 'react-native';
 import { useDataStore } from '../../src/store/dataStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { storage } from '../../src/utils/storage';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://shifts-by-psp.onrender.com';
 
 export default function ProfileScreen() {
   const store = useDataStore() as any;
@@ -68,14 +68,10 @@ export default function ProfileScreen() {
   );
 
   const purgeOccurrencesFromApi = async () => {
-    if (!API_URL) {
-      throw new Error('URL da API não configurada');
-    }
-
     const token = await storage.getItem('session_token');
 
     const listResponse = await fetch(`${API_URL}/api/occurrences`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       credentials: 'include',
     });
 
@@ -91,7 +87,7 @@ export default function ProfileScreen() {
         if (!occ?.id) return;
         const deleteResponse = await fetch(`${API_URL}/api/occurrences/${occ.id}`, {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: 'include',
         });
 
@@ -105,6 +101,8 @@ export default function ProfileScreen() {
   const executeReset = async (scope: ResetScope) => {
     setActiveReset(scope);
     try {
+      let remoteWarning: string | null = null;
+
       if (scope === 'calendar') {
         await resetCalendarData();
       }
@@ -114,16 +112,30 @@ export default function ProfileScreen() {
       }
 
       if (scope === 'occurrences') {
-        await purgeOccurrencesFromApi();
+        try {
+          await purgeOccurrencesFromApi();
+        } catch (error) {
+          console.error('Remote occurrences purge error:', error);
+          remoteWarning = 'Ocorrências locais limpas, mas não foi possível limpar todas no servidor.';
+        }
         await resetOccurrencesData();
       }
 
       if (scope === 'all') {
-        await purgeOccurrencesFromApi();
+        try {
+          await purgeOccurrencesFromApi();
+        } catch (error) {
+          console.error('Remote occurrences purge error:', error);
+          remoteWarning = 'Dados locais limpos, mas não foi possível limpar todas as ocorrências no servidor.';
+        }
         await resetData();
       }
 
-      Alert.alert('Sucesso', 'Dados apagados com sucesso.');
+      if (remoteWarning) {
+        Alert.alert('Concluído com aviso', remoteWarning);
+      } else {
+        Alert.alert('Sucesso', 'Dados apagados com sucesso.');
+      }
     } catch (error) {
       console.error('Reset error:', error);
       Alert.alert('Erro', 'Não foi possível concluir o reset.');
@@ -139,6 +151,18 @@ export default function ProfileScreen() {
       occurrences: 'Ocorrências',
       all: 'Tudo',
     };
+
+    // Em Web, Alert.alert pode não executar callbacks de botões de forma consistente
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined'
+        ? window.confirm(`Tens a certeza que queres apagar os dados de ${labels[scope]}? Esta ação não pode ser desfeita.`)
+        : false;
+
+      if (confirmed) {
+        executeReset(scope);
+      }
+      return;
+    }
 
     Alert.alert(
       `Resetar ${labels[scope]}`,
