@@ -27,7 +27,22 @@ export const generateReportPdf = async (
 
   if (!response.ok) {
     const responseText = await response.text();
-    throw new Error(responseText || `Falha ao gerar relatório (${response.status})`);
+    let parsedMessage = '';
+
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText) as {
+          detail?: string;
+          message?: string;
+          error?: string;
+        };
+        parsedMessage = parsed.detail || parsed.message || parsed.error || responseText;
+      } catch {
+        parsedMessage = responseText;
+      }
+    }
+
+    throw new Error(parsedMessage || `Falha ao gerar relatório (${response.status})`);
   }
 
   return response.json();

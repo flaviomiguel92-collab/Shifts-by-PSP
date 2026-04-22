@@ -29,8 +29,19 @@ const downloadOnWeb = (base64Pdf: string, fileName: string) => {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = fileName;
+  document.body.appendChild(anchor);
   anchor.click();
+  document.body.removeChild(anchor);
   URL.revokeObjectURL(url);
+};
+
+const showFeedback = (title: string, message: string) => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.alert(`${title}\n\n${message}`);
+    return;
+  }
+
+  Alert.alert(title, message);
 };
 
 const updateListItem = <T extends { id: string }>(
@@ -52,7 +63,7 @@ export default function ReportsScreen() {
   const handleGenerate = async () => {
     const validation = validateServicoRemunerado(formData);
     if (!validation.isValid) {
-      Alert.alert('Dados incompletos', validation.errors.join('\n'));
+      showFeedback('Dados incompletos', validation.errors.join('\n'));
       return;
     }
 
@@ -75,7 +86,7 @@ export default function ReportsScreen() {
 
       if (Platform.OS === 'web') {
         downloadOnWeb(response.pdf_base64, response.file_name);
-        Alert.alert('Sucesso', `PDF gerado: ${response.file_name}`);
+        showFeedback('Sucesso', `PDF gerado: ${response.file_name}`);
       } else {
         const outputPath = `${FileSystem.cacheDirectory}${response.file_name}`;
         await FileSystem.writeAsStringAsync(outputPath, response.pdf_base64, {
@@ -89,11 +100,11 @@ export default function ReportsScreen() {
             UTI: 'com.adobe.pdf',
           });
         } else {
-          Alert.alert('Sucesso', `PDF guardado em: ${outputPath}`);
+          showFeedback('Sucesso', `PDF guardado em: ${outputPath}`);
         }
       }
     } catch (error) {
-      Alert.alert('Erro', error instanceof Error ? error.message : 'Falha ao gerar relatório.');
+      showFeedback('Erro', error instanceof Error ? error.message : 'Falha ao gerar relatório.');
     } finally {
       setIsGenerating(false);
     }
