@@ -198,28 +198,36 @@ export default function CalendarScreen() {
 
       let currentDate = new Date(start);
       let i = 0;
+      let createdCount = 0;
 
       while (currentDate <= end) {
         const shiftType = cycle[i % cycle.length];
         const dateStr = formatLocalDate(currentDate);
 
+        console.log(`Creating shift: ${dateStr} -> ${shiftType}`);
+        
         await createShift({
           date: dateStr,
           shift_type: shiftType,
         });
 
+        createdCount++;
         currentDate.setDate(currentDate.getDate() + 1);
         i++;
       }
+
+      // Refresh shifts to show the newly created ones
+      await fetchShifts(currentMonth);
 
       setEditMode('none');
       setSelectedCycle(null);
       setCycleStartDate(null);
 
-      Alert.alert('Sucesso!', 'Ciclo aplicado com sucesso!');
+      Alert.alert('Sucesso!', `Ciclo aplicado com sucesso! (${createdCount} dias)`);
     } catch (error) {
-      console.log('Cycle error:', error);
-      Alert.alert('Erro', 'Falha ao aplicar ciclo');
+      console.error('Cycle error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
+      Alert.alert('Erro ao aplicar ciclo', errorMsg);
     } finally {
       setIsApplyingCycle(false);
     }
