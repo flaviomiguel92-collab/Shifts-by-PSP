@@ -437,110 +437,121 @@ export default function CalendarScreen() {
         </View>
       </ScrollView>
 
-      <Modal visible={isOptionsExpanded} transparent animationType="fade">
+      <Modal
+        visible={isOptionsExpanded}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsOptionsExpanded(false)}
+      >
         <Pressable style={styles.optionsOverlay} onPress={() => setIsOptionsExpanded(false)}>
           <Pressable style={styles.optionsPanelFloating} onPress={() => {}}>
-            <View style={styles.optionsPanelSection}>
-              <Text style={styles.optionsSectionTitle}>Seleção rápida de turnos</Text>
-              <Text style={styles.quickBarTitle}>Escolhe um turno e toca nos dias do calendário</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.quickButtons}>
-                  {shiftTypes.map((shift: any) => (
-                    <TouchableOpacity
-                      key={shift.name}
-                      style={[
-                        styles.quickBtn,
-                        { borderColor: shift.color },
-                        editMode === 'quick' && selectedShiftType === shift.name && {
-                          backgroundColor: shift.color,
-                        },
-                      ]}
-                      onPress={() => handleQuickSelect(shift.name)}
-                    >
-                      <Text
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.optionsPanelContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.optionsPanelSection}>
+                <Text style={styles.optionsSectionTitle}>Seleção rápida de turnos</Text>
+                <Text style={styles.quickBarTitle}>Escolhe um turno e toca nos dias do calendário</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.quickButtons}>
+                    {shiftTypes.map((shift: any) => (
+                      <TouchableOpacity
+                        key={shift.name}
                         style={[
-                          styles.quickBtnText,
-                          {
-                            color:
-                              editMode === 'quick' && selectedShiftType === shift.name
-                                ? '#FFF'
-                                : shift.color,
+                          styles.quickBtn,
+                          { borderColor: shift.color },
+                          editMode === 'quick' && selectedShiftType === shift.name && {
+                            backgroundColor: shift.color,
                           },
                         ]}
+                        onPress={() => handleQuickSelect(shift.name)}
                       >
-                        {shift.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-              {editMode === 'quick' && selectedShiftType && (
-                <Text style={styles.modeHint}>
-                  ✓ Toca nos dias para aplicar &quot;{getShiftDisplayName(selectedShiftType)}&quot;
-                </Text>
-              )}
-            </View>
+                        <Text
+                          style={[
+                            styles.quickBtnText,
+                            {
+                              color:
+                                editMode === 'quick' && selectedShiftType === shift.name
+                                  ? '#FFF'
+                                  : shift.color,
+                            },
+                          ]}
+                        >
+                          {shift.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+                {editMode === 'quick' && selectedShiftType && (
+                  <Text style={styles.modeHint}>
+                    ✓ Toca nos dias para aplicar &quot;{getShiftDisplayName(selectedShiftType)}&quot;
+                  </Text>
+                )}
+              </View>
 
-            <View style={styles.optionsDivider} />
+              <View style={styles.optionsDivider} />
 
-            <View style={styles.optionsPanelSection}>
-              <Text style={styles.optionsSectionTitle}>Ciclos</Text>
-              <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.cycleButtons}>
-                  <TouchableOpacity
-                    style={[styles.cycleBtn, { backgroundColor: '#10B981' }]}
-                    onPress={() => {
-                      setShowCycleModal(true);
-                      setIsOptionsExpanded(false);
-                      cancelEditMode();
-                    }}
-                  >
-                    <Text style={[styles.cycleBtnText, { color: '#FFFFFF' }]}>+ Novo</Text>
-                  </TouchableOpacity>
-
-                  {cycles.map((cycle: any) => (
+              <View style={styles.optionsPanelSection}>
+                <Text style={styles.optionsSectionTitle}>Ciclos</Text>
+                <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.cycleButtons}>
                     <TouchableOpacity
-                      key={cycle.id}
-                      style={[
-                        styles.cycleBtn,
-                        selectedCycle?.id === cycle.id && styles.cycleBtnActive,
-                      ]}
+                      style={[styles.cycleBtn, { backgroundColor: '#10B981' }]}
                       onPress={() => {
-                        if (selectedCycle?.id === cycle.id) {
-                          setSelectedCycle(null);
-                          setCycleStartDate(null);
-                          setEditMode('none');
-                        } else {
-                          setEditMode('cycle_start');
-                          setSelectedCycle({ id: cycle.id, name: cycle.name, pattern: cycle.pattern });
-                          setCycleStartDate(null);
-                          setSelectedShiftType(null);
-                        }
+                        setShowCycleModal(true);
                         setIsOptionsExpanded(false);
+                        cancelEditMode();
                       }}
                     >
-                      <Text style={[
-                        styles.cycleBtnText,
-                        selectedCycle?.id === cycle.id && styles.cycleBtnTextActive,
-                      ]}>
-                        {cycle.name}
-                      </Text>
+                      <Text style={[styles.cycleBtnText, { color: '#FFFFFF' }]}>+ Novo</Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-              {editMode === 'cycle_start' && (
-                <Text style={styles.modeHint}>
-                  ✓ Ciclo selecionado! Agora toca no DIA INICIAL
-                </Text>
-              )}
-              {editMode === 'cycle_end' && cycleStartDate && (
-                <Text style={styles.modeHintGreen}>
-                  ✓ Início: {format(new Date(cycleStartDate + 'T12:00:00'), 'dd/MM')} - Agora toca no DIA FINAL
-                </Text>
-              )}
-            </View>
+
+                    {cycles.map((cycle: any) => (
+                      <TouchableOpacity
+                        key={cycle.id}
+                        style={[
+                          styles.cycleBtn,
+                          selectedCycle?.id === cycle.id && styles.cycleBtnActive,
+                        ]}
+                        onPress={() => {
+                          if (selectedCycle?.id === cycle.id) {
+                            setSelectedCycle(null);
+                            setCycleStartDate(null);
+                            setEditMode('none');
+                          } else {
+                            setEditMode('cycle_start');
+                            setSelectedCycle({ id: cycle.id, name: cycle.name, pattern: cycle.pattern });
+                            setCycleStartDate(null);
+                            setSelectedShiftType(null);
+                          }
+                          setIsOptionsExpanded(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.cycleBtnText,
+                          selectedCycle?.id === cycle.id && styles.cycleBtnTextActive,
+                        ]}>
+                          {cycle.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+                {editMode === 'cycle_start' && (
+                  <Text style={styles.modeHint}>
+                    ✓ Ciclo selecionado! Agora toca no DIA INICIAL
+                  </Text>
+                )}
+                {editMode === 'cycle_end' && cycleStartDate && (
+                  <Text style={styles.modeHintGreen}>
+                    ✓ Início: {format(new Date(cycleStartDate + 'T12:00:00'), 'dd/MM')} - Agora toca no DIA FINAL
+                  </Text>
+                )}
+              </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -711,9 +722,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   toggleOptionsBtn: {
-    padding: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(59,130,246,0.08)',
   },
   loadingContainer: {
     flex: 1,
@@ -786,9 +800,11 @@ const styles = StyleSheet.create({
   },
   quickBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 2,
+    minHeight: 42,
+    justifyContent: 'center',
   },
   quickBtnText: {
     fontSize: 13,
@@ -820,9 +836,11 @@ const styles = StyleSheet.create({
   },
   cycleBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: '#374151',
+    minHeight: 42,
+    justifyContent: 'center',
   },
   cycleBtnActive: {
     backgroundColor: '#3B82F6',
@@ -864,6 +882,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
+  },
+  optionsPanelContent: {
+    paddingBottom: 8,
   },
   optionsPanelSection: {
     marginBottom: 12,
