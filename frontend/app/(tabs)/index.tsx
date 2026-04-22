@@ -254,6 +254,7 @@ export default function CalendarScreen() {
       setSelectedCycle(null);
       setCycleStartDate(null);
     }
+    setIsOptionsExpanded(false);
   };
 
   const handleCycleSelect = (cycle: ShiftType[]) => {
@@ -516,6 +517,7 @@ export default function CalendarScreen() {
                           setCycleStartDate(null);
                           setSelectedShiftType(null);
                         }
+                        setIsOptionsExpanded(false);
                       }}
                     >
                       <Text style={[
