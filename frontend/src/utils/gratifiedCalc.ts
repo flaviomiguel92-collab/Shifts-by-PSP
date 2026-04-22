@@ -1,3 +1,5 @@
+import { getHolidaysMap, isHoliday } from './holidays';
+
 export type GratifiedKind = 'pequeno' | 'grande';
 
 export type GratifiedConfig = {
@@ -83,7 +85,17 @@ export const calcGratifiedValue = (args: {
   isHolidayOrWeekend: boolean;
   config: GratifiedConfig;
 }): GratifiedCalcResult => {
-  const { startTime, endTime, isHolidayOrWeekend, config } = args;
+  const { date, startTime, endTime, isHolidayOrWeekend, config } = args;
+
+  // Safety rule: on Saturdays, Sundays and Portuguese national holidays,
+  // all gratified blocks/fractions are always "grande".
+  const d = new Date(`${date}T12:00:00`);
+  const weekday = d.getDay();
+  const isWeekendByDate = weekday === 0 || weekday === 6;
+  const holiday = Number.isFinite(d.getTime())
+    ? isHoliday(date, getHolidaysMap(d.getFullYear()))
+    : undefined;
+  const enforcedHolidayOrWeekend = isHolidayOrWeekend || isWeekendByDate || !!holiday;
 
   const startM = timeToMinutes(startTime);
   let endM = timeToMinutes(endTime);
@@ -97,11 +109,11 @@ export const calcGratifiedValue = (args: {
   let cursorM = startM;
   let remainingHours = durationHoursRoundedUp;
 
-  const startKind = getGratifiedKindForStart(startTime, config, isHolidayOrWeekend);
+  const startKind = getGratifiedKindForStart(startTime, config, enforcedHolidayOrWeekend);
 
   // Full 4h blocks
   while (remainingHours >= 4) {
-    const kind = getGratifiedKindForStart(minutesToTime(cursorM), config, isHolidayOrWeekend);
+    const kind = getGratifiedKindForStart(minutesToTime(cursorM), config, enforcedHolidayOrWeekend);
     const value = valueForBase(kind, config);
     lines.push({
       kind: 'base',
@@ -117,7 +129,7 @@ export const calcGratifiedValue = (args: {
   // Fractions (per hour), with 3rd fraction converting to 1 base
   while (remainingHours > 0) {
     if (remainingHours >= 3) {
-      const kind = getGratifiedKindForStart(minutesToTime(cursorM), config, isHolidayOrWeekend);
+      const kind = getGratifiedKindForStart(minutesToTime(cursorM), config, enforcedHolidayOrWeekend);
       const value = valueForBase(kind, config);
       lines.push({
         kind: 'base',
@@ -131,7 +143,7 @@ export const calcGratifiedValue = (args: {
       continue;
     }
 
-    const kind = getGratifiedKindForStart(minutesToTime(cursorM), config, isHolidayOrWeekend);
+    const kind = getGratifiedKindForStart(minutesToTime(cursorM), config, enforcedHolidayOrWeekend);
     const value = valueForFraction(kind, config);
     lines.push({
       kind: 'fraction',
@@ -154,10 +166,9 @@ export const calcGratifiedValue = (args: {
     total,
     lines,
     meta: {
-      isHolidayOrWeekend,
+      isHolidayOrWeekend: enforcedHolidayOrWeekend,
       startKind,
       durationMinutes,
     },
   };
 };
-
