@@ -5,7 +5,15 @@ import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { storage } from '../../src/utils/storage';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://shifts-by-psp.onrender.com';
+const RAW_API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://shifts-by-psp.onrender.com';
+
+const buildOccurrencesEndpoint = () => {
+  const normalized = RAW_API_URL.endsWith('/api')
+    ? RAW_API_URL.slice(0, -4)
+    : RAW_API_URL;
+
+  return `${normalized}/api/occurrences`;
+};
 
 export default function ProfileScreen() {
   const store = useDataStore() as any;
@@ -69,8 +77,9 @@ export default function ProfileScreen() {
 
   const purgeOccurrencesFromApi = async () => {
     const token = await storage.getItem('session_token');
+    const occurrencesEndpoint = buildOccurrencesEndpoint();
 
-    const listResponse = await fetch(`${API_URL}/api/occurrences`, {
+    const listResponse = await fetch(occurrencesEndpoint, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       credentials: 'include',
     });
@@ -85,7 +94,7 @@ export default function ProfileScreen() {
     await Promise.all(
       occurrences.map(async (occ: { id?: string }) => {
         if (!occ?.id) return;
-        const deleteResponse = await fetch(`${API_URL}/api/occurrences/${occ.id}`, {
+        const deleteResponse = await fetch(`${occurrencesEndpoint}/${occ.id}`, {
           method: 'DELETE',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: 'include',
