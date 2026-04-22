@@ -14,6 +14,14 @@ export default function HomeScreen() {
       href: '/(tabs)',
     },
     {
+      id: 'gratificados',
+      title: 'Gratificados',
+      description: 'Resumo mensal e anual',
+      icon: 'cash',
+      color: '#10B981',
+      href: '/(tabs)/gratificados',
+    },
+    {
       id: 'ocorrencias',
       title: 'Ocorrências',
       description: 'Registo de eventos',
@@ -26,7 +34,7 @@ export default function HomeScreen() {
       title: 'Painel',
       description: 'Estatísticas',
       icon: 'stats-chart',
-      color: '#10B981',
+      color: '#3B82F6',
       href: '/(tabs)/stats',
     },
     {
@@ -51,7 +59,7 @@ export default function HomeScreen() {
         {/* Grid de Cards */}
         <View style={styles.gridContainer}>
           {modules.map((module) => (
-            <Link href={module.href} key={module.id} asChild>
+            <Link href={module.href as any} key={module.id} asChild>
               <TouchableOpacity style={styles.card} activeOpacity={0.7}>
                 <View style={[styles.iconContainer, { backgroundColor: module.color }]}>
                   <Ionicons name={module.icon as any} size={40} color="#FFFFFF" />

@@ -15,22 +15,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useDataStore } from '../../src/store/dataStore';
-import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { 
   ShiftType, 
   SHIFT_LABELS, 
   SHIFT_COLORS, 
-  Shift, 
-  Gratification, 
-  GRATIFICATION_COLORS, 
-  GRATIFICATION_LABELS,
-  GratificationType 
+  Shift,
 } from '../../src/types';
 import { formatMonth, getCalendarDays, dateToString, WEEKDAYS, getNextMonth, getPrevMonth, formatDate } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
 import { ShiftModal } from '../../src/components/ShiftModal';
 import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
+import { ShiftsSummary } from '../../src/components/ShiftsSummary';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end';
 
@@ -47,9 +43,7 @@ export default function CalendarScreen() {
     updateShift, 
     deleteShift, 
     currentMonth, 
-    setCurrentMonth, 
-    gratifications,
-    fetchGratifications,
+    setCurrentMonth,
   } = store;
 
   const [refreshing, setRefreshing] = useState(false);
@@ -58,8 +52,7 @@ export default function CalendarScreen() {
   const [selectedCycle, setSelectedCycle] = useState<{ id: string; name: string; pattern: ShiftType[] } | null>(null);
   const [cycleStartDate, setCycleStartDate] = useState<string | null>(null);
   const [isApplyingCycle, setIsApplyingCycle] = useState(false);
-  const [isQuickExpanded, setIsQuickExpanded] = useState(false);
-  const [isCyclesExpanded, setIsCyclesExpanded] = useState(false);
+  const [isOptionsExpanded, setIsOptionsExpanded] = useState(false);
 
   // Modal states
   const [showShiftModal, setShowShiftModal] = useState(false);
@@ -68,7 +61,6 @@ export default function CalendarScreen() {
   const [showDayDetailModal, setShowDayDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
-  const [selectedGratification, setSelectedGratification] = useState<Gratification | null>(null);
 
   const year = parseInt(currentMonth.split('-')[0]);
   const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);
@@ -80,6 +72,19 @@ export default function CalendarScreen() {
     return (gratifiedEntries || []).filter((e: any) => e.date === selectedDate);
   }, [gratifiedEntries, selectedDate]);
 
+  const gratifiedByDateMap = useMemo(() => {
+    const map = new Map<string, any[]>();
+    (gratifiedEntries || []).forEach((entry: any) => {
+      const date = String(entry?.date || '');
+      if (!date) return;
+      if (!map.has(date)) {
+        map.set(date, []);
+      }
+      map.get(date)?.push(entry);
+    });
+    return map;
+  }, [gratifiedEntries]);
+
   // Create maps for quick lookup
   const shiftsMap = useMemo(() => {
     const map = new Map<string, Shift>();
@@ -87,31 +92,19 @@ export default function CalendarScreen() {
     return map;
   }, [shifts]);
 
-  const gratificationsMap = useMemo(() => {
-    const map = new Map<string, Gratification>();
-    gratifications.forEach((g: any) => map.set(g.date, g));
-    return map;
-  }, [gratifications]);
-
   useEffect(() => {
     fetchShifts(currentMonth);
-    fetchGratifications(currentMonth);
   }, [currentMonth]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchShifts(currentMonth);
-    await fetchGratifications(currentMonth);
     setRefreshing(false);
   };
 
   const getShiftForDay = useCallback((dateStr: string): Shift | undefined => {
     return shiftsMap.get(dateStr);
   }, [shiftsMap]);
-
-  const getGratificationForDay = useCallback((dateStr: string): Gratification | undefined => {
-    return gratificationsMap.get(dateStr);
-  }, [gratificationsMap]);
 
   // Handle day press based on current mode
   const handleDayPress = async (dateStr: string) => {
@@ -142,12 +135,21 @@ export default function CalendarScreen() {
     } else {
       // Normal mode: open detail modal
       const shift = getShiftForDay(dateStr);
-      const grat = getGratificationForDay(dateStr);
       setSelectedDate(dateStr);
       setSelectedShift(shift || null);
-      setSelectedGratification(grat || null);
       setShowDayDetailModal(true);
     }
+  };
+
+  const handleDeleteGratifiedEntry = (entryId: string) => {
+    Alert.alert('Eliminar gratificado', 'Queres remover este gratificado deste dia?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => deleteGratifiedEntry(entryId),
+      },
+    ]);
   };
 
   // Apply cycle between two dates
@@ -290,7 +292,20 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <HeaderWithBack title="Turnos" />
+      {/* Custom Header with Options Toggle */}
+      <View style={styles.customHeader}>
+        <Text style={styles.customHeaderTitle}>Turnos</Text>
+        <TouchableOpacity
+          style={styles.toggleOptionsBtn}
+          onPress={() => setIsOptionsExpanded((prev) => !prev)}
+        >
+          <Ionicons
+            name={isOptionsExpanded ? "chevron-up" : "add"}
+            size={28}
+            color="#3B82F6"
+          />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -308,19 +323,115 @@ export default function CalendarScreen() {
           </View>
         )}
 
-        {/* Quick Selection Bar */}
-        <View style={styles.quickBar}>
-          <TouchableOpacity
-            style={styles.sectionHeaderBtn}
-            onPress={() => setIsQuickExpanded((prev) => !prev)}
-          >
-            <Text style={styles.sectionHeaderText}>
-              {isQuickExpanded ? '▼' : '▶'} Seleção rápida de turnos
-            </Text>
-          </TouchableOpacity>
+        {/* Month Summary */}
+        <View style={styles.summaryContainer}>
+          <ShiftsSummary shifts={shifts} month={currentMonth} />
+        </View>
 
-          {isQuickExpanded && (
-            <>
+        {/* Calendar */}
+        <View style={styles.calendarCard}>
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={() => setCurrentMonth(getPrevMonth(currentMonth))}
+            >
+              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.monthTitle}>{formatMonth(currentMonth)}</Text>
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={() => setCurrentMonth(getNextMonth(currentMonth))}
+            >
+              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.weekdays}>
+            {WEEKDAYS.map((day) => (
+              <View key={day} style={styles.weekdayCell}>
+                <Text style={styles.weekdayText}>{day}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.daysGrid}>
+            {days.map((day, index) => {
+              if (!day) {
+                return <View key={`empty-${index}`} style={styles.dayCell} />;
+              }
+
+              const dateStr = dateToString(day);
+              const shift = getShiftForDay(dateStr);
+              const isToday = dateStr === today;
+              const holiday = holidaysMap.get(dateStr);
+              const dayGratifiedEntries = gratifiedByDateMap.get(dateStr) || [];
+              const hasGratification = dayGratifiedEntries.length > 0;
+              const gratifiedCount = dayGratifiedEntries.length;
+              const isCycleStart = cycleStartDate === dateStr;
+              const inCycleRange = isInCycleRange(dateStr);
+
+              return (
+                <TouchableOpacity
+                  key={dateStr}
+                  style={[
+                    styles.dayCell,
+                    shift && {
+                      backgroundColor: getShiftDisplayColor(shift.shift_type),
+                      opacity: 0.8,
+                    },
+                    isToday && styles.todayCell,
+                    hasGratification && styles.hasGratificationCell,
+                    isCycleStart && styles.cycleStartCell,
+                    inCycleRange && styles.inCycleRangeCell,
+                    editMode !== 'none' && styles.selectableCell,
+                  ]}
+                  onPress={() => handleDayPress(dateStr)}
+                >
+                  <Text style={[
+                    styles.dayText,
+                    isToday && styles.todayText,
+                    holiday && styles.holidayText,
+                    isCycleStart && styles.cycleStartText,
+                    shift && styles.shiftDayText,
+                  ]}>
+                    {format(day, 'd')}
+                  </Text>
+
+                  {hasGratification && (
+                    <View style={styles.gratifiedDotWrap}>
+                      <View style={styles.gratifiedDot} />
+                      {gratifiedCount > 1 && (
+                        <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
+                      )}
+                    </View>
+                  )}
+
+                  {shift ? (
+                    <View style={styles.shiftNameBadge}>
+                      <Text style={styles.shiftNameText} numberOfLines={1}>
+                        {getShiftDisplayName(shift.shift_type)}
+                        {shift.shift_type === 'excesso' && shift.excess_hours ? ` ${shift.excess_hours}h` : ''}
+                      </Text>
+                    </View>
+                  ) : holiday ? (
+                    <View style={styles.holidayBadge}>
+                      <Text style={styles.holidayBadgeText}>Feriado</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.emptyBadge} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Expandable Options Panel */}
+        {isOptionsExpanded && (
+          <View style={styles.optionsPanel}>
+            {/* Quick Selection Section */}
+            <View style={styles.optionsPanelSection}>
+              <Text style={styles.optionsSectionTitle}>Seleção rápida de turnos</Text>
               <Text style={styles.quickBarTitle}>Escolhe um turno e toca nos dias do calendário</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.quickButtons}>
@@ -358,23 +469,14 @@ export default function CalendarScreen() {
                   ✓ Toca nos dias para aplicar "{getShiftDisplayName(selectedShiftType)}"
                 </Text>
               )}
-            </>
-          )}
-        </View>
+            </View>
 
-        {/* Cycles Bar */}
-        <View style={styles.cyclesBar}>
-          <TouchableOpacity
-            style={styles.sectionHeaderBtn}
-            onPress={() => setIsCyclesExpanded((prev) => !prev)}
-          >
-            <Text style={styles.sectionHeaderText}>
-              {isCyclesExpanded ? '▼' : '▶'} Ciclos
-            </Text>
-          </TouchableOpacity>
+            {/* Divider */}
+            <View style={styles.optionsDivider} />
 
-          {isCyclesExpanded && (
-            <>
+            {/* Cycles Section */}
+            <View style={styles.optionsPanelSection}>
+              <Text style={styles.optionsSectionTitle}>Ciclos</Text>
               <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.cycleButtons}>
@@ -428,97 +530,9 @@ export default function CalendarScreen() {
                   ✓ Início: {format(new Date(cycleStartDate + 'T12:00:00'), 'dd/MM')} - Agora toca no DIA FINAL
                 </Text>
               )}
-            </>
-          )}
-        </View>
-
-        {/* Calendar */}
-        <View style={styles.calendarCard}>
-          <View style={styles.calendarHeader}>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => setCurrentMonth(getPrevMonth(currentMonth))}
-            >
-              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.monthTitle}>{formatMonth(currentMonth)}</Text>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => setCurrentMonth(getNextMonth(currentMonth))}
-            >
-              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+            </View>
           </View>
-
-          <View style={styles.weekdays}>
-            {WEEKDAYS.map((day) => (
-              <View key={day} style={styles.weekdayCell}>
-                <Text style={styles.weekdayText}>{day}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.daysGrid}>
-            {days.map((day, index) => {
-              if (!day) {
-                return <View key={`empty-${index}`} style={styles.dayCell} />;
-              }
-
-              const dateStr = dateToString(day);
-              const shift = getShiftForDay(dateStr);
-              const gratification = getGratificationForDay(dateStr);
-              const isToday = dateStr === today;
-              const holiday = holidaysMap.get(dateStr);
-              const hasGratification = !!gratification;
-              const isCycleStart = cycleStartDate === dateStr;
-              const inCycleRange = isInCycleRange(dateStr);
-
-              return (
-                <TouchableOpacity
-                  key={dateStr}
-                  style={[
-                    styles.dayCell,
-                    shift && {
-                      backgroundColor: getShiftDisplayColor(shift.shift_type),
-                      opacity: 0.8,
-                    },
-                    isToday && styles.todayCell,
-                    hasGratification && styles.hasGratificationCell,
-                    isCycleStart && styles.cycleStartCell,
-                    inCycleRange && styles.inCycleRangeCell,
-                    editMode !== 'none' && styles.selectableCell,
-                  ]}
-                  onPress={() => handleDayPress(dateStr)}
-                >
-                  <Text style={[
-                    styles.dayText,
-                    isToday && styles.todayText,
-                    holiday && styles.holidayText,
-                    isCycleStart && styles.cycleStartText,
-                    shift && styles.shiftDayText,
-                  ]}>
-                    {format(day, 'd')}
-                  </Text>
-
-                  {shift ? (
-                    <View style={styles.shiftNameBadge}>
-                      <Text style={styles.shiftNameText} numberOfLines={1}>
-                        {getShiftDisplayName(shift.shift_type)}
-                        {shift.shift_type === 'excesso' && shift.excess_hours ? ` ${shift.excess_hours}h` : ''}
-                      </Text>
-                    </View>
-                  ) : holiday ? (
-                    <View style={styles.holidayBadge}>
-                      <Text style={styles.holidayBadgeText}>Feriado</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.emptyBadge} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+        )}
       </ScrollView>
 
       {/* Day Detail Modal */}
@@ -598,20 +612,7 @@ export default function CalendarScreen() {
                 ) : (
                   <View style={{ gap: 10 }}>
                     {gratifiedForSelectedDate.map((g: any) => (
-                      <TouchableOpacity
-                        key={g.id}
-                        style={styles.gratDetailCard}
-                        onLongPress={() => {
-                          Alert.alert('Eliminar', 'Eliminar este gratificado?', [
-                            { text: 'Cancelar', style: 'cancel' },
-                            {
-                              text: 'Eliminar',
-                              style: 'destructive',
-                              onPress: () => deleteGratifiedEntry(g.id),
-                            },
-                          ]);
-                        }}
-                      >
+                      <View key={g.id} style={styles.gratDetailCard}>
                         <View style={styles.gratHeader}>
                           <View style={[styles.gratBadge, { backgroundColor: '#10B981' }]}>
                             <Text style={styles.gratBadgeText}>{g.name}</Text>
@@ -621,10 +622,14 @@ export default function CalendarScreen() {
                         <Text style={styles.hintText}>
                           {g.start_time} - {g.end_time} (já com desconto)
                         </Text>
-                        <Text style={[styles.hintText, { marginTop: 4 }]}>
-                          Pressiona longo para eliminar
-                        </Text>
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.removeGratifiedBtn}
+                          onPress={() => handleDeleteGratifiedEntry(g.id)}
+                        >
+                          <Ionicons name="trash-outline" size={14} color="#FCA5A5" />
+                          <Text style={styles.removeGratifiedBtnText}>Remover gratificado</Text>
+                        </TouchableOpacity>
+                      </View>
                     ))}
                   </View>
                 )}
@@ -680,6 +685,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111827',
   },
+  customHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#1F2937',
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
+  },
+  customHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  toggleOptionsBtn: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -716,6 +741,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 110,
+  },
+  summaryContainer: {
+    paddingHorizontal: 12,
+    marginBottom: 12,
   },
   quickBar: {
     paddingHorizontal: 12,
@@ -802,6 +831,27 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 12,
   },
+  optionsPanel: {
+    backgroundColor: '#1F2937',
+    borderRadius: 16,
+    padding: 12,
+    marginHorizontal: 12,
+    marginBottom: 12,
+  },
+  optionsPanelSection: {
+    marginBottom: 12,
+  },
+  optionsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#E5E7EB',
+    marginBottom: 8,
+  },
+  optionsDivider: {
+    height: 1,
+    backgroundColor: '#374151',
+    marginVertical: 12,
+  },
   calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -841,6 +891,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     minHeight: 56,
     borderRadius: 8,
+    position: 'relative',
   },
   todayCell: {
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
@@ -850,6 +901,26 @@ const styles = StyleSheet.create({
     borderColor: '#10B981',
     borderRadius: 8,
     margin: 1,
+  },
+  gratifiedDotWrap: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  gratifiedDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: '#10B981',
+  },
+  gratifiedCountText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#10B981',
+    lineHeight: 10,
   },
   cycleStartCell: {
     backgroundColor: 'rgba(245, 158, 11, 0.3)',
@@ -1048,6 +1119,24 @@ const styles = StyleSheet.create({
   hintText: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  removeGratifiedBtn: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.35)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  removeGratifiedBtnText: {
+    color: '#FCA5A5',
+    fontSize: 12,
+    fontWeight: '700',
   },
   deleteBtn: {
     flexDirection: 'row',
