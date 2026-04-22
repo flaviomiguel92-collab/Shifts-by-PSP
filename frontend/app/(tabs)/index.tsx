@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Platform,
   RefreshControl,
   Alert,
@@ -308,7 +309,7 @@ export default function CalendarScreen() {
           onPress={() => setIsOptionsExpanded((prev) => !prev)}
         >
           <Ionicons
-            name={isOptionsExpanded ? "chevron-up" : "add"}
+            name={isOptionsExpanded ? 'close' : 'add'}
             size={28}
             color="#3B82F6"
           />
@@ -433,11 +434,11 @@ export default function CalendarScreen() {
             })}
           </View>
         </View>
+      </ScrollView>
 
-        {/* Expandable Options Panel */}
-        {isOptionsExpanded && (
-          <View style={styles.optionsPanel}>
-            {/* Quick Selection Section */}
+      <Modal visible={isOptionsExpanded} transparent animationType="fade">
+        <Pressable style={styles.optionsOverlay} onPress={() => setIsOptionsExpanded(false)}>
+          <Pressable style={styles.optionsPanelFloating} onPress={() => {}}>
             <View style={styles.optionsPanelSection}>
               <Text style={styles.optionsSectionTitle}>Seleção rápida de turnos</Text>
               <Text style={styles.quickBarTitle}>Escolhe um turno e toca nos dias do calendário</Text>
@@ -479,10 +480,8 @@ export default function CalendarScreen() {
               )}
             </View>
 
-            {/* Divider */}
             <View style={styles.optionsDivider} />
 
-            {/* Cycles Section */}
             <View style={styles.optionsPanelSection}>
               <Text style={styles.optionsSectionTitle}>Ciclos</Text>
               <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
@@ -492,6 +491,7 @@ export default function CalendarScreen() {
                     style={[styles.cycleBtn, { backgroundColor: '#10B981' }]}
                     onPress={() => {
                       setShowCycleModal(true);
+                      setIsOptionsExpanded(false);
                       cancelEditMode();
                     }}
                   >
@@ -539,9 +539,9 @@ export default function CalendarScreen() {
                 </Text>
               )}
             </View>
-          </View>
-        )}
-      </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Day Detail Modal */}
       <Modal visible={showDayDetailModal} animationType="slide" transparent>
@@ -748,11 +748,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingTop: 14,
     paddingBottom: 110,
   },
   summaryContainer: {
     marginHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   quickBar: {
     paddingHorizontal: 12,
@@ -839,12 +840,28 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 12,
   },
-  optionsPanel: {
+  optionsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    justifyContent: 'flex-start',
+    paddingTop: 66,
+    paddingHorizontal: 12,
+    zIndex: 40,
+  },
+  optionsPanelFloating: {
     backgroundColor: '#1F2937',
     borderRadius: 16,
     padding: 12,
-    marginHorizontal: 12,
-    marginBottom: 12,
+    width: '100%',
+    maxHeight: '60%',
+    borderWidth: 1,
+    borderColor: '#374151',
+    zIndex: 50,
+    elevation: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
   },
   optionsPanelSection: {
     marginBottom: 12,
