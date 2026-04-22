@@ -50,7 +50,7 @@ export default function CalendarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [selectedShiftType, setSelectedShiftType] = useState<string | null>(null);
-  const [selectedCycle, setSelectedCycle] = useState<{ id: string; name: string; pattern: ShiftType[] } | null>(null);
+  const [selectedCycle, setSelectedCycle] = useState<{ id: string; name: string; pattern: string[] } | null>(null);
   const [cycleStartDate, setCycleStartDate] = useState<string | null>(null);
   const [isApplyingCycle, setIsApplyingCycle] = useState(false);
   const [isOptionsExpanded, setIsOptionsExpanded] = useState(false);
@@ -177,7 +177,7 @@ export default function CalendarScreen() {
   };
 
   // Apply cycle between two dates
-  const applyCycleFromDates = async (startDate: string, endDate: string, cycle: ShiftType[]) => {
+  const applyCycleFromDates = async (startDate: string, endDate: string, cycle: string[]) => {
     setIsApplyingCycle(true);
 
     const formatLocalDate = (date: Date) => {
@@ -188,6 +188,11 @@ export default function CalendarScreen() {
     };
 
     try {
+      if (!Array.isArray(cycle) || cycle.length === 0) {
+        Alert.alert('Erro', 'O ciclo selecionado não tem turnos válidos.');
+        return;
+      }
+
       const start = new Date(startDate + 'T12:00:00');
       const end = new Date(endDate + 'T12:00:00');
 
@@ -199,19 +204,33 @@ export default function CalendarScreen() {
       let currentDate = new Date(start);
       let i = 0;
       let createdCount = 0;
+      let updatedCount = 0;
+      let failedCount = 0;
+      const existingByDate = new Map<string, Shift>();
+      shifts.forEach((s: any) => existingByDate.set(s.date, s));
 
       while (currentDate <= end) {
         const shiftType = cycle[i % cycle.length];
         const dateStr = formatLocalDate(currentDate);
 
-        console.log(`Creating shift: ${dateStr} -> ${shiftType}`);
-        
-        await createShift({
-          date: dateStr,
-          shift_type: shiftType,
-        });
+        try {
+          const existingShift = existingByDate.get(dateStr);
 
-        createdCount++;
+          if (existingShift) {
+            await updateShift(existingShift.id, { shift_type: shiftType });
+            updatedCount++;
+          } else {
+            await createShift({
+              date: dateStr,
+              shift_type: shiftType,
+            });
+            createdCount++;
+          }
+        } catch (dayError) {
+          failedCount++;
+          console.error(`Erro ao aplicar ciclo em ${dateStr}:`, dayError);
+        }
+
         currentDate.setDate(currentDate.getDate() + 1);
         i++;
       }
@@ -223,7 +242,17 @@ export default function CalendarScreen() {
       setSelectedCycle(null);
       setCycleStartDate(null);
 
-      Alert.alert('Sucesso!', `Ciclo aplicado com sucesso! (${createdCount} dias)`);
+      if (failedCount > 0) {
+        Alert.alert(
+          'Ciclo aplicado com avisos',
+          `Criados: ${createdCount}\nAtualizados: ${updatedCount}\nFalhas: ${failedCount}`
+        );
+      } else {
+        Alert.alert(
+          'Sucesso!',
+          `Ciclo aplicado com sucesso!\nCriados: ${createdCount}\nAtualizados: ${updatedCount}`
+        );
+      }
     } catch (error) {
       console.error('Cycle error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -280,7 +309,7 @@ export default function CalendarScreen() {
     setIsOptionsExpanded(false);
   };
 
-  const handleCycleSelect = (cycle: ShiftType[]) => {
+  const handleCycleSelect = (cycle: string[]) => {
     // Legacy helper (kept for call sites, but cycles are now objects)
     setEditMode('cycle_start');
     setSelectedCycle({ id: 'legacy', name: 'legacy', pattern: cycle });
