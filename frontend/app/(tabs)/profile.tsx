@@ -2,21 +2,29 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, SafeAreaView } from 'react-native';
 import { useDataStore } from '../../src/store/dataStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
+import { storage } from '../../src/utils/storage';
+
+type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function ProfileScreen() {
+  const store = useDataStore() as any;
   const {
     shiftTypes,
-    createShiftType,
     deleteShiftType,
     resetData,
+    resetCalendarData,
+    resetGratifiedData,
+    resetOccurrencesData,
     gratifiedConfig,
     setGratifiedConfig,
     gratifiedTemplates,
     deleteGratifiedTemplate,
-  } = useDataStore();
+  } = store;
 
-  const [name, setName] = useState('');
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
+  const [isResetExpanded, setIsResetExpanded] = useState(false);
+  const [activeReset, setActiveReset] = useState<ResetScope | null>(null);
   const [cfg, setCfg] = useState({
     baseSmall4h: String(gratifiedConfig?.baseSmall4h ?? ''),
     baseLarge4h: String(gratifiedConfig?.baseLarge4h ?? ''),
@@ -29,84 +37,198 @@ export default function ProfileScreen() {
     largeEnd: String(gratifiedConfig?.largeEnd ?? ''),
   });
 
-  const handleAdd = () => {
-    if (!name.trim()) return;
+  const resetOptions = useMemo(
+    () => [
+      {
+        key: 'calendar' as ResetScope,
+        title: 'Calendário',
+        description: 'Apaga turnos, tipos de turno, gratificações e ciclos.',
+        buttonLabel: 'Resetar Calendário',
+      },
+      {
+        key: 'gratified' as ResetScope,
+        title: 'Gratificados',
+        description: 'Apaga templates, entradas e configurações de gratificados.',
+        buttonLabel: 'Resetar Gratificados',
+      },
+      {
+        key: 'occurrences' as ResetScope,
+        title: 'Ocorrências',
+        description: 'Apaga as ocorrências do backend e do estado local.',
+        buttonLabel: 'Resetar Ocorrências',
+      },
+      {
+        key: 'all' as ResetScope,
+        title: 'Tudo',
+        description: 'Apaga todos os dados da aplicação neste perfil.',
+        buttonLabel: 'Resetar Tudo',
+      },
+    ],
+    []
+  );
 
-    createShiftType({
-      name,
-      color: '#3B82F6',
-      startTime: '08:00',
-      endTime: '16:00',
+  const purgeOccurrencesFromApi = async () => {
+    if (!API_URL) {
+      throw new Error('URL da API não configurada');
+    }
+
+    const token = await storage.getItem('session_token');
+
+    const listResponse = await fetch(`${API_URL}/api/occurrences`, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
 
-    setName('');
+    if (!listResponse.ok) {
+      throw new Error(`Falha ao listar ocorrências (HTTP ${listResponse.status})`);
+    }
+
+    const occurrences = await listResponse.json();
+    if (!Array.isArray(occurrences) || occurrences.length === 0) return;
+
+    await Promise.all(
+      occurrences.map(async (occ: { id?: string }) => {
+        if (!occ?.id) return;
+        const deleteResponse = await fetch(`${API_URL}/api/occurrences/${occ.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+        });
+
+        if (!deleteResponse.ok && deleteResponse.status !== 404) {
+          throw new Error(`Falha ao apagar ocorrência ${occ.id} (HTTP ${deleteResponse.status})`);
+        }
+      })
+    );
+  };
+
+  const executeReset = async (scope: ResetScope) => {
+    setActiveReset(scope);
+    try {
+      if (scope === 'calendar') {
+        await resetCalendarData();
+      }
+
+      if (scope === 'gratified') {
+        await resetGratifiedData();
+      }
+
+      if (scope === 'occurrences') {
+        await purgeOccurrencesFromApi();
+        await resetOccurrencesData();
+      }
+
+      if (scope === 'all') {
+        await purgeOccurrencesFromApi();
+        await resetData();
+      }
+
+      Alert.alert('Sucesso', 'Dados apagados com sucesso.');
+    } catch (error) {
+      console.error('Reset error:', error);
+      Alert.alert('Erro', 'Não foi possível concluir o reset.');
+    } finally {
+      setActiveReset(null);
+    }
+  };
+
+  const confirmReset = (scope: ResetScope) => {
+    const labels: Record<ResetScope, string> = {
+      calendar: 'Calendário',
+      gratified: 'Gratificados',
+      occurrences: 'Ocorrências',
+      all: 'Tudo',
+    };
+
+    Alert.alert(
+      `Resetar ${labels[scope]}`,
+      `Tens a certeza que queres apagar os dados de ${labels[scope]}? Esta ação não pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar reset',
+          style: 'destructive',
+          onPress: () => executeReset(scope),
+        },
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
       <HeaderWithBack title="Perfil" />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-      
-      <Text style={{ color: 'white', fontSize: 20, marginBottom: 10 }}>
-        Criar Turno
+
+      <Text style={{ color: 'white', fontSize: 20, marginBottom: 10, marginTop: 10 }}>
+        Limpar Dados / Reset
       </Text>
 
-      <TextInput
-        placeholder="Nome do turno"
-        placeholderTextColor="#6B7280"
-        value={name}
-        onChangeText={setName}
+      <TouchableOpacity
+        onPress={() => setIsResetExpanded((prev) => !prev)}
         style={{
           backgroundColor: '#1F2937',
-          color: 'white',
-          padding: 10,
-          borderRadius: 8,
+          padding: 12,
+          borderRadius: 12,
           marginBottom: 10,
-        }}
-      />
-
-      <TouchableOpacity
-        onPress={handleAdd}
-        style={{
-          backgroundColor: '#3B82F6',
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 20,
-        }}
-      >
-        <Text style={{ color: 'white', textAlign: 'center' }}>
-          Adicionar Turno
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => {
-          Alert.alert(
-            'Limpar dados',
-            'Isto vai remover turnos, tipos de turno, extras e ciclos guardados neste dispositivo. Queres continuar?',
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              {
-                text: 'Limpar',
-                style: 'destructive',
-                onPress: () => resetData(),
-              },
-            ]
-          );
-        }}
-        style={{
-          backgroundColor: 'rgba(239, 68, 68, 0.15)',
-          borderColor: 'rgba(239, 68, 68, 0.35)',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           borderWidth: 1,
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 20,
+          borderColor: 'rgba(239, 68, 68, 0.35)',
         }}
       >
-        <Text style={{ color: '#EF4444', textAlign: 'center', fontWeight: '700' }}>
-          Limpar dados (reset)
+        <Text style={{ color: '#FCA5A5', fontWeight: '700' }}>
+          {isResetExpanded ? '▼' : '▶'} Opções de Reset
         </Text>
       </TouchableOpacity>
+
+      {isResetExpanded && (
+        <View
+          style={{
+            backgroundColor: '#1F2937',
+            borderRadius: 12,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: 'rgba(239, 68, 68, 0.35)',
+            padding: 12,
+            gap: 10,
+          }}
+        >
+          {resetOptions.map((option) => {
+            const isLoading = activeReset === option.key;
+            return (
+              <View
+                key={option.key}
+                style={{
+                  backgroundColor: '#111827',
+                  borderRadius: 10,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: '#374151',
+                }}
+              >
+                <Text style={{ color: '#F9FAFB', fontWeight: '700', marginBottom: 6 }}>{option.title}</Text>
+                <Text style={{ color: '#9CA3AF', fontSize: 12, marginBottom: 10 }}>{option.description}</Text>
+
+                <TouchableOpacity
+                  onPress={() => confirmReset(option.key)}
+                  disabled={!!activeReset}
+                  style={{
+                    backgroundColor: isLoading ? '#7F1D1D' : '#DC2626',
+                    padding: 10,
+                    borderRadius: 8,
+                    opacity: activeReset && !isLoading ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>
+                    {isLoading ? 'A processar...' : option.buttonLabel}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       <Text style={{ color: 'white', fontSize: 20, marginBottom: 10, marginTop: 10 }}>
         Configurações de Gratificados
