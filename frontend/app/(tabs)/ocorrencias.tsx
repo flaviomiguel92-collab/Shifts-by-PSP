@@ -325,6 +325,58 @@ export default function OcorrenciasScreen() {
   const handleDelete = async () => {
     if (!selectedOccurrence) return;
 
+    const occurrenceId = selectedOccurrence.id;
+
+    const executeDelete = async () => {
+      try {
+        const token = await storage.getItem('session_token');
+        const response = await fetch(`${API_URL}/api/occurrences/${occurrenceId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          let detail = `Falha ao eliminar ocorrência (HTTP ${response.status})`;
+          try {
+            const errorBody = await response.json();
+            if (errorBody?.detail) {
+              detail = String(errorBody.detail);
+            }
+          } catch {
+            // Ignora parse de erro e mantém mensagem padrão
+          }
+          throw new Error(detail);
+        }
+
+        // Atualiza imediatamente a lista local para refletir a remoção
+        setOccurrences(prev => prev.filter(occ => occ.id !== occurrenceId));
+
+        // Fecha o detalhe (retorna à lista de ocorrências)
+        setShowDetailModal(false);
+        setSelectedOccurrence(null);
+        setLocalPhotos([]);
+
+        // Revalida dados no backend
+        await fetchOccurrences();
+      } catch (error) {
+        console.error('Delete occurrence error:', error);
+        Alert.alert('Erro', 'Não foi possível eliminar a ocorrência');
+      }
+    };
+
+    // No Web, Alert com múltiplos botões pode não executar callbacks como esperado
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined'
+        ? window.confirm('Tem a certeza que deseja eliminar esta ocorrência?')
+        : false;
+
+      if (confirmed) {
+        await executeDelete();
+      }
+      return;
+    }
+
     Alert.alert(
       'Eliminar Ocorrência',
       'Tem a certeza que deseja eliminar esta ocorrência?',
@@ -333,22 +385,7 @@ export default function OcorrenciasScreen() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await storage.getItem('session_token');
-              await fetch(`${API_URL}/api/occurrences/${selectedOccurrence.id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` },
-                credentials: 'include',
-              });
-              setShowDetailModal(false);
-              setSelectedOccurrence(null);
-              setLocalPhotos([]);
-              fetchOccurrences();
-            } catch (error) {
-              console.error('Delete error:', error);
-            }
-          },
+          onPress: executeDelete,
         },
       ]
     );
