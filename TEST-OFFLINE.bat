@@ -1,137 +1,93 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM Script para testar a app offline (backend + frontend)
-REM Abre ambas em janelas separadas para desenvolvimento local
-
-title Shift Olama - Teste Offline
-
 cls
 color 0A
+title Shift Olama - Teste Offline
 
 echo.
 echo ============================================================
-echo          SHIFT OLAMA - TESTE OFFLINE LOCAL
+echo          SHIFT OLAMA - TESTE OFFLINE
 echo ============================================================
 echo.
-echo Este script inicia:
-echo   1. Backend (FastAPI + Python)
-echo   2. Frontend (Expo React Native)
-echo.
-echo Ambas as aplicacoes abrem em janelas separadas.
-echo.
-timeout /t 2 /nobreak
 
-REM Define o diretorio do script
-set SCRIPT_DIR=%~dp0
-cd /d "%SCRIPT_DIR%"
-
-REM Verifica se estamos no diretorio correto
+set "PROJECT_DIR=%~dp0"
+echo [INFO] Diretorio: %PROJECT_DIR%
 echo.
-echo [VERIFICACAO] Verificando diretorios...
-if not exist "backend" (
+
+REM Verifica diretorios
+if not exist "%PROJECT_DIR%backend" (
     color 0C
-    echo [ERRO] Diretorio 'backend' nao encontrado!
-    echo Diretorio atual: %CD%
-    echo.
-    echo Por favor, execute este script a partir da raiz do projeto.
-    echo.
+    echo [ERRO] Pasta 'backend' nao encontrada!
     pause
     exit /b 1
 )
 
-if not exist "frontend" (
+if not exist "%PROJECT_DIR%frontend" (
     color 0C
-    echo [ERRO] Diretorio 'frontend' nao encontrado!
-    echo Diretorio atual: %CD%
-    echo.
-    echo Por favor, execute este script a partir da raiz do projeto.
-    echo.
+    echo [ERRO] Pasta 'frontend' nao encontrada!
     pause
     exit /b 1
 )
 
-echo [OK] Diretorios encontrados!
+echo [OK] Diretorios encontrados
 echo.
 
-REM Verifica se Python esta instalado
-echo [VERIFICACAO] Verificando Python...
-python --version 2>nul
+REM Instala dependencias do backend se necessario
+echo [VERIFICACAO] Verificando dependencias do backend...
+cd /d "%PROJECT_DIR%backend"
+pip show uvicorn >nul 2>&1
 if errorlevel 1 (
-    color 0C
-    echo [ERRO] Python nao esta instalado ou nao esta no PATH
-    echo Por favor, instale Python antes de continuar.
-    echo Visite: https://www.python.org/downloads/
-    echo.
-    pause
-    exit /b 1
+    echo [INSTALACAO] Instalando dependencias do backend...
+    pip install -q -r requirements.txt
 )
-echo [OK] Python disponivel!
+echo [OK] Dependencias backend OK
 echo.
 
-REM Verifica se npm esta instalado
-echo [VERIFICACAO] Verificando Node.js/npm...
-npm --version 2>nul
-if errorlevel 1 (
-    color 0C
-    echo [ERRO] Node.js/npm nao esta instalado ou nao esta no PATH
-    echo Por favor, instale Node.js antes de continuar.
-    echo Visite: https://nodejs.org/
-    echo.
-    pause
-    exit /b 1
+REM Instala dependencias do frontend se necessario
+echo [VERIFICACAO] Verificando dependencias do frontend...
+cd /d "%PROJECT_DIR%frontend"
+if not exist "node_modules" (
+    echo [INSTALACAO] Instalando dependencias do frontend...
+    call npm install -q
 )
-echo [OK] Node.js/npm disponivel!
+echo [OK] Dependencias frontend OK
 echo.
 
-color 0A
-echo [OK] Todas as verificacoes passaram!
-echo.
-echo ============================================================
-echo Iniciando Backend (Mock - Sem MongoDB)...
-echo ============================================================
-echo.
+REM Volta para o diretorio raiz
+cd /d "%PROJECT_DIR%"
 
-REM Inicia o Backend em uma janela separada (usando mock - sem MongoDB)
-start "SHIFT OLAMA - Backend (FastAPI Mock)" cmd /k "cd /d "%SCRIPT_DIR%backend" && uvicorn server_mock:app --host 0.0.0.0 --port 8000 --reload && echo. && echo [INFO] Backend encerrado. Esta janela vai fechar em 10 segundos... && timeout /t 10"
-
-echo [OK] Backend iniciado em janela separada (Mock Mode)!
+REM Abre Backend
+echo [INICIANDO] Backend (Mock - sem MongoDB)...
 echo.
-echo Aguardando 4 segundos para o backend arrancar...
-timeout /t 4 /nobreak
+start "Shift Olama - Backend" cmd /k "cd /d "%PROJECT_DIR%backend" && python -m uvicorn server_mock:app --host 0.0.0.0 --port 8000 --reload"
+
+timeout /t 5 /nobreak
+
+REM Abre Frontend
+echo.
+echo [INICIANDO] Frontend (Expo)...
+echo.
+start "Shift Olama - Frontend" cmd /k "cd /d "%PROJECT_DIR%frontend" && npx expo start --clear"
 
 echo.
 echo ============================================================
-echo Iniciando Frontend...
+echo AMBIENTE OFFLINE INICIADO COM SUCESSO!
 echo ============================================================
 echo.
-
-REM Inicia o Frontend em uma janela separada
-start "SHIFT OLAMA - Frontend (Expo)" cmd /k "cd /d "%SCRIPT_DIR%frontend" && npx expo start --clear && echo. && echo [INFO] Frontend encerrado. Esta janela vai fechar em 10 segundos... && timeout /t 10"
-
-echo [OK] Frontend iniciado em janela separada!
+echo Servicos abertos em janelas separadas:
 echo.
-echo ============================================================
-echo PRONTO PARA TESTAR!
-echo ============================================================
+echo Backend:
+echo   - URL:   http://localhost:8000
+echo   - Docs:  http://localhost:8000/docs
+echo   - Status: Rodando em Mock Mode (sem MongoDB)
 echo.
-echo Backend rodando em: http://localhost:8000
-echo   - Documentacao: http://localhost:8000/docs
-echo   - API: http://localhost:8000/api
-echo.
-echo Frontend rodando em: Terminal Expo
-echo   - Pressiona 'i' para abrir no iOS
-echo   - Pressiona 'a' para abrir no Android
-echo   - Pressiona 'w' para abrir no Web
-echo   - Pressiona 'q' para sair
-echo.
-echo Duas novas janelas foram abertas com o backend e frontend.
-echo.
-echo PARA PARAR TUDO:
-echo   - Digite 'q' na janela do Frontend para sair
-echo   - Pressione Ctrl+C na janela do Backend para parar
-echo   - Feche ambas as janelas
+echo Frontend:
+echo   - Terminal Expo aberto
+echo   - Pressione 'i' para iOS, 'a' para Android, 'w' para Web
+echo   - Pressione 'q' para sair
 echo.
 echo Esta janela pode ser fechada a qualquer momento.
+echo Os servicos continuarao a correr nas suas janelas.
 echo.
 pause

@@ -17,8 +17,6 @@ import { format } from 'date-fns';
 import { useDataStore } from '../../src/store/dataStore';
 import { 
   ShiftType, 
-  SHIFT_LABELS, 
-  SHIFT_COLORS, 
   Shift,
 } from '../../src/types';
 import { formatMonth, getCalendarDays, dateToString, WEEKDAYS, getNextMonth, getPrevMonth, formatDate } from '../../src/utils/helpers';
@@ -61,6 +59,16 @@ export default function CalendarScreen() {
   const [showDayDetailModal, setShowDayDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+
+  const shiftTypesMap = useMemo(() => {
+    const map = new Map<string, any>();
+    (shiftTypes || []).forEach((shiftType: any) => {
+      const name = String(shiftType?.name || '').trim();
+      if (!name) return;
+      map.set(name, shiftType);
+    });
+    return map;
+  }, [shiftTypes]);
 
   const year = parseInt(currentMonth.split('-')[0]);
   const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);
@@ -269,13 +277,13 @@ export default function CalendarScreen() {
   };
 
   const getShiftDisplayName = (shiftType: string) => {
-    return SHIFT_LABELS[shiftType as ShiftType] || shiftType;
+    const configuredShift = shiftTypesMap.get(shiftType);
+    return configuredShift?.name || shiftType;
   };
 
   const getShiftDisplayColor = (shiftType: string) => {
-    const customShift = shiftTypes.find((s: any) => s.name === shiftType);
-    if (customShift?.color) return customShift.color;
-    return SHIFT_COLORS[shiftType as ShiftType] || '#6B7280';
+    const configuredShift = shiftTypesMap.get(shiftType);
+    return configuredShift?.color || '#6B7280';
   };
 
   if (isApplyingCycle) {
@@ -325,7 +333,7 @@ export default function CalendarScreen() {
 
         {/* Month Summary */}
         <View style={styles.summaryContainer}>
-          <ShiftsSummary shifts={shifts} month={currentMonth} />
+          <ShiftsSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
         </View>
 
         {/* Calendar */}
@@ -466,7 +474,7 @@ export default function CalendarScreen() {
               </ScrollView>
               {editMode === 'quick' && selectedShiftType && (
                 <Text style={styles.modeHint}>
-                  ✓ Toca nos dias para aplicar "{getShiftDisplayName(selectedShiftType)}"
+                  ✓ Toca nos dias para aplicar &quot;{getShiftDisplayName(selectedShiftType)}&quot;
                 </Text>
               )}
             </View>
@@ -743,7 +751,7 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   summaryContainer: {
-    paddingHorizontal: 12,
+    marginHorizontal: 12,
     marginBottom: 12,
   },
   quickBar: {
