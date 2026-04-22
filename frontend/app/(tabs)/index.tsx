@@ -12,6 +12,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
@@ -60,6 +62,7 @@ export default function CalendarScreen() {
   const [showDayDetailModal, setShowDayDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
   const shiftTypesMap = useMemo(() => {
     const map = new Map<string, any>();
@@ -104,6 +107,18 @@ export default function CalendarScreen() {
   useEffect(() => {
     fetchShifts(currentMonth);
   }, [currentMonth]);
+
+  useEffect(() => {
+    if (isOptionsExpanded) {
+      optionsPanelAnim.setValue(0);
+      Animated.timing(optionsPanelAnim, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isOptionsExpanded, optionsPanelAnim]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -304,14 +319,18 @@ export default function CalendarScreen() {
     <SafeAreaView style={styles.container}>
       {/* Custom Header with Options Toggle */}
       <View style={styles.customHeader}>
-        <Text style={styles.customHeaderTitle}>Turnos</Text>
+        <View>
+          <Text style={styles.customHeaderTitle}>Turnos</Text>
+          <Text style={styles.customHeaderSubtitle}>{formatMonth(currentMonth)}</Text>
+        </View>
         <TouchableOpacity
           style={styles.toggleOptionsBtn}
           onPress={() => setIsOptionsExpanded((prev) => !prev)}
+          activeOpacity={0.85}
         >
           <Ionicons
             name={isOptionsExpanded ? 'close' : 'add'}
-            size={28}
+            size={24}
             color="#3B82F6"
           />
         </TouchableOpacity>
@@ -335,6 +354,7 @@ export default function CalendarScreen() {
 
         {/* Month Summary */}
         <View style={styles.summaryContainer}>
+          <Text style={styles.sectionEyebrow}>Resumo mensal</Text>
           <ShiftsSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
         </View>
 
@@ -444,7 +464,30 @@ export default function CalendarScreen() {
         onRequestClose={() => setIsOptionsExpanded(false)}
       >
         <Pressable style={styles.optionsOverlay} onPress={() => setIsOptionsExpanded(false)}>
-          <Pressable style={styles.optionsPanelFloating} onPress={() => {}}>
+          <Animated.View
+            style={[
+              styles.optionsPanelFloating,
+              {
+                opacity: optionsPanelAnim,
+                transform: [
+                  {
+                    translateY: optionsPanelAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-10, 0],
+                    }),
+                  },
+                  {
+                    scale: optionsPanelAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.98, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Pressable onPress={() => {}}>
+            <View style={styles.optionsHandle} />
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.optionsPanelContent}
@@ -458,6 +501,7 @@ export default function CalendarScreen() {
                     {shiftTypes.map((shift: any) => (
                       <TouchableOpacity
                         key={shift.name}
+                        activeOpacity={0.8}
                         style={[
                           styles.quickBtn,
                           { borderColor: shift.color },
@@ -500,6 +544,7 @@ export default function CalendarScreen() {
                   <View style={styles.cycleButtons}>
                     <TouchableOpacity
                       style={[styles.cycleBtn, { backgroundColor: '#10B981' }]}
+                      activeOpacity={0.8}
                       onPress={() => {
                         setShowCycleModal(true);
                         setIsOptionsExpanded(false);
@@ -512,6 +557,7 @@ export default function CalendarScreen() {
                     {cycles.map((cycle: any) => (
                       <TouchableOpacity
                         key={cycle.id}
+                        activeOpacity={0.8}
                         style={[
                           styles.cycleBtn,
                           selectedCycle?.id === cycle.id && styles.cycleBtnActive,
@@ -552,7 +598,8 @@ export default function CalendarScreen() {
                 )}
               </View>
             </ScrollView>
-          </Pressable>
+            </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
 
@@ -711,7 +758,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 14,
+    paddingBottom: 12,
     backgroundColor: '#1F2937',
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
@@ -721,13 +769,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  customHeaderSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#93C5FD',
+    textTransform: 'capitalize',
+  },
   toggleOptionsBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(59,130,246,0.08)',
+    backgroundColor: 'rgba(59,130,246,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.35)',
   },
   loadingContainer: {
     flex: 1,
@@ -746,17 +803,19 @@ const styles = StyleSheet.create({
   },
   topActionsRow: {
     paddingHorizontal: 12,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   cancelBtn: {
-    backgroundColor: '#EF4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.45)',
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
     alignSelf: 'flex-start',
   },
   cancelBtnText: {
-    color: '#FFFFFF',
+    color: '#FCA5A5',
     fontWeight: '600',
     fontSize: 12,
   },
@@ -770,6 +829,14 @@ const styles = StyleSheet.create({
   summaryContainer: {
     marginHorizontal: 12,
     marginBottom: 16,
+  },
+  sectionEyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
   },
   quickBar: {
     paddingHorizontal: 12,
@@ -859,10 +926,12 @@ const styles = StyleSheet.create({
     padding: 10,
     marginHorizontal: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   optionsOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
     justifyContent: 'flex-start',
     paddingTop: 66,
     paddingHorizontal: 12,
@@ -882,6 +951,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
+  },
+  optionsHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: '#4B5563',
+    alignSelf: 'center',
+    marginBottom: 10,
   },
   optionsPanelContent: {
     paddingBottom: 8,
