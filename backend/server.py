@@ -21,6 +21,17 @@ db = client[os.environ.get('DB_NAME', 'shiftextra_db')]
 
 # Create the main app
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://shifts-by-psp.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
