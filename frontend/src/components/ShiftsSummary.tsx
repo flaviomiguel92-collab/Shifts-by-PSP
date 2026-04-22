@@ -1,28 +1,43 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ShiftType, SHIFT_LABELS, SHIFT_COLORS, Shift } from '../types';
+import { Shift } from '../types';
 
 interface ShiftsSummaryProps {
   shifts: Shift[];
+  shiftTypes: { id: string; name: string; color?: string }[];
   month: string;
 }
 
-export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, month }) => {
-  const counts = useMemo(() => {
-    const counts: Record<ShiftType, number> = {
-      manha: 0,
-      tarde: 0,
-      noite: 0,
-      ferias: 0,
-      folga: 0,
-      excesso: 0,
-    };
+export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes, month }) => {
+  const shiftItems = useMemo(() => {
+    const normalizedConfigured = (shiftTypes || [])
+      .map((item) => ({
+        id: String(item?.id || ''),
+        name: String(item?.name || '').trim(),
+        color: item?.color || '#6B7280',
+      }))
+      .filter((item) => item.name.length > 0);
 
-    shifts.forEach((shift) => {
-      counts[shift.shift_type]++;
+    const configuredNames = new Set(normalizedConfigured.map((item) => item.name));
+    const unknownFromShifts = Array.from(new Set((shifts || []).map((shift) => String(shift.shift_type || '').trim())))
+      .filter((name) => name.length > 0 && !configuredNames.has(name))
+      .map((name) => ({
+        id: `from-shift-${name}`,
+        name,
+        color: '#6B7280',
+      }));
+
+    return [...normalizedConfigured, ...unknownFromShifts];
+  }, [shiftTypes, shifts]);
+
+  const countsByType = useMemo(() => {
+    const map = new Map<string, number>();
+    (shifts || []).forEach((shift) => {
+      const typeName = String(shift.shift_type || '').trim();
+      if (!typeName) return;
+      map.set(typeName, (map.get(typeName) || 0) + 1);
     });
-
-    return counts;
+    return map;
   }, [shifts]);
 
   const monthName = new Date(month + '-01').toLocaleDateString('pt-PT', {
@@ -38,35 +53,28 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, month }) =
       </View>
 
       <View style={styles.counters}>
-        <View style={styles.counterItem}>
-          <Text style={styles.counterValue}>{counts.noite}</Text>
-          <Text style={styles.counterLabel}>Noite</Text>
-        </View>
-        <View style={styles.counterItem}>
-          <Text style={styles.counterValue}>{counts.manha}</Text>
-          <Text style={styles.counterLabel}>Manhã</Text>
-        </View>
-        <View style={styles.counterItem}>
-          <Text style={styles.counterValue}>{counts.tarde}</Text>
-          <Text style={styles.counterLabel}>Tarde</Text>
-        </View>
-        <View style={styles.counterItem}>
-          <Text style={styles.counterValue}>{counts.folga}</Text>
-          <Text style={styles.counterLabel}>Folga</Text>
-        </View>
+        {shiftItems.map((item) => (
+          <View key={item.id} style={styles.counterItem}>
+            <Text style={[styles.counterValue, { color: item.color }]}>{countsByType.get(item.name) || 0}</Text>
+            <Text style={styles.counterLabel} numberOfLines={1}>{item.name}</Text>
+          </View>
+        ))}
+        {shiftItems.length === 0 && (
+          <Text style={styles.emptyText}>Sem tipos de turno configurados</Text>
+        )}
       </View>
 
       {/* Legend */}
       <View style={styles.legend}>
-        {Object.entries(SHIFT_LABELS).map(([key, label]) => (
-          <View key={key} style={styles.legendItem}>
+        {shiftItems.map((item) => (
+          <View key={item.id} style={styles.legendItem}>
             <View
               style={[
                 styles.colorBox,
-                { backgroundColor: SHIFT_COLORS[key as ShiftType] },
+                { backgroundColor: item.color },
               ]}
             />
-            <Text style={styles.legendLabel}>{label}</Text>
+            <Text style={styles.legendLabel}>{item.name}</Text>
           </View>
         ))}
       </View>
@@ -79,8 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F2937',
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    width: '100%',
   },
   header: {
     flexDirection: 'row',
@@ -100,7 +107,9 @@ const styles = StyleSheet.create({
   },
   counters: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    columnGap: 12,
+    rowGap: 10,
     marginBottom: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
@@ -109,6 +118,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#374151',
   },
   counterItem: {
+    minWidth: 68,
+    flexGrow: 1,
+    flexShrink: 1,
     alignItems: 'center',
   },
   counterValue: {
@@ -142,5 +154,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: '#D1D5DB',
+  },
+  emptyText: {
+    color: '#9CA3AF',
+    fontSize: 12,
   },
 });
