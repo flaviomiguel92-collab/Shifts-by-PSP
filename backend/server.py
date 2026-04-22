@@ -10,6 +10,16 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
+from reporting import (
+    ReportGenerateRequest,
+    ReportGenerateResponse,
+    ServicoRemuneradoData,
+    build_servico_remunerado_file_name,
+    build_servico_remunerado_context,
+    build_template_registry,
+    resolve_existing_template_path,
+    generate_pdf_base64,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -46,6 +56,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+report_templates_registry = build_template_registry(build_servico_remunerado_context)
 
 # ==================== MODELS ====================
 
@@ -1144,6 +1155,46 @@ async def add_photo_to_occurrence(
     return {"message": "Photo added successfully"}
 
 # ==================== ROOT ENDPOINT ====================
+
+@api_router.get("/reports/templates")
+async def get_report_templates():
+    return [
+        {
+            "id": definition.template_id,
+            "title": definition.title,
+        }
+        for definition in report_templates_registry.values()
+    ]
+
+
+@api_router.post("/reports/generate", response_model=ReportGenerateResponse)
+async def generate_report(request_data: ReportGenerateRequest):
+    template = report_templates_registry.get(request_data.template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template de relatório não encontrado.")
+
+    if request_data.template_id != "servico_remunerado":
+        raise HTTPException(status_code=400, detail="Template ainda não suportado.")
+
+    try:
+        parsed_data = ServicoRemuneradoData(**request_data.data)
+        output_name = parsed_data.desired_file_name or build_servico_remunerado_file_name(
+            report_date=parsed_data.reportDate,
+            report_hour=parsed_data.reportHour,
+            remunerated_name=parsed_data.remuneratedName,
+            graduado_matricula=parsed_data.graduadoMatricula,
+        )
+        template_path = resolve_existing_template_path(template.template_docx_path_candidates)
+        context = template.context_builder(parsed_data)
+        pdf_base64 = generate_pdf_base64(template_path, context, output_name)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=500, detail=str(error))
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=f"Erro ao gerar relatório: {error}")
+
+    return ReportGenerateResponse(file_name=output_name, pdf_base64=pdf_base64)
 
 @api_router.get("/")
 async def root():

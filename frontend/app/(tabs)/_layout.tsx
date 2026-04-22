@@ -23,6 +23,10 @@ const PersonIcon = ({ color, size }: { color: string; size: number }) => (
   <Ionicons name="person" size={size} color={color} />
 );
 
+const ReportsIcon = ({ color, size }: { color: string; size: number }) => (
+  <Ionicons name="document-attach" size={size} color={color} />
+);
+
 export default function TabLayout() {
   const isWeb = Platform.OS === 'web';
   
@@ -93,6 +97,13 @@ export default function TabLayout() {
         options={{
           title: 'Painel',
           tabBarIcon: StatsIcon,
+        }}
+      />
+      <Tabs.Screen
+        name="relatorios"
+        options={{
+          title: 'Relatórios',
+          tabBarIcon: ReportsIcon,
         }}
       />
       <Tabs.Screen
