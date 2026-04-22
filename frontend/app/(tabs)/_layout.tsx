@@ -68,6 +68,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="gratificados"
+        options={{
+          title: 'Gratificados',
+          tabBarIcon: CashIcon,
+        }}
+      />
+      <Tabs.Screen
         name="ocorrencias"
         options={{
           title: 'Ocorrências',
