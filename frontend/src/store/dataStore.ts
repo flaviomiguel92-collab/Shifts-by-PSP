@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as api from '../services/api';
 
 const STORAGE_KEY = 'app_data';
 
@@ -8,6 +9,7 @@ export const useDataStore = create((set, get) => ({
   shiftTypes: [],
   gratifications: [],
   cycles: [],
+  occurrences: [],
   gratifiedConfig: {
     baseSmall4h: 52.73,
     baseLarge4h: 75.89,
@@ -27,13 +29,223 @@ export const useDataStore = create((set, get) => ({
   setCurrentMonth: (month) => set({ currentMonth: month }),
   setCurrentYear: (year) => set({ currentYear: year }),
 
-  // 🔥 FUNÇÕES VAZIAS (para evitar erros)
-  fetchShifts: async () => {},
-  fetchGratifications: async () => {},
-  fetchMonthlyStats: async () => {},
-  fetchComparisonStats: async () => {},
+  // ==================== OCCURRENCES ====================
 
-  // 🔥 LOAD DATA
+  createOccurrence: async (data) => {
+    try {
+      const result = await api.createOccurrence(data);
+      set((state) => ({
+        occurrences: [result, ...state.occurrences],
+      }));
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error creating occurrence:', error);
+      throw error;
+    }
+  },
+
+  fetchOccurrences: async (status, classification) => {
+    try {
+      const result = await api.getOccurrences(status, classification);
+      set({ occurrences: result });
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error fetching occurrences:', error);
+      throw error;
+    }
+  },
+
+  updateOccurrence: async (id, data) => {
+    try {
+      const result = await api.updateOccurrence(id, data);
+      set((state) => ({
+        occurrences: state.occurrences.map((o) =>
+          o.id === id ? result : o
+        ),
+      }));
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error updating occurrence:', error);
+      throw error;
+    }
+  },
+
+  deleteOccurrence: async (id) => {
+    try {
+      await api.deleteOccurrence(id);
+      set((state) => ({
+        occurrences: state.occurrences.filter((o) => o.id !== id),
+      }));
+      get().saveData();
+    } catch (error) {
+      console.error('Error deleting occurrence:', error);
+      throw error;
+    }
+  },
+
+  // ==================== SHIFTS ====================
+
+  fetchShifts: async (month) => {
+    try {
+      const result = await api.getShifts(month);
+      set({ shifts: result });
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error fetching shifts:', error);
+      return get().shifts;
+    }
+  },
+
+  createShift: async (shift) => {
+    try {
+      const result = await api.createShift(shift);
+      set((state) => {
+        const existingIndex = state.shifts.findIndex((s) => s.date === shift.date);
+        if (existingIndex >= 0) {
+          const updated = [...state.shifts];
+          updated[existingIndex] = result;
+          return { shifts: updated };
+        }
+        return { shifts: [...state.shifts, result] };
+      });
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error creating shift:', error);
+      const newShift = {
+        ...shift,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      set((state) => {
+        const existingIndex = state.shifts.findIndex((s) => s.date === shift.date);
+        if (existingIndex >= 0) {
+          const updated = [...state.shifts];
+          updated[existingIndex] = { ...updated[existingIndex], ...shift };
+          return { shifts: updated };
+        }
+        return { shifts: [...state.shifts, newShift] };
+      });
+      get().saveData();
+      throw error;
+    }
+  },
+
+  updateShift: async (id, data) => {
+    try {
+      const result = await api.updateShift(id, data);
+      set((state) => ({
+        shifts: state.shifts.map((s) =>
+          s.id === id ? result : s
+        ),
+      }));
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error updating shift:', error);
+      set((state) => ({
+        shifts: state.shifts.map((s) =>
+          s.id === id ? { ...s, ...data } : s
+        ),
+      }));
+      get().saveData();
+      throw error;
+    }
+  },
+
+  deleteShift: async (id) => {
+    try {
+      await api.deleteShift(id);
+      set((state) => ({
+        shifts: state.shifts.filter((s) => s.id !== id),
+      }));
+      get().saveData();
+    } catch (error) {
+      console.error('Error deleting shift:', error);
+      set((state) => ({
+        shifts: state.shifts.filter((s) => s.id !== id),
+      }));
+      get().saveData();
+      throw error;
+    }
+  },
+
+  // ==================== GRATIFICATIONS ====================
+
+  fetchGratifications: async (month, year) => {
+    try {
+      const result = await api.getGratifications(month, year);
+      set({ gratifications: result });
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error fetching gratifications:', error);
+      return get().gratifications;
+    }
+  },
+
+  createGratification: async (data) => {
+    try {
+      const result = await api.createGratification(data);
+      set((state) => ({
+        gratifications: [result, ...state.gratifications],
+      }));
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.error('Error creating gratification:', error);
+      const newItem = { ...data, id: Date.now().toString() };
+      set((state) => ({
+        gratifications: [newItem, ...state.gratifications],
+      }));
+      get().saveData();
+      throw error;
+    }
+  },
+
+  // ==================== STATISTICS ====================
+
+  fetchMonthlyStats: async (month) => {
+    try {
+      return await api.getMonthlyStats(month);
+    } catch (error) {
+      console.error('Error fetching monthly stats:', error);
+      throw error;
+    }
+  },
+
+  fetchYearlyStats: async (year) => {
+    try {
+      return await api.getYearlyStats(year);
+    } catch (error) {
+      console.error('Error fetching yearly stats:', error);
+      throw error;
+    }
+  },
+
+  fetchDashboardStats: async () => {
+    try {
+      return await api.getDashboardStats();
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      throw error;
+    }
+  },
+
+  fetchComparisonStats: async () => {
+    try {
+      return await api.getComparisonStats();
+    } catch (error) {
+      console.error('Error fetching comparison stats:', error);
+      throw error;
+    }
+  },
+
+  // ==================== LOCAL STORAGE ====================
+
   loadData: async () => {
     const data = await AsyncStorage.getItem(STORAGE_KEY);
     if (data) {
@@ -44,6 +256,7 @@ export const useDataStore = create((set, get) => ({
         shifts: parsed?.shifts ?? [],
         shiftTypes: parsed?.shiftTypes ?? [],
         gratifications: parsed?.gratifications ?? [],
+        occurrences: parsed?.occurrences ?? [],
         gratifiedConfig: parsed?.gratifiedConfig ?? get().gratifiedConfig,
         gratifiedTemplates: parsed?.gratifiedTemplates ?? [],
         gratifiedEntries: parsed?.gratifiedEntries ?? [],
@@ -51,7 +264,6 @@ export const useDataStore = create((set, get) => ({
     }
   },
 
-  // 🔥 SAVE DATA
   saveData: async () => {
     const state = get();
     await AsyncStorage.setItem(
@@ -61,6 +273,7 @@ export const useDataStore = create((set, get) => ({
         shiftTypes: state.shiftTypes,
         gratifications: state.gratifications,
         cycles: state.cycles,
+        occurrences: state.occurrences,
         gratifiedConfig: state.gratifiedConfig,
         gratifiedTemplates: state.gratifiedTemplates,
         gratifiedEntries: state.gratifiedEntries,
@@ -75,150 +288,99 @@ export const useDataStore = create((set, get) => ({
       shiftTypes: [],
       gratifications: [],
       cycles: [],
+      occurrences: [],
       gratifiedTemplates: [],
       gratifiedEntries: [],
     });
   },
 
-  // SHIFTS
-  createShift: async (shift) => {
-  const newShift = {
-    ...shift,
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-  };
+  // ==================== SHIFT TYPES ====================
 
-  set((state) => {
-    const existingIndex = state.shifts.findIndex((s) => s.date === shift.date);
-
-    if (existingIndex >= 0) {
-      const updated = [...state.shifts];
-      updated[existingIndex] = { ...updated[existingIndex], ...shift };
-      return { shifts: updated };
-    }
-
-    return { shifts: [...state.shifts, newShift] };
-  });
-
-  get().saveData();
-},
-
-// SHIFT TYPES (turnos personalizados)
-createShiftType: async (shiftType) => {
-  const newShiftType = {
-    ...shiftType,
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-  };
-
-  set((state) => ({
-    shiftTypes: [...state.shiftTypes, newShiftType],
-  }));
-
-  get().saveData();
-},
-
-// CYCLES (sequências definidas pelo utilizador)
-createCycle: async (cycle) => {
-  const newCycle = {
-    ...cycle,
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
-  };
-
-  set((state) => ({
-    cycles: [newCycle, ...(state.cycles || [])],
-  }));
-
-  get().saveData();
-},
-
-deleteCycle: async (id) => {
-  set((state) => ({
-    cycles: (state.cycles || []).filter((c) => c.id !== id),
-  }));
-  get().saveData();
-},
-
-// GRATIFIED CONFIG / TEMPLATES / ENTRIES
-setGratifiedConfig: async (partial) => {
-  set((state) => ({
-    gratifiedConfig: { ...state.gratifiedConfig, ...(partial || {}) },
-  }));
-  get().saveData();
-},
-
-upsertGratifiedTemplate: async (template) => {
-  const name = (template?.name || '').trim();
-  if (!name) return;
-
-  set((state) => {
-    const existingIndex = (state.gratifiedTemplates || []).findIndex((t) => t.name === name);
-    const next = [...(state.gratifiedTemplates || [])];
-    const item = { ...template, name };
-
-    if (existingIndex >= 0) {
-      next[existingIndex] = { ...next[existingIndex], ...item };
-      return { gratifiedTemplates: next };
-    }
-    return { gratifiedTemplates: [item, ...next] };
-  });
-
-  get().saveData();
-},
-
-deleteGratifiedTemplate: async (name) => {
-  set((state) => ({
-    gratifiedTemplates: (state.gratifiedTemplates || []).filter((t) => t.name !== name),
-  }));
-  get().saveData();
-},
-
-createGratifiedEntry: async (entry) => {
-  const newItem = {
-    ...entry,
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-  };
-  set((state) => ({
-    gratifiedEntries: [newItem, ...(state.gratifiedEntries || [])],
-  }));
-  get().saveData();
-},
-
-deleteGratifiedEntry: async (id) => {
-  set((state) => ({
-    gratifiedEntries: (state.gratifiedEntries || []).filter((e) => e.id !== id),
-  }));
-  get().saveData();
-},
-
-  updateShift: async (id, data) => {
+  createShiftType: async (shiftType) => {
+    const newShiftType = {
+      ...shiftType,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    };
     set((state) => ({
-      shifts: state.shifts.map((s) =>
-        s.id === id ? { ...s, ...data } : s
-      ),
+      shiftTypes: [...state.shiftTypes, newShiftType],
     }));
     get().saveData();
   },
 
   deleteShiftType: async (id) => {
-  set((state) => ({
-    shiftTypes: state.shiftTypes.filter((s) => s.id !== id),
-  }));
-
-  get().saveData();
-},
-
-  deleteShift: async (id) => {
     set((state) => ({
-      shifts: state.shifts.filter((s) => s.id !== id),
+      shiftTypes: state.shiftTypes.filter((s) => s.id !== id),
     }));
     get().saveData();
   },
 
-  // GRATIFICATIONS
-  createGratification: async (data) => {
-    const newItem = { ...data, id: Date.now().toString() };
+  // ==================== CYCLES ====================
+
+  createCycle: async (cycle) => {
+    const newCycle = {
+      ...cycle,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
+    };
     set((state) => ({
-      gratifications: [newItem, ...state.gratifications],
+      cycles: [newCycle, ...(state.cycles || [])],
+    }));
+    get().saveData();
+  },
+
+  deleteCycle: async (id) => {
+    set((state) => ({
+      cycles: (state.cycles || []).filter((c) => c.id !== id),
+    }));
+    get().saveData();
+  },
+
+  // ==================== GRATIFIED CONFIG ====================
+
+  setGratifiedConfig: async (partial) => {
+    set((state) => ({
+      gratifiedConfig: { ...state.gratifiedConfig, ...(partial || {}) },
+    }));
+    get().saveData();
+  },
+
+  upsertGratifiedTemplate: async (template) => {
+    const name = (template?.name || '').trim();
+    if (!name) return;
+    set((state) => {
+      const existingIndex = (state.gratifiedTemplates || []).findIndex((t) => t.name === name);
+      const next = [...(state.gratifiedTemplates || [])];
+      const item = { ...template, name };
+      if (existingIndex >= 0) {
+        next[existingIndex] = { ...next[existingIndex], ...item };
+        return { gratifiedTemplates: next };
+      }
+      return { gratifiedTemplates: [item, ...next] };
+    });
+    get().saveData();
+  },
+
+  deleteGratifiedTemplate: async (name) => {
+    set((state) => ({
+      gratifiedTemplates: (state.gratifiedTemplates || []).filter((t) => t.name !== name),
+    }));
+    get().saveData();
+  },
+
+  createGratifiedEntry: async (entry) => {
+    const newItem = {
+      ...entry,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    };
+    set((state) => ({
+      gratifiedEntries: [newItem, ...(state.gratifiedEntries || [])],
+    }));
+    get().saveData();
+  },
+
+  deleteGratifiedEntry: async (id) => {
+    set((state) => ({
+      gratifiedEntries: (state.gratifiedEntries || []).filter((e) => e.id !== id),
     }));
     get().saveData();
   },
