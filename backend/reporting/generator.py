@@ -2,6 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Dict, Any
 import base64
+import os
 import shutil
 import subprocess
 import zipfile
@@ -33,12 +34,33 @@ def render_docx(template_path: Path, context: Dict[str, Any], output_docx_path: 
     document.save(str(output_docx_path))
 
 
-def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
-    office_bin = shutil.which("soffice") or shutil.which("libreoffice")
-    if not office_bin:
+def resolve_office_bin() -> str:
+    configured_bin = (os.getenv("LIBREOFFICE_BIN") or "").strip()
+    if configured_bin:
+        if Path(configured_bin).exists():
+            return configured_bin
+
+        found_in_path = shutil.which(configured_bin)
+        if found_in_path:
+            return found_in_path
+
         raise RuntimeError(
-            "Conversão para PDF indisponível: LibreOffice (soffice) não instalado no servidor."
+            "Conversão para PDF indisponível: variável LIBREOFFICE_BIN configurada, "
+            f"mas o binário não foi encontrado ({configured_bin})."
         )
+
+    office_bin = shutil.which("soffice") or shutil.which("libreoffice")
+    if office_bin:
+        return office_bin
+
+    raise RuntimeError(
+        "Conversão para PDF indisponível: LibreOffice (soffice) não instalado no servidor. "
+        "Instale LibreOffice no ambiente de deploy ou configure LIBREOFFICE_BIN com o caminho do binário."
+    )
+
+
+def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
+    office_bin = resolve_office_bin()
 
     command = [
         office_bin,
