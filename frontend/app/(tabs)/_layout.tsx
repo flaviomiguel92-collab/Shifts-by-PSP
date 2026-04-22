@@ -34,9 +34,9 @@ export default function TabLayout() {
           backgroundColor: '#1F2937',
           borderTopColor: '#374151',
           borderTopWidth: 1,
-          height: isWeb ? 70 : (Platform.OS === 'ios' ? 85 : 65),
-          paddingBottom: isWeb ? 15 : (Platform.OS === 'ios' ? 25 : 10),
-          paddingTop: isWeb ? 12 : 10,
+          height: isWeb ? 72 : (Platform.OS === 'ios' ? 86 : 72),
+          paddingBottom: isWeb ? 14 : (Platform.OS === 'ios' ? 24 : 10),
+          paddingTop: isWeb ? 12 : 8,
           paddingHorizontal: isWeb ? 20 : 0,
           display: isWeb ? 'flex' : 'flex',
           borderRadius: isWeb ? 12 : 0,
@@ -55,9 +55,16 @@ export default function TabLayout() {
           marginBottom: isWeb ? 2 : 0,
         },
         tabBarItemStyle: {
-          paddingVertical: isWeb ? 8 : 0,
+          paddingVertical: isWeb ? 8 : 6,
           marginHorizontal: isWeb ? 8 : 0,
+          minHeight: isWeb ? 52 : 56,
         },
+        tabBarIconStyle: {
+          marginBottom: 2,
+        },
+        tabBarHideOnKeyboard: true,
+        tabBarAllowFontScaling: false,
+        tabBarPressColor: 'rgba(59,130,246,0.16)',
       }}
     >
       <Tabs.Screen
