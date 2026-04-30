@@ -188,7 +188,11 @@ export default function CalendarScreen() {
     };
 
     try {
-      if (!Array.isArray(cycle) || cycle.length === 0) {
+      const normalizedCycle = (Array.isArray(cycle) ? cycle : [])
+        .map((entry) => String(entry ?? '').trim())
+        .filter((entry) => entry.length > 0);
+
+      if (normalizedCycle.length === 0) {
         Alert.alert('Erro', 'O ciclo selecionado não tem turnos válidos.');
         return;
       }
@@ -210,7 +214,7 @@ export default function CalendarScreen() {
       shifts.forEach((s: any) => existingByDate.set(s.date, s));
 
       while (currentDate <= end) {
-        const shiftType = cycle[i % cycle.length];
+        const shiftType = normalizedCycle[i % normalizedCycle.length];
         const dateStr = formatLocalDate(currentDate);
 
         try {
@@ -218,12 +222,16 @@ export default function CalendarScreen() {
 
           if (existingShift) {
             await updateShift(existingShift.id, { shift_type: shiftType });
+            existingByDate.set(dateStr, { ...existingShift, shift_type: shiftType } as Shift);
             updatedCount++;
           } else {
-            await createShift({
+            const createdShift = await createShift({
               date: dateStr,
               shift_type: shiftType,
             });
+            if (createdShift) {
+              existingByDate.set(dateStr, createdShift as Shift);
+            }
             createdCount++;
           }
         } catch (dayError) {
@@ -442,11 +450,11 @@ export default function CalendarScreen() {
                   key={dateStr}
                   style={[
                     styles.dayCell,
+                    isToday && styles.todayCell,
                     shift && {
                       backgroundColor: getShiftDisplayColor(shift.shift_type),
                       opacity: 0.8,
                     },
-                    isToday && styles.todayCell,
                     hasGratification && styles.hasGratificationCell,
                     isCycleStart && styles.cycleStartCell,
                     inCycleRange && styles.inCycleRangeCell,
@@ -1056,7 +1064,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   todayCell: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.85)',
   },
   hasGratificationCell: {
     borderWidth: 2,
