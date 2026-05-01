@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Shift } from '../types';
 
 interface ShiftsSummaryProps {
@@ -9,6 +9,9 @@ interface ShiftsSummaryProps {
 }
 
 export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes, month }) => {
+  const { width } = useWindowDimensions();
+  const isMobileSize = width < 480;
+  const isTabletSize = width >= 480 && width < 768;
   const shiftItems = useMemo(() => {
     const normalizedConfigured = (shiftTypes || [])
       .map((item) => ({
@@ -46,17 +49,21 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { padding: isMobileSize ? 12 : 16 }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Turnos</Text>
+        <Text style={[styles.title, { fontSize: isMobileSize ? 20 : 24 }]}>Turnos</Text>
         <Text style={styles.monthText}>{monthName.toUpperCase()}</Text>
       </View>
 
-      <View style={styles.counters}>
+      <View style={[styles.counters, { columnGap: isMobileSize ? 8 : 12, rowGap: isMobileSize ? 8 : 10 }]}>
         {shiftItems.map((item) => (
-          <View key={item.id} style={styles.counterItem}>
-            <Text style={[styles.counterValue, { color: item.color }]}>{countsByType.get(item.name) || 0}</Text>
-            <Text style={styles.counterLabel} numberOfLines={1}>{item.name}</Text>
+          <View key={item.id} style={[styles.counterItem, { minWidth: isMobileSize ? 60 : 68 }]}>
+            <Text style={[styles.counterValue, { color: item.color, fontSize: isMobileSize ? 18 : 20 }]}>
+              {countsByType.get(item.name) || 0}
+            </Text>
+            <Text style={[styles.counterLabel, { fontSize: isMobileSize ? 10 : 11 }]} numberOfLines={1}>
+              {item.name}
+            </Text>
           </View>
         ))}
         {shiftItems.length === 0 && (
@@ -65,16 +72,16 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
       </View>
 
       {/* Legend */}
-      <View style={styles.legend}>
+      <View style={[styles.legend, { gap: isMobileSize ? 8 : 12 }]}>
         {shiftItems.map((item) => (
-          <View key={item.id} style={styles.legendItem}>
+          <View key={item.id} style={[styles.legendItem, { gap: isMobileSize ? 4 : 6 }]}>
             <View
               style={[
                 styles.colorBox,
                 { backgroundColor: item.color },
               ]}
             />
-            <Text style={styles.legendLabel}>{item.name}</Text>
+            <Text style={[styles.legendLabel, { fontSize: isMobileSize ? 10 : 11 }]}>{item.name}</Text>
           </View>
         ))}
       </View>

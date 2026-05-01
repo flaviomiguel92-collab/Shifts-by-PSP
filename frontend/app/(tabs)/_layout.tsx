@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { Platform, useWindowDimensions, StyleSheet } from 'react-native';
 
 const CalendarIcon = ({ color, size }: { color: string; size: number }) => (
   <Ionicons name="calendar" size={size} color={color} />
@@ -24,12 +24,18 @@ const PersonIcon = ({ color, size }: { color: string; size: number }) => (
 );
 
 const ReportsIcon = ({ color, size }: { color: string; size: number }) => (
-  <Ionicons name="document-attach" size={size} color={color} />
+  <Ionicons name="document" size={size} color={color} />
 );
 
 export default function TabLayout() {
   const isWeb = Platform.OS === 'web';
-  
+  const { width } = useWindowDimensions();
+  const isMobileSize = width < 768;
+
+  const tabBarHeight = isMobileSize ? (Platform.OS === 'ios' ? 86 : 72) : 80;
+  const tabBarPadding = isMobileSize ? 0 : 20;
+  const fontSize = isMobileSize ? 10 : 12;
+
   return (
     <Tabs
       screenOptions={{
@@ -38,30 +44,33 @@ export default function TabLayout() {
           backgroundColor: '#1F2937',
           borderTopColor: '#374151',
           borderTopWidth: 1,
-          height: isWeb ? 72 : (Platform.OS === 'ios' ? 86 : 72),
-          paddingBottom: isWeb ? 14 : (Platform.OS === 'ios' ? 24 : 10),
-          paddingTop: isWeb ? 12 : 8,
-          paddingHorizontal: isWeb ? 20 : 0,
-          display: isWeb ? 'flex' : 'flex',
-          borderRadius: isWeb ? 12 : 0,
-          margin: isWeb ? 16 : 0,
-          position: isWeb ? 'relative' : 'absolute',
-          bottom: isWeb ? 'auto' : 0,
-          left: isWeb ? 0 : 0,
-          right: isWeb ? 0 : 0,
-          width: isWeb ? 'auto' : '100%',
+          height: tabBarHeight,
+          paddingBottom: isMobileSize ? (Platform.OS === 'ios' ? 24 : 10) : 16,
+          paddingTop: isMobileSize ? 8 : 12,
+          paddingHorizontal: tabBarPadding,
+          display: 'flex',
+          borderRadius: isWeb ? 0 : 0,
+          margin: 0,
+          position: isMobileSize ? 'absolute' : 'relative',
+          bottom: isMobileSize ? 0 : 'auto',
+          left: 0,
+          right: 0,
+          width: '100%',
+          maxWidth: '100vw',
+          overflow: 'hidden',
         },
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: '#6B7280',
         tabBarLabelStyle: {
-          fontSize: isWeb ? 12 : 10,
+          fontSize: fontSize,
           fontWeight: '600',
-          marginBottom: isWeb ? 2 : 0,
+          marginBottom: 4,
         },
         tabBarItemStyle: {
-          paddingVertical: isWeb ? 8 : 6,
-          marginHorizontal: isWeb ? 8 : 0,
-          minHeight: isWeb ? 52 : 56,
+          paddingVertical: isMobileSize ? 4 : 8,
+          marginHorizontal: 0,
+          flex: 1,
+          minHeight: tabBarHeight - 20,
         },
         tabBarIconStyle: {
           marginBottom: 2,

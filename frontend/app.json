@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Shift Olama",
+    "slug": "shift-olama",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "description": "Gestão de turnos, gratificações e relatórios PDF",
     "ios": {
       "supportsTablet": true
     },
@@ -21,7 +22,13 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "display": "standalone",
+      "startUrl": "/",
+      "scope": "/",
+      "orientation": "portrait-primary",
+      "themeColor": "#1F2937",
+      "backgroundColor": "#111827"
     },
     "plugins": [
       "expo-router",
