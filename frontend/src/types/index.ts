@@ -6,7 +6,7 @@ export interface User {
   created_at?: string;
 }
 
-export type ShiftType = 'manha' | 'tarde' | 'noite' | 'ferias' | 'folga' | 'excesso';
+export type ShiftType = string;
 
 export interface Shift {
   id: string;
@@ -57,24 +57,6 @@ export interface YearlyStats {
 export interface ComparisonStats {
   months: { month: string; total: number; count: number }[];
 }
-
-export const SHIFT_LABELS: Record<ShiftType, string> = {
-  manha: 'Manhã',
-  tarde: 'Tarde',
-  noite: 'Noite',
-  ferias: 'Férias',
-  folga: 'Folga',
-  excesso: 'Excesso',
-};
-
-export const SHIFT_COLORS: Record<ShiftType, string> = {
-  manha: '#F59E0B',
-  tarde: '#3B82F6',
-  noite: '#8B5CF6',
-  ferias: '#10B981',
-  folga: '#6B7280',
-  excesso: '#EF4444',
-};
 
 export const GRATIFICATION_LABELS: Record<GratificationType, string> = {
   hora_extra: 'Hora Extra',

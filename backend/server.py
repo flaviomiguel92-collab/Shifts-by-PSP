@@ -79,23 +79,6 @@ class SessionRequest(BaseModel):
 
 # Shift Types: Manhã, Tarde, Noite, Férias, Folga, Excesso
 
-class ShiftType:
-    MANHA = "manha"
-    TARDE = "tarde"
-    NOITE = "noite"
-    FERIAS = "ferias"
-    FOLGA = "folga"
-    EXCESSO = "excesso"  # Uses hours from bank
-
-    SHIFT_TIMES = {
-        "manha": {"start": "08:00", "end": "16:00"},
-        "tarde": {"start": "16:00", "end": "00:00"},
-        "noite": {"start": "00:00", "end": "08:00"},
-        "ferias": {"start": None, "end": None},
-        "folga": {"start": None, "end": None},
-        "excesso": {"start": None, "end": None},
-    }
-
 class Shift(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
@@ -409,11 +392,6 @@ async def create_shift(shift_data: ShiftCreate, user: User = Depends(get_current
     start_time = shift_data.start_time
     end_time = shift_data.end_time
 
-    if not start_time and shift_data.shift_type in ShiftType.SHIFT_TIMES:
-        start_time = ShiftType.SHIFT_TIMES[shift_data.shift_type]["start"]
-    if not end_time and shift_data.shift_type in ShiftType.SHIFT_TIMES:
-        end_time = ShiftType.SHIFT_TIMES[shift_data.shift_type]["end"]
-
     shift = Shift(
         user_id=user.user_id,
         date=shift_data.date,
@@ -522,14 +500,8 @@ async def create_or_update_shifts_bulk(
             {"user_id": user.user_id, "date": shift_item.date}
         )
 
-        # Set default times based on shift type
         start_time = shift_item.start_time
         end_time = shift_item.end_time
-
-        if not start_time and shift_item.shift_type in ShiftType.SHIFT_TIMES:
-            start_time = ShiftType.SHIFT_TIMES[shift_item.shift_type]["start"]
-        if not end_time and shift_item.shift_type in ShiftType.SHIFT_TIMES:
-            end_time = ShiftType.SHIFT_TIMES[shift_item.shift_type]["end"]
 
         if existing:
             # Update existing shift

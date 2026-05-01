@@ -2,9 +2,10 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { Shift, Gratification, ShiftType, SHIFT_COLORS, GRATIFICATION_COLORS, GratificationType } from '../types';
+import { Shift, Gratification, GratificationType, GRATIFICATION_COLORS } from '../types';
 import { getCalendarDays, formatMonth, dateToString, WEEKDAYS, getNextMonth, getPrevMonth } from '../utils/helpers';
 import { getHolidaysMap } from '../utils/holidays';
+import { useDataStore } from '../store/dataStore';
 
 interface CalendarProps {
   month: string;
@@ -14,16 +15,6 @@ interface CalendarProps {
   onMonthChange: (month: string) => void;
 }
 
-// Short labels for calendar display
-const SHIFT_SHORT_LABELS: Record<ShiftType, string> = {
-  manha: 'M',
-  tarde: 'T',
-  noite: 'N',
-  ferias: 'Fér',
-  folga: 'Flg',
-  excesso: 'Exc',
-};
-
 export const Calendar: React.FC<CalendarProps> = ({
   month,
   shifts,
@@ -31,9 +22,20 @@ export const Calendar: React.FC<CalendarProps> = ({
   onDayPress,
   onMonthChange,
 }) => {
+  const { shiftTypes } = useDataStore();
   const days = getCalendarDays(month);
   const year = parseInt(month.split('-')[0]);
   const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);
+
+  const getShiftColor = (shiftTypeName: string) => {
+    const shiftType = shiftTypes.find((st: any) => st.name === shiftTypeName);
+    return shiftType?.color || '#6B7280';
+  };
+
+  const getShiftLabel = (shiftTypeName: string) => {
+    const shiftType = shiftTypes.find((st: any) => st.name === shiftTypeName);
+    return shiftType?.shortLabel || shiftTypeName.slice(0, 3).toUpperCase();
+  };
   
   const getShiftForDay = (date: Date): Shift | undefined => {
     const dateStr = dateToString(date);
@@ -106,10 +108,10 @@ export const Calendar: React.FC<CalendarProps> = ({
               {shift ? (
                 <View style={[
                   styles.shiftBadge,
-                  { backgroundColor: SHIFT_COLORS[shift.shift_type as ShiftType] }
+                  { backgroundColor: getShiftColor(shift.shift_type) }
                 ]}>
                   <Text style={styles.shiftBadgeText}>
-                    {SHIFT_SHORT_LABELS[shift.shift_type as ShiftType]}
+                    {getShiftLabel(shift.shift_type)}
                   </Text>
                 </View>
               ) : holiday ? (
