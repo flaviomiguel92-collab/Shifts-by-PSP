@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
     minHeight: 56,
+    position: 'relative',
   },
   todayCell: {
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
@@ -245,8 +246,9 @@ const styles = StyleSheet.create({
   },
   gratificationStar: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 0,
+    right: 0,
+    zIndex: 10,
   },
   legendRow: {
     flexDirection: 'row',
