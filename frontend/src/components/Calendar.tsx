@@ -122,11 +122,8 @@ export const Calendar: React.FC<CalendarProps> = ({
 
               {/* Show gratification indicator as floating star */}
               {gratification && (
-                <View style={[
-                  styles.gratificationStar,
-                  { backgroundColor: GRATIFICATION_COLORS[gratification.gratification_type as GratificationType] }
-                ]}>
-                  <Ionicons name="star" size={12} color="#FFFFFF" />
+                <View style={styles.gratificationStar}>
+                  <Ionicons name="star" size={12} color="#10B981" />
                 </View>
               )}
             </TouchableOpacity>
@@ -137,9 +134,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       {/* Legend */}
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendStarIndicator, { backgroundColor: '#10B981' }]}>
-            <Ionicons name="star" size={10} color="#FFFFFF" />
-          </View>
+          <Ionicons name="star" size={12} color="#10B981" />
           <Text style={styles.legendText}>= Extra</Text>
         </View>
         <View style={styles.legendItem}>
@@ -250,13 +245,8 @@ const styles = StyleSheet.create({
   },
   gratificationStar: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
+    top: -2,
+    right: -2,
   },
   legendRow: {
     flexDirection: 'row',
@@ -274,13 +264,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 3,
     borderRadius: 2,
-  },
-  legendStarIndicator: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   legendText: {
     fontSize: 10,
