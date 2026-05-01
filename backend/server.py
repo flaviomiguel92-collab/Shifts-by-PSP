@@ -1178,12 +1178,15 @@ async def generate_report(request_data: ReportGenerateRequest):
 
     try:
         parsed_data = ServicoRemuneradoData(**request_data.data)
-        output_name = parsed_data.desired_file_name or build_servico_remunerado_file_name(
-            report_date=parsed_data.reportDate,
-            report_hour=parsed_data.reportHour,
-            remunerated_name=parsed_data.remuneratedName,
-            graduado_matricula=parsed_data.graduadoMatricula,
-        )
+        # Use desired_file_name if provided, otherwise generate a default name
+        if parsed_data.desired_file_name:
+            output_name = parsed_data.desired_file_name
+        else:
+            # Default to date_hour.pdf if no name provided
+            date_str = (parsed_data.reportDate or "").replace("-", "")
+            hour_str = (parsed_data.reportHour or "").replace(":", "")
+            output_name = f"{date_str}_{hour_str}.pdf" if date_str and hour_str else "relatorio.pdf"
+
         template_path = resolve_existing_template_path(template.template_docx_path_candidates)
         context = template.context_builder(parsed_data)
         pdf_base64 = generate_pdf_base64(template_path, context, output_name)

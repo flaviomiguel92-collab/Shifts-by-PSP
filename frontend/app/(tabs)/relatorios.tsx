@@ -15,7 +15,6 @@ import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import {
   reportTemplatesCatalog,
-  makeDemaisEfetivoItem,
   makeEfetivoItem,
   makeExpedienteItem,
 } from '../../src/reports/reportSchemas';
@@ -55,26 +54,36 @@ interface CategoryPickerProps {
   onChange: (categoria: Categoria) => void;
 }
 
-const CategoryPicker: React.FC<CategoryPickerProps> = ({ value, onChange }) => (
-  <View style={styles.categoryPicker}>
-    {CATEGORIAS.map((categoria) => (
+const CategoryDropdown: React.FC<CategoryPickerProps> = ({ value, onChange }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <View>
       <TouchableOpacity
-        key={categoria}
-        style={[styles.categoryButton, value === categoria && styles.categoryButtonSelected]}
-        onPress={() => onChange(categoria)}
+        style={styles.dropdownButton}
+        onPress={() => setExpanded(!expanded)}
       >
-        <Text
-          style={[
-            styles.categoryButtonText,
-            value === categoria && styles.categoryButtonTextSelected,
-          ]}
-        >
-          {categoria}
-        </Text>
+        <Text style={styles.dropdownButtonText}>{value}</Text>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color="#9CA3AF" />
       </TouchableOpacity>
-    ))}
-  </View>
-);
+      {expanded && (
+        <View style={styles.dropdownMenu}>
+          {CATEGORIAS.map((categoria) => (
+            <TouchableOpacity
+              key={categoria}
+              style={styles.dropdownItem}
+              onPress={() => {
+                onChange(categoria);
+                setExpanded(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>{categoria}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const updateListItem = <T extends { id: string }>(
   list: T[],
@@ -99,11 +108,12 @@ export default function ReportsScreen() {
       return;
     }
 
+    const maisAntigoItem = formData.efetivoPolicial.find((item) => item.isMaisAntigo);
     const suggestedFileName = buildServicoRemuneradoFileName({
       reportDate: formData.reportDate,
       reportHour: formData.reportHour,
-      remuneratedName: formData.graduadoNome,
-      graduadoMatricula: formData.graduadoMatricula,
+      remuneratedName: maisAntigoItem?.nome || 'Sem nome',
+      graduadoMatricula: maisAntigoItem?.matricula || 'Sem matricula',
     });
 
     setIsGenerating(true);
@@ -184,7 +194,7 @@ export default function ReportsScreen() {
                 setFormData((prev) => ({ ...prev, efetivoPolicial: [...prev.efetivoPolicial, makeEfetivoItem()] }))
               }
             >
-              <Text style={styles.addBtnText}>+ Adicionar</Text>
+              <Text style={styles.addBtnText}>+ Adicionar Efetivo</Text>
             </TouchableOpacity>
           </View>
           {formData.efetivoPolicial.length === 0 && (
@@ -205,7 +215,20 @@ export default function ReportsScreen() {
                   <Text style={styles.removeText}>Remover</Text>
                 </TouchableOpacity>
               </View>
-              <CategoryPicker
+              <TextInput
+                value={item.matricula}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    efetivoPolicial: updateListItem(prev.efetivoPolicial, item.id, { matricula: value }),
+                  }))
+                }
+                placeholder="Matrícula"
+                placeholderTextColor="#6B7280"
+                style={styles.input}
+              />
+              <Text style={styles.fieldLabel}>Categoria</Text>
+              <CategoryDropdown
                 value={item.categoria}
                 onChange={(categoria) =>
                   setFormData((prev) => ({
@@ -214,103 +237,37 @@ export default function ReportsScreen() {
                   }))
                 }
               />
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Polícia Mais Graduado/Antigo</Text>
-          <TextInput
-            value={formData.graduadoMatricula}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoMatricula: value }))}
-            placeholder="Matrícula"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-          <Text style={styles.fieldLabel}>Categoria</Text>
-          <CategoryPicker
-            value={formData.graduadoCategoria}
-            onChange={(categoria) => setFormData((prev) => ({ ...prev, graduadoCategoria: categoria }))}
-          />
-          <TextInput
-            value={formData.graduadoNome}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoNome: value }))}
-            placeholder="Nome"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-          <TextInput
-            value={formData.graduadoRadio}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoRadio: value }))}
-            placeholder="Número do Rádio (E/R)"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.listHeader}>
-            <Text style={styles.sectionTitle}>Demais Efetivo Policial</Text>
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() =>
-                setFormData((prev) => ({ ...prev, demaisEfetivo: [...prev.demaisEfetivo, makeDemaisEfetivoItem()] }))
-              }
-            >
-              <Text style={styles.addBtnText}>+ Adicionar</Text>
-            </TouchableOpacity>
-          </View>
-          {formData.demaisEfetivo.map((item, index) => (
-            <View key={item.id} style={styles.dynamicBlock}>
-              <View style={styles.dynamicHeader}>
-                <Text style={styles.dynamicTitle}>Elemento {index + 1}</Text>
-                {index > 0 && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        demaisEfetivo: prev.demaisEfetivo.filter((entry) => entry.id !== item.id),
-                      }))
-                    }
-                  >
-                    <Text style={styles.removeText}>Remover</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TextInput
-                value={item.matricula}
-                onChangeText={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { matricula: value }),
-                  }))
-                }
-                placeholder="Matrícula"
-                placeholderTextColor="#6B7280"
-                style={styles.input}
-              />
-              <Text style={styles.fieldLabel}>Categoria</Text>
-              <CategoryPicker
-                value={item.categoria}
-                onChange={(categoria) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { categoria }),
-                  }))
-                }
-              />
               <TextInput
                 value={item.nome}
                 onChangeText={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { nome: value }),
+                    efetivoPolicial: updateListItem(prev.efetivoPolicial, item.id, { nome: value }),
                   }))
                 }
                 placeholder="Nome"
                 placeholderTextColor="#6B7280"
                 style={styles.input}
               />
+              <View style={styles.checkboxRow}>
+                <TouchableOpacity
+                  style={styles.checkbox}
+                  onPress={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      efetivoPolicial: prev.efetivoPolicial.map((e) => ({
+                        ...e,
+                        isMaisAntigo: e.id === item.id ? !item.isMaisAntigo : false,
+                      })),
+                    }));
+                  }}
+                >
+                  {item.isMaisAntigo && (
+                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>Mais Antigo</Text>
+              </View>
             </View>
           ))}
         </View>
@@ -506,6 +463,46 @@ const styles = StyleSheet.create({
   categoryButtonSelected: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   categoryButtonText: { color: '#9CA3AF', fontSize: 12, fontWeight: '600' },
   categoryButtonTextSelected: { color: '#FFFFFF', fontWeight: '700' },
+  dropdownButton: {
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#374151',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownButtonText: { color: '#FFFFFF', fontSize: 13 },
+  dropdownMenu: {
+    backgroundColor: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#374151',
+    borderRadius: 8,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
+  },
+  dropdownItemText: { color: '#FFFFFF', fontSize: 13 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#2563EB',
+    borderRadius: 4,
+    backgroundColor: '#111827',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxLabel: { color: '#D1D5DB', fontSize: 13 },
   listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   addBtn: {
     backgroundColor: 'rgba(16,185,129,0.15)',

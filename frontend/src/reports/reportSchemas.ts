@@ -2,14 +2,10 @@ import { ReportTemplateDefinition, ServicoRemuneradoFormData } from './reportTyp
 
 export const makeEfetivoItem = () => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  categoria: 'Agente' as const,
-});
-
-export const makeDemaisEfetivoItem = () => ({
-  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  matricula: '',
   categoria: 'Agente' as const,
   nome: '',
-  matricula: '',
+  isMaisAntigo: false,
 });
 
 export const makeExpedienteItem = () => ({
@@ -28,12 +24,7 @@ export const SERVICO_REMUNERADO_TEMPLATE: ReportTemplateDefinition<ServicoRemune
     servicoRemunerado: '',
     reportDate: '',
     reportHour: '',
-    graduadoMatricula: '',
-    graduadoCategoria: 'Agente',
-    graduadoNome: '',
-    graduadoRadio: '',
-    efetivoPolicial: [],
-    demaisEfetivo: [makeDemaisEfetivoItem()],
+    efetivoPolicial: [makeEfetivoItem()],
     expedienteEfetuado: [],
     ordemMissaoCumprida: null,
     justificacao: '',

@@ -3,14 +3,10 @@ export type Categoria = 'Agente' | 'Chefe' | 'Oficial';
 
 export interface EfetivoItem {
   id: string;
-  categoria: Categoria;
-}
-
-export interface DemaisEfetivoItem {
-  id: string;
+  matricula: string;
   categoria: Categoria;
   nome: string;
-  matricula: string;
+  isMaisAntigo: boolean;
 }
 
 export interface ExpedienteItem {
@@ -24,12 +20,7 @@ export interface ServicoRemuneradoFormData {
   servicoRemunerado: string;
   reportDate: string;
   reportHour: string;
-  graduadoMatricula: string;
-  graduadoCategoria: Categoria;
-  graduadoNome: string;
-  graduadoRadio: string;
   efetivoPolicial: EfetivoItem[];
-  demaisEfetivo: DemaisEfetivoItem[];
   expedienteEfetuado: ExpedienteItem[];
   ordemMissaoCumprida: boolean | null;
   justificacao: string;
