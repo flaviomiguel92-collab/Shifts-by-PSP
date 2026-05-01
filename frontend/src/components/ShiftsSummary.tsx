@@ -35,13 +35,16 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
 
   const countsByType = useMemo(() => {
     const map = new Map<string, number>();
+    const [year, monthNum] = month.split('-').map(Number);
     (shifts || []).forEach((shift) => {
+      const shiftDate = new Date(String(shift.date || ''));
+      if (shiftDate.getFullYear() !== year || shiftDate.getMonth() + 1 !== monthNum) return;
       const typeName = String(shift.shift_type || '').trim();
       if (!typeName) return;
       map.set(typeName, (map.get(typeName) || 0) + 1);
     });
     return map;
-  }, [shifts]);
+  }, [shifts, month]);
 
   const monthName = new Date(month + '-01').toLocaleDateString('pt-PT', {
     month: 'long',
