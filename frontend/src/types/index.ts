@@ -15,7 +15,6 @@ export interface Shift {
   shift_type: ShiftType;
   start_time?: string;
   end_time?: string;
-  excess_hours?: number; // Hours to add to bank (positive) or deduct (negative for excesso type)
   note?: string;
   created_at?: string;
 }

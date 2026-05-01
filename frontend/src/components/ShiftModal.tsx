@@ -16,14 +16,13 @@ import { useDataStore } from '../store/dataStore';
 interface ShiftModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (shift: { shift_type: string; start_time?: string; end_time?: string; excess_hours?: number; note?: string }) => void;
+  onSave: (shift: { shift_type: string; start_time?: string; end_time?: string; note?: string }) => void;
   onDelete?: () => void;
   date: string;
   existingShift?: {
     shift_type: string;
     start_time?: string;
     end_time?: string;
-    excess_hours?: number;
     note?: string;
   } | null;
 }
@@ -44,7 +43,6 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [excessHours, setExcessHours] = useState('');
   const [note, setNote] = useState('');
 
   useEffect(() => {
@@ -52,13 +50,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       setSelectedType(existingShift.shift_type);
       setStartTime(existingShift.start_time || '');
       setEndTime(existingShift.end_time || '');
-      setExcessHours(existingShift.excess_hours?.toString() || '');
       setNote(existingShift.note || '');
     } else {
       setSelectedType('');
       setStartTime('');
       setEndTime('');
-      setExcessHours('');
       setNote('');
     }
   }, [existingShift, visible]);
@@ -78,13 +74,10 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       finalType = newShiftName;
     }
 
-    const excessHoursNum = excessHours ? parseFloat(excessHours) : undefined;
-
     onSave({
       shift_type: finalType,
       start_time: startTime || undefined,
       end_time: endTime || undefined,
-      excess_hours: excessHoursNum,
       note: note || undefined,
     });
   };
