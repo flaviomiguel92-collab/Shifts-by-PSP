@@ -19,6 +19,7 @@ class ExpedienteItem(BaseModel):
 
 
 class ServicoRemuneradoData(BaseModel):
+    servicoRemunerado: Optional[str] = ""
     reportDate: Optional[str] = ""
     reportHour: Optional[str] = ""
     graduadoMatricula: Optional[str] = ""

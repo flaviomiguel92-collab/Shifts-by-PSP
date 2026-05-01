@@ -150,6 +150,13 @@ export default function ReportsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Cabeçalho: Serviço Remunerado</Text>
+          <TextInput
+            value={formData.servicoRemunerado}
+            onChangeText={(value) => setFormData((prev) => ({ ...prev, servicoRemunerado: value }))}
+            placeholder="Serviço Remunerado"
+            placeholderTextColor="#6B7280"
+            style={styles.input}
+          />
           <View style={styles.row}>
             <TextInput
               value={formData.reportDate}

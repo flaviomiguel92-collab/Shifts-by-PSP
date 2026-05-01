@@ -21,6 +21,7 @@ export interface ExpedienteItem {
 }
 
 export interface ServicoRemuneradoFormData {
+  servicoRemunerado: string;
   reportDate: string;
   reportHour: string;
   graduadoMatricula: string;

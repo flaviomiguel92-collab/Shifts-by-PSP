@@ -64,6 +64,7 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
 
     return {
         "generated_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "servico_remunerado": data.servicoRemunerado or "",
         "report_date": report_date_display,
         "report_hour": data.reportHour or "",
         "graduado_nome": data.graduadoNome or "",

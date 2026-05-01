@@ -25,6 +25,7 @@ export const SERVICO_REMUNERADO_TEMPLATE: ReportTemplateDefinition<ServicoRemune
   description: 'Modelo base para serviço remunerado com exportação automática em PDF.',
   version: 'v1',
   createInitialData: () => ({
+    servicoRemunerado: '',
     reportDate: '',
     reportHour: '',
     graduadoMatricula: '',
