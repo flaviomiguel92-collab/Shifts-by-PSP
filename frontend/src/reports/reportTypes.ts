@@ -6,6 +6,7 @@ export interface EfetivoItem {
   matricula: string;
   categoria: Categoria;
   nome: string;
+  radio: string;
   isMaisAntigo: boolean;
 }
 

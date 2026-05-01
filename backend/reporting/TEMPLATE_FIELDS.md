@@ -1,37 +1,44 @@
 # Template mapping - Relatório de Serviço Remunerado
 
-Para automação robusta do `.docx`, o template Word deve usar placeholders Jinja2 compatíveis com `docxtpl`.
+Placeholders Jinja2 compatíveis com `docxtpl` que devem estar presentes no template Word.
 
-## Campos simples
+## Campos simples - Cabeçalho
 
-- `{{ report_date }}`
-- `{{ report_hour }}`
-- `{{ remunerated_name }}`
-- `{{ service_type }}`
-- `{{ service_location }}`
-- `{{ service_reference }}`
-- `{{ efetivo_total }}`
-- `{{ oficiais_count }}`
-- `{{ chefes_count }}`
-- `{{ agentes_count }}`
-- `{{ graduado_posto }}`
-- `{{ graduado_nome }}`
-- `{{ graduado_matricula }}`
-- `{{ graduado_comando }}`
-- `{{ observacoes }}`
-- `{{ justificacoes }}`
+- `{{ servico_remunerado }}` - Nome do serviço remunerado
+- `{{ report_date }}` - Data do relatório (formatada DD/MM/YYYY)
+- `{{ report_hour }}` - Hora do relatório (HH:MM)
 
-## Lista repetível - Demais efetivo policial
+## Campos simples - Efetivo Policial (Contadores)
+
+- `{{ efetivo_oficiais }}` - Número total de oficiais
+- `{{ efetivo_chefes }}` - Número total de chefes
+- `{{ efetivo_agentes }}` - Número total de agentes
+
+## Campos simples - Polícia Mais Graduado/Antigo
+
+- `{{ graduado_nome }}` - Nome da pessoa mais antiga
+- `{{ graduado_categoria }}` - Categoria (Agente, Chefe, Oficial)
+- `{{ graduado_matricula }}` - Matrícula (com prefixo M/)
+- `{{ graduado_radio }}` - Número do rádio (E/R)
+
+## Campos simples - Ordem de Missão e Observações
+
+- `{{ ordem_missao_cumprida }}` - "Sim", "Não" ou "Não respondido"
+- `{{ justificacao }}` - Justificação em caso de não cumprimento
+- `{{ observacao }}` - Observações adicionais
+- `{{ generated_at }}` - Data/hora de geração (DD/MM/YYYY HH:MM:SS)
+
+## Lista repetível - Demais Efetivo Policial
 
 Dentro da linha de tabela repetível:
 
 ```jinja2
 {% for item in demais_efetivo %}
-{{ item.posto }} | {{ item.nome }} | {{ item.matricula }}
+{{ item.matricula }} | {{ item.categoria }} | {{ item.nome }}
 {% endfor %}
 ```
 
-## Lista repetível - Expediente efetuado
+## Lista repetível - Expediente Efetuado
 
 Dentro da linha de tabela repetível:
 
@@ -41,17 +48,8 @@ Dentro da linha de tabela repetível:
 {% endfor %}
 ```
 
-## Lista repetível - Responsáveis contactados (ORV)
-
-Dentro da linha de tabela repetível:
-
-```jinja2
-{% for item in contactados %}
-{{ item.hora }} | {{ item.nome }} | {{ item.local }}
-{% endfor %}
-```
-
 ## Nota
 
-- ORV fica fora de escopo nesta fase.
-- Se o template atual não tiver placeholders técnicos, basta inserir estes tokens nas células amarelas correspondentes.
+- **ORV (Responsáveis Contactados)**: Removido do escopo (não será preenchido)
+- Template foi atualizado automaticamente: placeholders antigos foram corrigidos
+- Novos campos (`servico_remunerado`, `graduado_radio`, `ordem_missao_cumprida`) precisam ser adicionados manualmente ao template Word se não estiverem presentes

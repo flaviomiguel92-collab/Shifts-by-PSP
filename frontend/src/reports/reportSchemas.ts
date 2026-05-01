@@ -5,6 +5,7 @@ export const makeEfetivoItem = () => ({
   matricula: '',
   categoria: 'Agente' as const,
   nome: '',
+  radio: '',
   isMaisAntigo: false,
 });
 

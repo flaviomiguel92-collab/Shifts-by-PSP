@@ -249,6 +249,18 @@ export default function ReportsScreen() {
                 placeholderTextColor="#6B7280"
                 style={styles.input}
               />
+              <TextInput
+                value={item.radio}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    efetivoPolicial: updateListItem(prev.efetivoPolicial, item.id, { radio: value }),
+                  }))
+                }
+                placeholder="E/R (Número do Rádio)"
+                placeholderTextColor="#6B7280"
+                style={styles.input}
+              />
               <View style={styles.checkboxRow}>
                 <TouchableOpacity
                   style={styles.checkbox}

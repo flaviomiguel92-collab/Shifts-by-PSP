@@ -7,6 +7,7 @@ class EfetivoItem(BaseModel):
     categoria: str  # Agente, Chefe, Oficial
     nome: Optional[str] = ""
     matricula: Optional[str] = ""
+    radio: Optional[str] = ""
     isMaisAntigo: bool = False
 
 

@@ -64,6 +64,7 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
     graduado_nome = mais_antigo.nome if mais_antigo else ""
     graduado_categoria = mais_antigo.categoria if mais_antigo else "Agente"
     graduado_matricula = str(mais_antigo.matricula or "").strip() if mais_antigo else ""
+    graduado_radio = str(mais_antigo.radio or "").strip() if mais_antigo else ""
 
     if graduado_matricula and not graduado_matricula.upper().startswith("M/"):
         graduado_matricula = f"M/{graduado_matricula}"
@@ -83,7 +84,7 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
         "graduado_nome": graduado_nome,
         "graduado_categoria": graduado_categoria,
         "graduado_matricula": graduado_matricula,
-        "graduado_radio": "",
+        "graduado_radio": graduado_radio,
         "efetivo_agentes": efetivo_count.get("Agente", 0),
         "efetivo_chefes": efetivo_count.get("Chefe", 0),
         "efetivo_oficiais": efetivo_count.get("Oficial", 0),
