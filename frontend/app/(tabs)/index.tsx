@@ -454,7 +454,6 @@ export default function CalendarScreen() {
                       backgroundColor: getShiftDisplayColor(shift.shift_type),
                       opacity: 0.8,
                     },
-                    hasGratification && styles.hasGratificationCell,
                     isCycleStart && styles.cycleStartCell,
                     inCycleRange && styles.inCycleRangeCell,
                     editMode !== 'none' && styles.selectableCell,
@@ -1059,12 +1058,6 @@ const styles = StyleSheet.create({
   todayCell: {
     borderWidth: 1,
     borderColor: 'rgba(59, 130, 246, 0.85)',
-  },
-  hasGratificationCell: {
-    borderWidth: 2,
-    borderColor: '#10B981',
-    borderRadius: 8,
-    margin: 1,
   },
   gratifiedDotWrap: {
     position: 'absolute',
