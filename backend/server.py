@@ -423,9 +423,6 @@ async def delete_shift(shift_id: str, user: User = Depends(get_current_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Shift not found")
 
-    # Also delete associated hour bank entry
-    await db.hour_bank.delete_many({"shift_id": shift_id})
-
     return {"message": "Shift deleted successfully"}
 
 # ==================== BULK SHIFTS ENDPOINT ====================
@@ -637,39 +634,12 @@ async def get_yearly_stats(year: str, user: User = Depends(get_current_user)):
         by_type[gtype]["total"] += g["value"]
         by_type[gtype]["count"] += 1
 
-    # Get shifts for the year
-    shifts = await db.shifts.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{year}"}},
-        {"_id": 0}
-    ).to_list(1000)
-
-    # Count folgas
-    folgas_count = len([s for s in shifts if s.get("shift_type") == "folga"])
-    ferias_count = len([s for s in shifts if s.get("shift_type") == "ferias"])
-    excesso_count = len([s for s in shifts if s.get("shift_type") == "excesso"])
-
-    # Get hour bank balance for the year
-    hour_entries = await db.hour_bank.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{year}"}},
-        {"_id": 0}
-    ).to_list(1000)
-
-    hour_bank_balance = sum(e.get("hours", 0) for e in hour_entries)
-    hours_added = sum(e.get("hours", 0) for e in hour_entries if e.get("hours", 0) > 0)
-    hours_used = abs(sum(e.get("hours", 0) for e in hour_entries if e.get("hours", 0) < 0))
-
     return {
         "year": year,
         "total_gratifications": total,
         "gratification_count": count,
         "by_month": by_month,
-        "by_type": by_type,
-        "folgas_count": folgas_count,
-        "ferias_count": ferias_count,
-        "excesso_count": excesso_count,
-        "hour_bank_balance": hour_bank_balance,
-        "hours_added": hours_added,
-        "hours_used": hours_used
+        "by_type": by_type
     }
 
 @api_router.get("/stats/comparison")
@@ -717,39 +687,9 @@ async def get_dashboard_stats(user: User = Depends(get_current_user)):
     ).to_list(1000)
     yearly_total = sum(g["value"] for g in yearly_grats)
 
-    # Hour bank balance
-    hour_entries = await db.hour_bank.find(
-        {"user_id": user.user_id},
-        {"_id": 0}
-    ).to_list(10000)
-    hour_bank_total = sum(e.get("hours", 0) for e in hour_entries)
-
-    # Year hour bank
-    year_hour_entries = [e for e in hour_entries if e.get("date", "").startswith(current_year)]
-    year_hour_balance = sum(e.get("hours", 0) for e in year_hour_entries)
-    hours_added = sum(e.get("hours", 0) for e in year_hour_entries if e.get("hours", 0) > 0)
-    hours_used = abs(sum(e.get("hours", 0) for e in year_hour_entries if e.get("hours", 0) < 0))
-
-    # Shifts this year
-    shifts = await db.shifts.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{current_year}"}},
-        {"_id": 0}
-    ).to_list(1000)
-
-    folgas_count = len([s for s in shifts if s.get("shift_type") == "folga"])
-    ferias_count = len([s for s in shifts if s.get("shift_type") == "ferias"])
-    excesso_count = len([s for s in shifts if s.get("shift_type") == "excesso"])
-
     return {
         "monthly_total": monthly_total,
         "yearly_total": yearly_total,
-        "hour_bank_balance": hour_bank_total,
-        "year_hour_balance": year_hour_balance,
-        "hours_added": hours_added,
-        "hours_used": hours_used,
-        "folgas_count": folgas_count,
-        "ferias_count": ferias_count,
-        "excesso_count": excesso_count,
         "current_month": current_month,
         "current_year": current_year
     }

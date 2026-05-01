@@ -58,7 +58,6 @@ class ShiftCreate(BaseModel):
     shift_type: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    excess_hours: Optional[float] = None
     note: Optional[str] = None
 
 class Shift(ShiftCreate):
@@ -256,7 +255,6 @@ async def create_shift(shift_data: ShiftCreate, user: dict = Depends(get_current
         "shift_type": shift_data.shift_type,
         "start_time": shift_data.start_time,
         "end_time": shift_data.end_time,
-        "excess_hours": shift_data.excess_hours,
         "note": shift_data.note,
         "created_at": datetime.now(timezone.utc).isoformat()
     }

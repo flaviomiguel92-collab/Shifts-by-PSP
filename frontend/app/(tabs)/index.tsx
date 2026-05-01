@@ -272,11 +272,10 @@ export default function CalendarScreen() {
 
   // Handle shift save from modal
   const handleShiftSave = async (shiftData: { 
-    shift_type: string; 
-    start_time?: string; 
-    end_time?: string; 
-    excess_hours?: number;
-    note?: string 
+    shift_type: string;
+    start_time?: string;
+    end_time?: string;
+    note?: string
   }) => {
     try {
       if (selectedShift) {
@@ -485,7 +484,6 @@ export default function CalendarScreen() {
                     <View style={styles.shiftNameBadge}>
                       <Text style={styles.shiftNameText} numberOfLines={1}>
                         {getShiftDisplayName(shift.shift_type)}
-                        {shift.shift_type === 'excesso' && shift.excess_hours ? ` ${shift.excess_hours}h` : ''}
                       </Text>
                     </View>
                   ) : holiday ? (
@@ -678,11 +676,6 @@ export default function CalendarScreen() {
                     {selectedShift.start_time && selectedShift.end_time && (
                       <Text style={styles.shiftTime}>
                         {selectedShift.start_time} - {selectedShift.end_time}
-                      </Text>
-                    )}
-                    {selectedShift.shift_type === 'excesso' && selectedShift.excess_hours && (
-                      <Text style={styles.excessHoursText}>
-                        {selectedShift.excess_hours}h do banco de horas
                       </Text>
                     )}
                     {selectedShift.note && (

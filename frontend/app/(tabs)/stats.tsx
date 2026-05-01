@@ -53,19 +53,6 @@ export default function StatsScreen() {
     return selectedMonthItems.reduce((sum, g) => sum + (g.value || 0), 0);
   }, [selectedMonthItems]);
 
-  const shiftStats = useMemo(() => {
-    let folgas = 0;
-    let ferias = 0;
-    let excesso = 0;
-
-    shifts.forEach(s => {
-      if (s.shift_type === 'folga') folgas++;
-      if (s.shift_type === 'ferias') ferias++;
-      if (s.shift_type === 'excesso') excesso++;
-    });
-
-    return { folgas, ferias, excesso };
-  }, [shifts]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -84,25 +71,6 @@ export default function StatsScreen() {
           <Text style={styles.totalValue}>{formatCurrency(yearlyTotal)}</Text>
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Ionicons name="bed" size={20} color="#6B7280" />
-            <Text style={styles.statValue}>{shiftStats.folgas}</Text>
-            <Text style={styles.statLabel}>Folgas</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Ionicons name="airplane" size={20} color="#10B981" />
-            <Text style={styles.statValue}>{shiftStats.ferias}</Text>
-            <Text style={styles.statLabel}>Férias</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Ionicons name="flash" size={20} color="#EF4444" />
-            <Text style={styles.statValue}>{shiftStats.excesso}</Text>
-            <Text style={styles.statLabel}>Excesso</Text>
-          </View>
-        </View>
 
         {chartData.length > 0 && (
           <View style={styles.chartCard}>
