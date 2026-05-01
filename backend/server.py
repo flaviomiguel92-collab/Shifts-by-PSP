@@ -83,10 +83,9 @@ class Shift(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     date: str  # YYYY-MM-DD format
-    shift_type: str  # manha, tarde, noite, ferias, folga, excesso
+    shift_type: str
     start_time: Optional[str] = None  # HH:MM format
     end_time: Optional[str] = None  # HH:MM format
-    excess_hours: Optional[float] = None  # Hours to add (+) or deduct (-) from bank
     note: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -95,14 +94,12 @@ class ShiftCreate(BaseModel):
     shift_type: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    excess_hours: Optional[float] = None
     note: Optional[str] = None
 
 class ShiftUpdate(BaseModel):
     shift_type: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    excess_hours: Optional[float] = None
     note: Optional[str] = None
 
 # Gratification Types: Hora Extra, Gratificação, Prémio
@@ -137,20 +134,6 @@ class GratificationUpdate(BaseModel):
     shift_id: Optional[str] = None
 
 # Hour Bank Entry - for tracking excess hours
-
-class HourBankEntry(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    date: str  # YYYY-MM-DD format
-    hours: float  # Positive = added, Negative = used
-    description: Optional[str] = None
-    shift_id: Optional[str] = None  # Link to shift if applicable
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class HourBankEntryCreate(BaseModel):
-    date: str
-    hours: float
-    description: Optional[str] = None
 
 # ==================== CUSTOM SHIFT TYPES & CYCLES ====================
 
@@ -398,22 +381,10 @@ async def create_shift(shift_data: ShiftCreate, user: User = Depends(get_current
         shift_type=shift_data.shift_type,
         start_time=start_time,
         end_time=end_time,
-        excess_hours=shift_data.excess_hours,
         note=shift_data.note
     )
 
     await db.shifts.insert_one(shift.dict())
-
-    # If this is an excesso shift with hours, add to hour bank (negative = using hours)
-    if shift_data.shift_type == "excesso" and shift_data.excess_hours:
-        hour_entry = HourBankEntry(
-            user_id=user.user_id,
-            date=shift_data.date,
-            hours=-abs(shift_data.excess_hours),  # Negative because we're using hours
-            description=f"Turno excesso - {abs(shift_data.excess_hours)}h utilizadas",
-            shift_id=shift.id
-        )
-        await db.hour_bank.insert_one(hour_entry.dict())
 
     return shift.dict()
 
@@ -438,23 +409,6 @@ async def update_shift(
             {"id": shift_id},
             {"$set": update_data}
         )
-
-    # Update hour bank if excess hours changed
-    if shift_data.excess_hours is not None:
-        # Remove old hour bank entry for this shift
-        await db.hour_bank.delete_many({"shift_id": shift_id})
-
-        # Add new entry if it's an excesso shift
-        new_type = shift_data.shift_type or existing.get("shift_type")
-        if new_type == "excesso" and shift_data.excess_hours:
-            hour_entry = HourBankEntry(
-                user_id=user.user_id,
-                date=existing["date"],
-                hours=-abs(shift_data.excess_hours),
-                description=f"Turno excesso - {abs(shift_data.excess_hours)}h utilizadas",
-                shift_id=shift_id
-            )
-            await db.hour_bank.insert_one(hour_entry.dict())
 
     updated = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
     return updated
