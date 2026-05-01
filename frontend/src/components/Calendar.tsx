@@ -237,13 +237,6 @@ const styles = StyleSheet.create({
   emptyBadge: {
     height: 18,
   },
-  gratificationUnderline: {
-    position: 'absolute',
-    bottom: 2,
-    width: 20,
-    height: 3,
-    borderRadius: 2,
-  },
   gratificationStar: {
     position: 'absolute',
     top: 0,
