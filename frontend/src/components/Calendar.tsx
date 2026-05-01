@@ -239,15 +239,9 @@ const styles = StyleSheet.create({
   },
   gratificationStar: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: 2,
+    right: 2,
     zIndex: 10,
-    backgroundColor: '#10B981',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   legendRow: {
     flexDirection: 'row',
