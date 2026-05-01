@@ -20,15 +20,17 @@ export const SERVICO_REMUNERADO_TEMPLATE: ReportTemplateDefinition<ServicoRemune
     serviceLocation: '',
     serviceReference: '',
     efetivoTotal: '',
+    oficiaisCount: '',
     chefesCount: '',
     agentesCount: '',
     graduadoPosto: '',
     graduadoNome: '',
     graduadoMatricula: '',
     graduadoComando: '',
-    observacoes: '',
-    justificacoes: '',
+    observacoes: [''],
+    justificacoes: [''],
     demaisEfetivo: [createDemaisEfetivoItem()],
+    contactados: [],
     expedienteEfetuado: [],
   }),
 };
@@ -39,6 +41,14 @@ export const makeDemaisEfetivoItem = createDemaisEfetivoItem;
 
 export const makeExpedienteItem = () => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  descricao: '',
-  referencia: '',
+  npp: '',
+  nuipc: '',
+  tipificacao: '',
+});
+
+export const makeContactadoItem = () => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  hora: '',
+  nome: '',
+  local: '',
 });

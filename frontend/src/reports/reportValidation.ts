@@ -8,14 +8,6 @@ export interface ReportValidationResult {
 export const validateServicoRemunerado = (data: ServicoRemuneradoFormData): ReportValidationResult => {
   const errors: string[] = [];
 
-  if (!data.reportDate) errors.push('Data do relatório é obrigatória.');
-  if (!data.reportHour) errors.push('Hora do relatório é obrigatória.');
-  if (!data.remuneratedName.trim()) errors.push('Nome do remunerado é obrigatório.');
-  if (!data.graduadoMatricula.trim()) {
-    errors.push('Matrícula do polícia mais graduado/antigo é obrigatória.');
-  }
-  if (!data.graduadoNome.trim()) errors.push('Nome do polícia mais graduado/antigo é obrigatório.');
-
   data.demaisEfetivo.forEach((item, index) => {
     if (!item.nome.trim() && !item.matricula.trim() && !item.posto.trim()) return;
     if (!item.nome.trim()) errors.push(`Demais efetivo #${index + 1}: nome em falta.`);

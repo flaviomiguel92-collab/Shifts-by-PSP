@@ -13,9 +13,12 @@ export const buildServicoRemuneradoFileName = (params: {
   graduadoMatricula: string;
 }) => {
   const date = new Date(`${params.reportDate}T12:00:00`);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = PT_MONTH_ABBR[date.getMonth()] || 'JAN';
-  const year = String(date.getFullYear()).slice(-2);
+  const isValidDate = Number.isFinite(date.getTime());
+  const now = new Date();
+  const sourceDate = isValidDate ? date : now;
+  const day = String(sourceDate.getDate()).padStart(2, '0');
+  const month = PT_MONTH_ABBR[sourceDate.getMonth()] || 'JAN';
+  const year = String(sourceDate.getFullYear()).slice(-2);
   const time = params.reportHour.replace(':', '').padStart(4, '0');
 
   const remuneratedName = normalizeFileSegment(params.remuneratedName || 'Sem nome');

@@ -12,7 +12,10 @@ def _sanitize_segment(value: str) -> str:
 
 
 def build_servico_remunerado_file_name(report_date: str, report_hour: str, remunerated_name: str, graduado_matricula: str) -> str:
-    dt = datetime.strptime(report_date, "%Y-%m-%d")
+    try:
+        dt = datetime.strptime(report_date or "", "%Y-%m-%d")
+    except ValueError:
+        dt = datetime.now()
     day = f"{dt.day:02d}"
     month = PT_MONTH_ABBR[dt.month - 1]
     year = str(dt.year)[-2:]

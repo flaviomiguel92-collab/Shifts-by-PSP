@@ -13,7 +13,12 @@ import {
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
-import { reportTemplatesCatalog, makeDemaisEfetivoItem, makeExpedienteItem } from '../../src/reports/reportSchemas';
+import {
+  reportTemplatesCatalog,
+  makeDemaisEfetivoItem,
+  makeExpedienteItem,
+  makeContactadoItem,
+} from '../../src/reports/reportSchemas';
 import { ServicoRemuneradoFormData } from '../../src/reports/reportTypes';
 import { validateServicoRemunerado } from '../../src/reports/reportValidation';
 import { buildServicoRemuneradoFileName } from '../../src/reports/reportFileNaming';
@@ -49,6 +54,9 @@ const updateListItem = <T extends { id: string }>(
   id: string,
   patch: Partial<T>
 ): T[] => list.map((item) => (item.id === id ? { ...item, ...patch } : item));
+
+const updateTextLine = (lines: string[], index: number, value: string): string[] =>
+  lines.map((line, idx) => (idx === index ? value : line));
 
 export default function ReportsScreen() {
   const [selectedTemplateId] = useState(template.id);
@@ -186,6 +194,13 @@ export default function ReportsScreen() {
               value={formData.efetivoTotal}
               onChangeText={(value) => setFormData((prev) => ({ ...prev, efetivoTotal: value }))}
               placeholder="Efetivo total"
+              placeholderTextColor="#6B7280"
+              style={[styles.input, styles.thirdInput]}
+            />
+            <TextInput
+              value={formData.oficiaisCount}
+              onChangeText={(value) => setFormData((prev) => ({ ...prev, oficiaisCount: value }))}
+              placeholder="Oficiais"
               placeholderTextColor="#6B7280"
               style={[styles.input, styles.thirdInput]}
             />
@@ -337,26 +352,38 @@ export default function ReportsScreen() {
                 </TouchableOpacity>
               </View>
               <TextInput
-                value={item.descricao}
+                value={item.npp}
                 onChangeText={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    expedienteEfetuado: updateListItem(prev.expedienteEfetuado, item.id, { descricao: value }),
+                    expedienteEfetuado: updateListItem(prev.expedienteEfetuado, item.id, { npp: value }),
                   }))
                 }
-                placeholder="Descrição"
+                placeholder="NPP"
                 placeholderTextColor="#6B7280"
                 style={styles.input}
               />
               <TextInput
-                value={item.referencia}
+                value={item.nuipc}
                 onChangeText={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    expedienteEfetuado: updateListItem(prev.expedienteEfetuado, item.id, { referencia: value }),
+                    expedienteEfetuado: updateListItem(prev.expedienteEfetuado, item.id, { nuipc: value }),
                   }))
                 }
-                placeholder="Referência"
+                placeholder="NUIPC"
+                placeholderTextColor="#6B7280"
+                style={styles.input}
+              />
+              <TextInput
+                value={item.tipificacao}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    expedienteEfetuado: updateListItem(prev.expedienteEfetuado, item.id, { tipificacao: value }),
+                  }))
+                }
+                placeholder="Tipificação"
                 placeholderTextColor="#6B7280"
                 style={styles.input}
               />
@@ -365,23 +392,166 @@ export default function ReportsScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Observações e justificações</Text>
-          <TextInput
-            value={formData.observacoes}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
-            placeholder="Observações"
-            placeholderTextColor="#6B7280"
-            style={[styles.input, styles.textArea]}
-            multiline
-          />
-          <TextInput
-            value={formData.justificacoes}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, justificacoes: value }))}
-            placeholder="Justificações"
-            placeholderTextColor="#6B7280"
-            style={[styles.input, styles.textArea]}
-            multiline
-          />
+          <View style={styles.listHeader}>
+            <Text style={styles.sectionTitle}>Responsáveis contactados (ORV)</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  contactados: [...prev.contactados, makeContactadoItem()],
+                }))
+              }
+            >
+              <Text style={styles.addBtnText}>+ Adicionar</Text>
+            </TouchableOpacity>
+          </View>
+          {formData.contactados.length === 0 && (
+            <Text style={styles.emptyText}>Sem entradas (opcional).</Text>
+          )}
+          {formData.contactados.map((item, index) => (
+            <View key={item.id} style={styles.dynamicBlock}>
+              <View style={styles.dynamicHeader}>
+                <Text style={styles.dynamicTitle}>Contacto {index + 1}</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactados: prev.contactados.filter((entry) => entry.id !== item.id),
+                    }))
+                  }
+                >
+                  <Text style={styles.removeText}>Remover</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.row}>
+                <TextInput
+                  value={item.hora}
+                  onChangeText={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactados: updateListItem(prev.contactados, item.id, { hora: value }),
+                    }))
+                  }
+                  placeholder="Hora (HH:MM)"
+                  placeholderTextColor="#6B7280"
+                  style={[styles.input, styles.thirdInput]}
+                />
+                <TextInput
+                  value={item.nome}
+                  onChangeText={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactados: updateListItem(prev.contactados, item.id, { nome: value }),
+                    }))
+                  }
+                  placeholder="Nome"
+                  placeholderTextColor="#6B7280"
+                  style={[styles.input, styles.thirdInput]}
+                />
+                <TextInput
+                  value={item.local}
+                  onChangeText={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactados: updateListItem(prev.contactados, item.id, { local: value }),
+                    }))
+                  }
+                  placeholder="Local"
+                  placeholderTextColor="#6B7280"
+                  style={[styles.input, styles.thirdInput]}
+                />
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.listHeader}>
+            <Text style={styles.sectionTitle}>Observações</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => setFormData((prev) => ({ ...prev, observacoes: [...prev.observacoes, ''] }))}
+            >
+              <Text style={styles.addBtnText}>+ Adicionar</Text>
+            </TouchableOpacity>
+          </View>
+          {formData.observacoes.map((line, index) => (
+            <View key={`obs-${index}`} style={styles.dynamicBlock}>
+              <View style={styles.dynamicHeader}>
+                <Text style={styles.dynamicTitle}>Observação {index + 1}</Text>
+                {index > 0 && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        observacoes: prev.observacoes.filter((_, idx) => idx !== index),
+                      }))
+                    }
+                  >
+                    <Text style={styles.removeText}>Remover</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TextInput
+                value={line}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    observacoes: updateTextLine(prev.observacoes, index, value),
+                  }))
+                }
+                placeholder="Observação"
+                placeholderTextColor="#6B7280"
+                style={[styles.input, styles.textArea]}
+                multiline
+              />
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.listHeader}>
+            <Text style={styles.sectionTitle}>Justificações (em baixo)</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => setFormData((prev) => ({ ...prev, justificacoes: [...prev.justificacoes, ''] }))}
+            >
+              <Text style={styles.addBtnText}>+ Adicionar</Text>
+            </TouchableOpacity>
+          </View>
+          {formData.justificacoes.map((line, index) => (
+            <View key={`jus-${index}`} style={styles.dynamicBlock}>
+              <View style={styles.dynamicHeader}>
+                <Text style={styles.dynamicTitle}>Justificação {index + 1}</Text>
+                {index > 0 && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        justificacoes: prev.justificacoes.filter((_, idx) => idx !== index),
+                      }))
+                    }
+                  >
+                    <Text style={styles.removeText}>Remover</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TextInput
+                value={line}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    justificacoes: updateTextLine(prev.justificacoes, index, value),
+                  }))
+                }
+                placeholder="Justificação"
+                placeholderTextColor="#6B7280"
+                style={[styles.input, styles.textArea]}
+                multiline
+              />
+            </View>
+          ))}
         </View>
 
         <TouchableOpacity style={styles.generateBtn} onPress={handleGenerate} disabled={isGenerating}>

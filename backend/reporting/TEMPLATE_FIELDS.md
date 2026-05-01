@@ -11,6 +11,7 @@ Para automação robusta do `.docx`, o template Word deve usar placeholders Jinj
 - `{{ service_location }}`
 - `{{ service_reference }}`
 - `{{ efetivo_total }}`
+- `{{ oficiais_count }}`
 - `{{ chefes_count }}`
 - `{{ agentes_count }}`
 - `{{ graduado_posto }}`
@@ -36,7 +37,17 @@ Dentro da linha de tabela repetível:
 
 ```jinja2
 {% for item in expediente_efetuado %}
-{{ item.descricao }} | {{ item.referencia }}
+{{ item.npp }} | {{ item.nuipc }} | {{ item.tipificacao }}
+{% endfor %}
+```
+
+## Lista repetível - Responsáveis contactados (ORV)
+
+Dentro da linha de tabela repetível:
+
+```jinja2
+{% for item in contactados %}
+{{ item.hora }} | {{ item.nome }} | {{ item.local }}
 {% endfor %}
 ```
 

@@ -9,8 +9,16 @@ export interface DemaisEfetivoItem {
 
 export interface ExpedienteItem {
   id: string;
-  descricao: string;
-  referencia: string;
+  npp: string;
+  nuipc: string;
+  tipificacao: string;
+}
+
+export interface ContactadoItem {
+  id: string;
+  hora: string;
+  nome: string;
+  local: string;
 }
 
 export interface ServicoRemuneradoFormData {
@@ -21,15 +29,17 @@ export interface ServicoRemuneradoFormData {
   serviceLocation: string;
   serviceReference: string;
   efetivoTotal: string;
+  oficiaisCount: string;
   chefesCount: string;
   agentesCount: string;
   graduadoPosto: string;
   graduadoNome: string;
   graduadoMatricula: string;
   graduadoComando: string;
-  observacoes: string;
-  justificacoes: string;
+  observacoes: string[];
+  justificacoes: string[];
   demaisEfetivo: DemaisEfetivoItem[];
+  contactados: ContactadoItem[];
   expedienteEfetuado: ExpedienteItem[];
 }
 
