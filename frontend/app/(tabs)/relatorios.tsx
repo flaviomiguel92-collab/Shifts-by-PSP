@@ -16,15 +16,16 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   reportTemplatesCatalog,
   makeDemaisEfetivoItem,
+  makeEfetivoItem,
   makeExpedienteItem,
-  makeContactadoItem,
 } from '../../src/reports/reportSchemas';
-import { ServicoRemuneradoFormData } from '../../src/reports/reportTypes';
+import { ServicoRemuneradoFormData, Categoria } from '../../src/reports/reportTypes';
 import { validateServicoRemunerado } from '../../src/reports/reportValidation';
 import { buildServicoRemuneradoFileName } from '../../src/reports/reportFileNaming';
 import { generateReportPdf } from '../../src/services/reportsApi';
 
 const template = reportTemplatesCatalog[0];
+const CATEGORIAS: readonly Categoria[] = ['Agente', 'Chefe', 'Oficial'] as const;
 
 const downloadOnWeb = (base64Pdf: string, fileName: string) => {
   const binary = atob(base64Pdf);
@@ -49,14 +50,37 @@ const showFeedback = (title: string, message: string) => {
   Alert.alert(title, message);
 };
 
+interface CategoryPickerProps {
+  value: Categoria;
+  onChange: (categoria: Categoria) => void;
+}
+
+const CategoryPicker: React.FC<CategoryPickerProps> = ({ value, onChange }) => (
+  <View style={styles.categoryPicker}>
+    {CATEGORIAS.map((categoria) => (
+      <TouchableOpacity
+        key={categoria}
+        style={[styles.categoryButton, value === categoria && styles.categoryButtonSelected]}
+        onPress={() => onChange(categoria)}
+      >
+        <Text
+          style={[
+            styles.categoryButtonText,
+            value === categoria && styles.categoryButtonTextSelected,
+          ]}
+        >
+          {categoria}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+);
+
 const updateListItem = <T extends { id: string }>(
   list: T[],
   id: string,
   patch: Partial<T>
 ): T[] => list.map((item) => (item.id === id ? { ...item, ...patch } : item));
-
-const updateTextLine = (lines: string[], index: number, value: string): string[] =>
-  lines.map((line, idx) => (idx === index ? value : line));
 
 export default function ReportsScreen() {
   const [selectedTemplateId] = useState(template.id);
@@ -78,7 +102,7 @@ export default function ReportsScreen() {
     const suggestedFileName = buildServicoRemuneradoFileName({
       reportDate: formData.reportDate,
       reportHour: formData.reportHour,
-      remuneratedName: formData.remuneratedName,
+      remuneratedName: formData.graduadoNome,
       graduadoMatricula: formData.graduadoMatricula,
     });
 
@@ -122,25 +146,10 @@ export default function ReportsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Relatórios</Text>
-        <Text style={styles.pageSubtitle}>Escolhe o modelo e preenche os campos para gerar PDF.</Text>
+        <Text style={styles.pageSubtitle}>Preenche os campos para gerar o Relatório de Serviço Remunerado.</Text>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Modelos disponíveis</Text>
-          {selectedTemplate && (
-            <View style={styles.templateCard}>
-              <View style={styles.templateBadge}>
-                <Ionicons name="document-text-outline" size={18} color="#93C5FD" />
-              </View>
-              <View style={styles.templateInfo}>
-                <Text style={styles.templateTitle}>{selectedTemplate.title}</Text>
-                <Text style={styles.templateDescription}>{selectedTemplate.description}</Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Dados gerais</Text>
+          <Text style={styles.sectionTitle}>Cabeçalho: Serviço Remunerado</Text>
           <View style={styles.row}>
             <TextInput
               value={formData.reportDate}
@@ -157,93 +166,76 @@ export default function ReportsScreen() {
               style={[styles.input, styles.halfInput]}
             />
           </View>
-          <TextInput
-            value={formData.remuneratedName}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, remuneratedName: value }))}
-            placeholder="Nome do remunerado (usado no nome do ficheiro)"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-          <TextInput
-            value={formData.serviceType}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, serviceType: value }))}
-            placeholder="Tipo de serviço"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-          <TextInput
-            value={formData.serviceLocation}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, serviceLocation: value }))}
-            placeholder="Local"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-          <TextInput
-            value={formData.serviceReference}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, serviceReference: value }))}
-            placeholder="Referência / evento"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Efetivo e cabeçalho</Text>
-          <View style={styles.row}>
-            <TextInput
-              value={formData.efetivoTotal}
-              onChangeText={(value) => setFormData((prev) => ({ ...prev, efetivoTotal: value }))}
-              placeholder="Efetivo total"
-              placeholderTextColor="#6B7280"
-              style={[styles.input, styles.thirdInput]}
-            />
-            <TextInput
-              value={formData.oficiaisCount}
-              onChangeText={(value) => setFormData((prev) => ({ ...prev, oficiaisCount: value }))}
-              placeholder="Oficiais"
-              placeholderTextColor="#6B7280"
-              style={[styles.input, styles.thirdInput]}
-            />
-            <TextInput
-              value={formData.chefesCount}
-              onChangeText={(value) => setFormData((prev) => ({ ...prev, chefesCount: value }))}
-              placeholder="Chefes"
-              placeholderTextColor="#6B7280"
-              style={[styles.input, styles.thirdInput]}
-            />
-            <TextInput
-              value={formData.agentesCount}
-              onChangeText={(value) => setFormData((prev) => ({ ...prev, agentesCount: value }))}
-              placeholder="Agentes"
-              placeholderTextColor="#6B7280"
-              style={[styles.input, styles.thirdInput]}
-            />
+          <View style={styles.listHeader}>
+            <Text style={styles.sectionTitle}>Efetivo Policial</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() =>
+                setFormData((prev) => ({ ...prev, efetivoPolicial: [...prev.efetivoPolicial, makeEfetivoItem()] }))
+              }
+            >
+              <Text style={styles.addBtnText}>+ Adicionar</Text>
+            </TouchableOpacity>
           </View>
+          {formData.efetivoPolicial.length === 0 && (
+            <Text style={styles.emptyText}>Sem elementos adicionados.</Text>
+          )}
+          {formData.efetivoPolicial.map((item, index) => (
+            <View key={item.id} style={styles.dynamicBlock}>
+              <View style={styles.dynamicHeader}>
+                <Text style={styles.dynamicTitle}>Elemento {index + 1}</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      efetivoPolicial: prev.efetivoPolicial.filter((entry) => entry.id !== item.id),
+                    }))
+                  }
+                >
+                  <Text style={styles.removeText}>Remover</Text>
+                </TouchableOpacity>
+              </View>
+              <CategoryPicker
+                value={item.categoria}
+                onChange={(categoria) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    efetivoPolicial: updateListItem(prev.efetivoPolicial, item.id, { categoria }),
+                  }))
+                }
+              />
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Polícia Mais Graduado/Antigo</Text>
           <TextInput
-            value={formData.graduadoPosto}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoPosto: value }))}
-            placeholder="Posto do polícia mais graduado/antigo"
+            value={formData.graduadoMatricula}
+            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoMatricula: value }))}
+            placeholder="Matrícula"
             placeholderTextColor="#6B7280"
             style={styles.input}
+          />
+          <Text style={styles.fieldLabel}>Categoria</Text>
+          <CategoryPicker
+            value={formData.graduadoCategoria}
+            onChange={(categoria) => setFormData((prev) => ({ ...prev, graduadoCategoria: categoria }))}
           />
           <TextInput
             value={formData.graduadoNome}
             onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoNome: value }))}
-            placeholder="Nome do polícia mais graduado/antigo"
+            placeholder="Nome"
             placeholderTextColor="#6B7280"
             style={styles.input}
           />
           <TextInput
-            value={formData.graduadoMatricula}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoMatricula: value }))}
-            placeholder="Matrícula do polícia mais graduado/antigo"
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-          <TextInput
-            value={formData.graduadoComando}
-            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoComando: value }))}
-            placeholder="Comando/Unidade do graduado"
+            value={formData.graduadoRadio}
+            onChangeText={(value) => setFormData((prev) => ({ ...prev, graduadoRadio: value }))}
+            placeholder="Número do Rádio (E/R)"
             placeholderTextColor="#6B7280"
             style={styles.input}
           />
@@ -251,7 +243,7 @@ export default function ReportsScreen() {
 
         <View style={styles.card}>
           <View style={styles.listHeader}>
-            <Text style={styles.sectionTitle}>Demais efetivo policial</Text>
+            <Text style={styles.sectionTitle}>Demais Efetivo Policial</Text>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() =>
@@ -279,16 +271,26 @@ export default function ReportsScreen() {
                 )}
               </View>
               <TextInput
-                value={item.posto}
+                value={item.matricula}
                 onChangeText={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { posto: value }),
+                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { matricula: value }),
                   }))
                 }
-                placeholder="Posto"
+                placeholder="Matrícula"
                 placeholderTextColor="#6B7280"
                 style={styles.input}
+              />
+              <Text style={styles.fieldLabel}>Categoria</Text>
+              <CategoryPicker
+                value={item.categoria}
+                onChange={(categoria) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { categoria }),
+                  }))
+                }
               />
               <TextInput
                 value={item.nome}
@@ -302,25 +304,13 @@ export default function ReportsScreen() {
                 placeholderTextColor="#6B7280"
                 style={styles.input}
               />
-              <TextInput
-                value={item.matricula}
-                onChangeText={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    demaisEfetivo: updateListItem(prev.demaisEfetivo, item.id, { matricula: value }),
-                  }))
-                }
-                placeholder="Matrícula"
-                placeholderTextColor="#6B7280"
-                style={styles.input}
-              />
             </View>
           ))}
         </View>
 
         <View style={styles.card}>
           <View style={styles.listHeader}>
-            <Text style={styles.sectionTitle}>Expediente efetuado</Text>
+            <Text style={styles.sectionTitle}>Expediente Efetuado</Text>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() =>
@@ -392,166 +382,70 @@ export default function ReportsScreen() {
         </View>
 
         <View style={styles.card}>
-          <View style={styles.listHeader}>
-            <Text style={styles.sectionTitle}>Responsáveis contactados (ORV)</Text>
+          <Text style={styles.sectionTitle}>Ordem de Missão nº 8/DSTP/2024</Text>
+          <Text style={styles.questionText}>
+            Foi integralmente cumprida a Ordem de Missão nº 8/DSTP/2024, incluindo horários e locais estipulados?
+          </Text>
+          <View style={styles.toggleGroup}>
             <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  contactados: [...prev.contactados, makeContactadoItem()],
-                }))
-              }
+              style={[
+                styles.toggleButton,
+                formData.ordemMissaoCumprida === true && styles.toggleButtonActive,
+              ]}
+              onPress={() => setFormData((prev) => ({ ...prev, ordemMissaoCumprida: true }))}
             >
-              <Text style={styles.addBtnText}>+ Adicionar</Text>
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  formData.ordemMissaoCumprida === true && styles.toggleButtonTextActive,
+                ]}
+              >
+                Sim
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                formData.ordemMissaoCumprida === false && styles.toggleButtonActive,
+              ]}
+              onPress={() => setFormData((prev) => ({ ...prev, ordemMissaoCumprida: false }))}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  formData.ordemMissaoCumprida === false && styles.toggleButtonTextActive,
+                ]}
+              >
+                Não
+              </Text>
             </TouchableOpacity>
           </View>
-          {formData.contactados.length === 0 && (
-            <Text style={styles.emptyText}>Sem entradas (opcional).</Text>
-          )}
-          {formData.contactados.map((item, index) => (
-            <View key={item.id} style={styles.dynamicBlock}>
-              <View style={styles.dynamicHeader}>
-                <Text style={styles.dynamicTitle}>Contacto {index + 1}</Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      contactados: prev.contactados.filter((entry) => entry.id !== item.id),
-                    }))
-                  }
-                >
-                  <Text style={styles.removeText}>Remover</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.row}>
-                <TextInput
-                  value={item.hora}
-                  onChangeText={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      contactados: updateListItem(prev.contactados, item.id, { hora: value }),
-                    }))
-                  }
-                  placeholder="Hora (HH:MM)"
-                  placeholderTextColor="#6B7280"
-                  style={[styles.input, styles.thirdInput]}
-                />
-                <TextInput
-                  value={item.nome}
-                  onChangeText={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      contactados: updateListItem(prev.contactados, item.id, { nome: value }),
-                    }))
-                  }
-                  placeholder="Nome"
-                  placeholderTextColor="#6B7280"
-                  style={[styles.input, styles.thirdInput]}
-                />
-                <TextInput
-                  value={item.local}
-                  onChangeText={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      contactados: updateListItem(prev.contactados, item.id, { local: value }),
-                    }))
-                  }
-                  placeholder="Local"
-                  placeholderTextColor="#6B7280"
-                  style={[styles.input, styles.thirdInput]}
-                />
-              </View>
-            </View>
-          ))}
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.listHeader}>
-            <Text style={styles.sectionTitle}>Observações</Text>
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => setFormData((prev) => ({ ...prev, observacoes: [...prev.observacoes, ''] }))}
-            >
-              <Text style={styles.addBtnText}>+ Adicionar</Text>
-            </TouchableOpacity>
+        {formData.ordemMissaoCumprida === false && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Justificação</Text>
+            <TextInput
+              value={formData.justificacao}
+              onChangeText={(value) => setFormData((prev) => ({ ...prev, justificacao: value }))}
+              placeholder="Justificação em caso de não cumprimento integral da ordem de missão"
+              placeholderTextColor="#6B7280"
+              style={[styles.input, styles.textArea]}
+              multiline
+            />
           </View>
-          {formData.observacoes.map((line, index) => (
-            <View key={`obs-${index}`} style={styles.dynamicBlock}>
-              <View style={styles.dynamicHeader}>
-                <Text style={styles.dynamicTitle}>Observação {index + 1}</Text>
-                {index > 0 && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        observacoes: prev.observacoes.filter((_, idx) => idx !== index),
-                      }))
-                    }
-                  >
-                    <Text style={styles.removeText}>Remover</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TextInput
-                value={line}
-                onChangeText={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    observacoes: updateTextLine(prev.observacoes, index, value),
-                  }))
-                }
-                placeholder="Observação"
-                placeholderTextColor="#6B7280"
-                style={[styles.input, styles.textArea]}
-                multiline
-              />
-            </View>
-          ))}
-        </View>
+        )}
 
         <View style={styles.card}>
-          <View style={styles.listHeader}>
-            <Text style={styles.sectionTitle}>Justificações (em baixo)</Text>
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => setFormData((prev) => ({ ...prev, justificacoes: [...prev.justificacoes, ''] }))}
-            >
-              <Text style={styles.addBtnText}>+ Adicionar</Text>
-            </TouchableOpacity>
-          </View>
-          {formData.justificacoes.map((line, index) => (
-            <View key={`jus-${index}`} style={styles.dynamicBlock}>
-              <View style={styles.dynamicHeader}>
-                <Text style={styles.dynamicTitle}>Justificação {index + 1}</Text>
-                {index > 0 && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        justificacoes: prev.justificacoes.filter((_, idx) => idx !== index),
-                      }))
-                    }
-                  >
-                    <Text style={styles.removeText}>Remover</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TextInput
-                value={line}
-                onChangeText={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    justificacoes: updateTextLine(prev.justificacoes, index, value),
-                  }))
-                }
-                placeholder="Justificação"
-                placeholderTextColor="#6B7280"
-                style={[styles.input, styles.textArea]}
-                multiline
-              />
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>Observações</Text>
+          <TextInput
+            value={formData.observacao}
+            onChangeText={(value) => setFormData((prev) => ({ ...prev, observacao: value }))}
+            placeholder="Observações"
+            placeholderTextColor="#6B7280"
+            style={[styles.input, styles.textArea]}
+            multiline
+          />
         </View>
 
         <TouchableOpacity style={styles.generateBtn} onPress={handleGenerate} disabled={isGenerating}>
@@ -577,18 +471,6 @@ const styles = StyleSheet.create({
     borderColor: '#374151',
   },
   sectionTitle: { color: '#E5E7EB', fontSize: 15, fontWeight: '700', marginBottom: 10 },
-  templateCard: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  templateBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(59,130,246,0.16)',
-  },
-  templateInfo: { flex: 1 },
-  templateTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  templateDescription: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
   row: { flexDirection: 'row', gap: 8 },
   input: {
     backgroundColor: '#111827',
@@ -602,7 +484,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   halfInput: { flex: 1 },
-  thirdInput: { flex: 1 },
+  fieldLabel: { color: '#9CA3AF', fontSize: 12, fontWeight: '600', marginTop: 8, marginBottom: 6 },
+  categoryPicker: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  categoryButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    backgroundColor: '#111827',
+    alignItems: 'center',
+  },
+  categoryButtonSelected: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+  categoryButtonText: { color: '#9CA3AF', fontSize: 12, fontWeight: '600' },
+  categoryButtonTextSelected: { color: '#FFFFFF', fontWeight: '700' },
   listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   addBtn: {
     backgroundColor: 'rgba(16,185,129,0.15)',
@@ -625,7 +521,21 @@ const styles = StyleSheet.create({
   dynamicTitle: { color: '#E5E7EB', fontSize: 12, fontWeight: '700' },
   removeText: { color: '#FCA5A5', fontSize: 12, fontWeight: '700' },
   emptyText: { color: '#9CA3AF', fontSize: 12, marginBottom: 8 },
-  textArea: { minHeight: 72, textAlignVertical: 'top' },
+  questionText: { color: '#D1D5DB', fontSize: 13, marginBottom: 12, lineHeight: 18 },
+  toggleGroup: { flexDirection: 'row', gap: 8 },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    backgroundColor: '#111827',
+    alignItems: 'center',
+  },
+  toggleButtonActive: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+  toggleButtonText: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
+  toggleButtonTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  textArea: { minHeight: 100, textAlignVertical: 'top' },
   generateBtn: {
     backgroundColor: '#2563EB',
     borderRadius: 12,

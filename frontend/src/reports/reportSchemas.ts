@@ -1,10 +1,22 @@
 import { ReportTemplateDefinition, ServicoRemuneradoFormData } from './reportTypes';
 
-const createDemaisEfetivoItem = () => ({
+export const makeEfetivoItem = () => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  posto: '',
+  categoria: 'Agente' as const,
+});
+
+export const makeDemaisEfetivoItem = () => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  categoria: 'Agente' as const,
   nome: '',
   matricula: '',
+});
+
+export const makeExpedienteItem = () => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  npp: '',
+  nuipc: '',
+  tipificacao: '',
 });
 
 export const SERVICO_REMUNERADO_TEMPLATE: ReportTemplateDefinition<ServicoRemuneradoFormData> = {
@@ -15,40 +27,17 @@ export const SERVICO_REMUNERADO_TEMPLATE: ReportTemplateDefinition<ServicoRemune
   createInitialData: () => ({
     reportDate: '',
     reportHour: '',
-    remuneratedName: '',
-    serviceType: '',
-    serviceLocation: '',
-    serviceReference: '',
-    efetivoTotal: '',
-    oficiaisCount: '',
-    chefesCount: '',
-    agentesCount: '',
-    graduadoPosto: '',
-    graduadoNome: '',
     graduadoMatricula: '',
-    graduadoComando: '',
-    observacoes: [''],
-    justificacoes: [''],
-    demaisEfetivo: [createDemaisEfetivoItem()],
-    contactados: [],
+    graduadoCategoria: 'Agente',
+    graduadoNome: '',
+    graduadoRadio: '',
+    efetivoPolicial: [],
+    demaisEfetivo: [makeDemaisEfetivoItem()],
     expedienteEfetuado: [],
+    ordemMissaoCumprida: null,
+    justificacao: '',
+    observacao: '',
   }),
 };
 
 export const reportTemplatesCatalog = [SERVICO_REMUNERADO_TEMPLATE];
-
-export const makeDemaisEfetivoItem = createDemaisEfetivoItem;
-
-export const makeExpedienteItem = () => ({
-  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  npp: '',
-  nuipc: '',
-  tipificacao: '',
-});
-
-export const makeContactadoItem = () => ({
-  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  hora: '',
-  nome: '',
-  local: '',
-});

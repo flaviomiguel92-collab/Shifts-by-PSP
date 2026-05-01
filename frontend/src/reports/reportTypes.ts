@@ -1,8 +1,14 @@
 export type ReportTemplateId = 'servico_remunerado';
+export type Categoria = 'Agente' | 'Chefe' | 'Oficial';
+
+export interface EfetivoItem {
+  id: string;
+  categoria: Categoria;
+}
 
 export interface DemaisEfetivoItem {
   id: string;
-  posto: string;
+  categoria: Categoria;
   nome: string;
   matricula: string;
 }
@@ -14,33 +20,19 @@ export interface ExpedienteItem {
   tipificacao: string;
 }
 
-export interface ContactadoItem {
-  id: string;
-  hora: string;
-  nome: string;
-  local: string;
-}
-
 export interface ServicoRemuneradoFormData {
   reportDate: string;
   reportHour: string;
-  remuneratedName: string;
-  serviceType: string;
-  serviceLocation: string;
-  serviceReference: string;
-  efetivoTotal: string;
-  oficiaisCount: string;
-  chefesCount: string;
-  agentesCount: string;
-  graduadoPosto: string;
-  graduadoNome: string;
   graduadoMatricula: string;
-  graduadoComando: string;
-  observacoes: string[];
-  justificacoes: string[];
+  graduadoCategoria: Categoria;
+  graduadoNome: string;
+  graduadoRadio: string;
+  efetivoPolicial: EfetivoItem[];
   demaisEfetivo: DemaisEfetivoItem[];
-  contactados: ContactadoItem[];
   expedienteEfetuado: ExpedienteItem[];
+  ordemMissaoCumprida: boolean | null;
+  justificacao: string;
+  observacao: string;
 }
 
 export interface ReportTemplateDefinition<TFormData> {
