@@ -242,6 +242,12 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     zIndex: 10,
+    backgroundColor: '#10B981',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   legendRow: {
     flexDirection: 'row',
