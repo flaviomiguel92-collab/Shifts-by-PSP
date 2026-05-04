@@ -172,8 +172,13 @@ export default function CalendarScreen() {
         text: 'Eliminar',
         style: 'destructive',
         onPress: async () => {
-          await deleteGratifiedEntry(entryId);
-          setShowDayDetailModal(false);
+          try {
+            await deleteGratifiedEntry(entryId);
+            setShowDayDetailModal(false);
+          } catch (error) {
+            console.error('Error deleting gratified entry:', error);
+            Alert.alert('Erro', 'Não foi possível remover o gratificado');
+          }
         },
       },
     ]);
@@ -296,14 +301,24 @@ export default function CalendarScreen() {
 
   const handleShiftDelete = async () => {
     if (!selectedShift) return;
-    try {
-      await deleteShift(selectedShift.id);
-      await fetchShifts(currentMonth);
-      setShowShiftModal(false);
-      setShowDayDetailModal(false);
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível eliminar o turno');
-    }
+    Alert.alert('Eliminar turno', 'Tem a certeza que quer eliminar este turno?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteShift(selectedShift.id);
+            await fetchShifts(currentMonth);
+            setShowShiftModal(false);
+            setShowDayDetailModal(false);
+          } catch (error) {
+            console.error('Error deleting shift:', error);
+            Alert.alert('Erro', 'Não foi possível eliminar o turno');
+          }
+        },
+      },
+    ]);
   };
 
   const handleQuickSelect = (type: string) => {
