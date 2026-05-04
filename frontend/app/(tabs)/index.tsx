@@ -279,7 +279,7 @@ export default function CalendarScreen() {
   };
 
   // Handle shift save from modal
-  const handleShiftSave = async (shiftData: { 
+  const handleShiftSave = async (shiftData: {
     shift_type: string;
     start_time?: string;
     end_time?: string;
@@ -289,7 +289,13 @@ export default function CalendarScreen() {
       if (selectedShift) {
         await updateShift(selectedShift.id, shiftData);
       } else {
-        await createShift({ date: selectedDate, ...shiftData });
+        // Check if shift already exists in backend (handles desync cases)
+        const existingShift = shiftsMap.get(selectedDate);
+        if (existingShift) {
+          await updateShift(existingShift.id, shiftData);
+        } else {
+          await createShift({ date: selectedDate, ...shiftData });
+        }
       }
       await fetchShifts(currentMonth);
       setShowShiftModal(false);
