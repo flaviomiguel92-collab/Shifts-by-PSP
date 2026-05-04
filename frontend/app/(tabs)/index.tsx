@@ -472,7 +472,7 @@ export default function CalendarScreen() {
 
                   {hasGratification && (
                     <View style={styles.gratifiedDotWrap}>
-                      <View style={styles.gratifiedDot} />
+                      <Ionicons name="star-sharp" size={12} color="#10B981" />
                       {gratifiedCount > 1 && (
                         <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
                       )}
@@ -1066,12 +1066,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-  },
-  gratifiedDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 999,
-    backgroundColor: '#10B981',
   },
   gratifiedCountText: {
     fontSize: 9,
