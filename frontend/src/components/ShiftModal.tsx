@@ -118,6 +118,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                     setSelectedType(shift.name);
                     setStartTime(shift.startTime || '');
                     setEndTime(shift.endTime || '');
+                    setNewShiftName('');
                   }}
                 >
                   <Text
@@ -140,7 +141,10 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               placeholder="Nome do turno"
               placeholderTextColor="#6B7280"
               value={newShiftName}
-              onChangeText={setNewShiftName}
+              onChangeText={(text) => {
+                setNewShiftName(text);
+                if (text) setSelectedType('');
+              }}
             />
 
             <View style={{ flexDirection: 'row', marginTop: 10 }}>
