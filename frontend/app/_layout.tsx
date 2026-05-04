@@ -1,45 +1,63 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useDataStore } from '../src/store/dataStore';
+import { storage } from '../src/utils/storage';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
+
+async function ensureSessionToken(): Promise<string | null> {
+  // Always request a fresh demo token on app startup so we never carry
+  // an expired/invalid session_token into subsequent API calls.
+  console.log('[auth] Requesting demo token from', `${API_URL}/api/auth/demo`);
+  try {
+    const authResponse = await fetch(`${API_URL}/api/auth/demo`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    console.log('[auth] /api/auth/demo status:', authResponse.status);
+
+    if (!authResponse.ok) {
+      console.warn('[auth] Demo auth returned non-OK status:', authResponse.status);
+      return null;
+    }
+
+    const authData = await authResponse.json();
+    const token = authData?.session_token ?? null;
+    if (token) {
+      await storage.setItem('session_token', token);
+      console.log('[auth] session_token saved to storage');
+    } else {
+      console.warn('[auth] Response had no session_token field:', authData);
+    }
+    return token;
+  } catch (authError) {
+    console.error('[auth] Demo auth failed:', authError);
+    return null;
+  }
+}
 
 export default function RootLayout() {
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const loadData = useDataStore((s) => s.loadData);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Ensure authentication token exists before loading data
-        const { storage } = await import('../src/utils/storage');
-        const token = await storage.getItem('session_token');
+        // ALWAYS authenticate first so the rest of the app sees a valid token.
+        await ensureSessionToken();
 
-        if (!token) {
-          // Get demo token from backend
-          const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
-          try {
-            const authResponse = await fetch(`${apiUrl}/api/auth/demo`, {
-              method: 'POST',
-              credentials: 'include',
-            });
-
-            if (authResponse.ok) {
-              const authData = await authResponse.json();
-              if (authData.session_token) {
-                await storage.setItem('session_token', authData.session_token);
-              }
-            }
-          } catch (authError) {
-            console.warn('Demo auth failed:', authError);
-          }
-        }
-
-        // Load app data
+        // Load locally cached data (does not hit the API).
         await loadData();
       } catch (err) {
-        console.error('Error initializing app:', err);
+        console.error('[init] Error initializing app:', err);
         setError(String(err));
+      } finally {
+        setReady(true);
       }
     };
 
@@ -50,6 +68,14 @@ export default function RootLayout() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111827' }}>
         <Text style={{ color: '#fff', textAlign: 'center', padding: 20 }}>Erro: {error}</Text>
+      </View>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111827' }}>
+        <ActivityIndicator size="large" color="#fff" />
       </View>
     );
   }

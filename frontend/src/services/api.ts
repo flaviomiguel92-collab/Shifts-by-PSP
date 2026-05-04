@@ -1,22 +1,62 @@
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com') + '/api';
+import { storage } from '../utils/storage';
 
-const getHeaders = () => {
-  let token = null;
+const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
+const API_BASE_URL = API_ROOT + '/api';
 
-  if (typeof localStorage !== 'undefined') {
-    token = localStorage.getItem('session_token');
-  }
-
+const getHeaders = async () => {
+  const token = await storage.getItem('session_token');
   return {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
 
+// Request a fresh demo session token. Called on startup and on 401 retry.
+const refreshSessionToken = async (): Promise<string | null> => {
+  try {
+    console.log('[api] Refreshing demo session token...');
+    const res = await fetch(`${API_ROOT}/api/auth/demo`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      console.warn('[api] /api/auth/demo failed with', res.status);
+      return null;
+    }
+    const data = await res.json();
+    const token = data?.session_token ?? null;
+    if (token) {
+      await storage.setItem('session_token', token);
+      console.log('[api] session_token refreshed');
+    }
+    return token;
+  } catch (err) {
+    console.error('[api] refreshSessionToken error:', err);
+    return null;
+  }
+};
+
+// Wrapper around fetch that auto-retries once with a fresh session token on 401.
+const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
+  const headers = { ...(init.headers || {}), ...(await getHeaders()) };
+  let response = await fetch(url, { ...init, headers });
+
+  if (response.status === 401) {
+    console.warn('[api] 401 from', url, '- attempting token refresh and retry');
+    const token = await refreshSessionToken();
+    if (token) {
+      const retryHeaders = { ...(init.headers || {}), ...(await getHeaders()) };
+      response = await fetch(url, { ...init, headers: retryHeaders });
+    }
+  }
+
+  return response;
+};
+
 export const createOccurrence = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/occurrences`, {
+  const response = await apiFetch(`${API_BASE_URL}/occurrences`, {
     method: 'POST',
-    headers: getHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -30,18 +70,15 @@ export const createOccurrence = async (data) => {
 export const getOccurrences = async (status, classification) => {
   let url = `${API_BASE_URL}/occurrences`;
   const params = new URLSearchParams();
-  
+
   if (status) params.append('status', status);
   if (classification) params.append('classification', classification);
-  
+
   if (params.toString()) {
     url += `?${params.toString()}`;
   }
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
+  const response = await apiFetch(url, { method: 'GET' });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch occurrences: ${response.statusText}`);
@@ -51,9 +88,8 @@ export const getOccurrences = async (status, classification) => {
 };
 
 export const updateOccurrence = async (id, data) => {
-  const response = await fetch(`${API_BASE_URL}/occurrences/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, {
     method: 'PUT',
-    headers: getHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -65,9 +101,8 @@ export const updateOccurrence = async (id, data) => {
 };
 
 export const deleteOccurrence = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/occurrences/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, {
     method: 'DELETE',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -83,10 +118,7 @@ export const getShifts = async (month) => {
     url += `?month=${month}`;
   }
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
+  const response = await apiFetch(url, { method: 'GET' });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch shifts: ${response.statusText}`);
@@ -96,9 +128,8 @@ export const getShifts = async (month) => {
 };
 
 export const createShift = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/shifts`, {
+  const response = await apiFetch(`${API_BASE_URL}/shifts`, {
     method: 'POST',
-    headers: getHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -110,9 +141,8 @@ export const createShift = async (data) => {
 };
 
 export const updateShift = async (id, data) => {
-  const response = await fetch(`${API_BASE_URL}/shifts/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/shifts/${id}`, {
     method: 'PUT',
-    headers: getHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -124,9 +154,8 @@ export const updateShift = async (id, data) => {
 };
 
 export const deleteShift = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/shifts/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/shifts/${id}`, {
     method: 'DELETE',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -139,18 +168,15 @@ export const deleteShift = async (id) => {
 export const getGratifications = async (month, year) => {
   let url = `${API_BASE_URL}/gratifications`;
   const params = new URLSearchParams();
-  
+
   if (month) params.append('month', month);
   if (year) params.append('year', year);
-  
+
   if (params.toString()) {
     url += `?${params.toString()}`;
   }
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
+  const response = await apiFetch(url, { method: 'GET' });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch gratifications: ${response.statusText}`);
@@ -160,9 +186,8 @@ export const getGratifications = async (month, year) => {
 };
 
 export const createGratification = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/gratifications`, {
+  const response = await apiFetch(`${API_BASE_URL}/gratifications`, {
     method: 'POST',
-    headers: getHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -174,9 +199,8 @@ export const createGratification = async (data) => {
 };
 
 export const deleteGratification = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/gratifications/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/gratifications/${id}`, {
     method: 'DELETE',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -187,9 +211,8 @@ export const deleteGratification = async (id) => {
 };
 
 export const getMonthlyStats = async (month) => {
-  const response = await fetch(`${API_BASE_URL}/stats/monthly/${month}`, {
+  const response = await apiFetch(`${API_BASE_URL}/stats/monthly/${month}`, {
     method: 'GET',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -200,9 +223,8 @@ export const getMonthlyStats = async (month) => {
 };
 
 export const getYearlyStats = async (year) => {
-  const response = await fetch(`${API_BASE_URL}/stats/yearly/${year}`, {
+  const response = await apiFetch(`${API_BASE_URL}/stats/yearly/${year}`, {
     method: 'GET',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -213,9 +235,8 @@ export const getYearlyStats = async (year) => {
 };
 
 export const getDashboardStats = async () => {
-  const response = await fetch(`${API_BASE_URL}/stats/dashboard`, {
+  const response = await apiFetch(`${API_BASE_URL}/stats/dashboard`, {
     method: 'GET',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -226,9 +247,8 @@ export const getDashboardStats = async () => {
 };
 
 export const getComparisonStats = async () => {
-  const response = await fetch(`${API_BASE_URL}/stats/comparison`, {
+  const response = await apiFetch(`${API_BASE_URL}/stats/comparison`, {
     method: 'GET',
-    headers: getHeaders(),
   });
 
   if (!response.ok) {
