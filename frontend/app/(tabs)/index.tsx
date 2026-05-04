@@ -33,17 +33,18 @@ type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end';
 
 export default function CalendarScreen() {
   const store = useDataStore() as any;
-  const { 
-    shifts, 
+  const {
+    shifts,
     shiftTypes,
     cycles,
     gratifiedEntries,
     deleteGratifiedEntry,
-    fetchShifts, 
-    createShift, 
-    updateShift, 
-    deleteShift, 
-    currentMonth, 
+    fetchShifts,
+    fetchGratifications,
+    createShift,
+    updateShift,
+    deleteShift,
+    currentMonth,
     setCurrentMonth,
   } = store;
 
@@ -173,6 +174,7 @@ export default function CalendarScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteGratifiedEntry(entryId);
+          await fetchGratifications(currentMonth, currentMonth.split('-')[0]);
         },
       },
     ]);

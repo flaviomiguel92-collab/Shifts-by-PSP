@@ -147,7 +147,7 @@ export default function OcorrenciasScreen() {
         const newOcc = await response.json();
         setShowCreateModal(false);
         resetForm();
-        fetchOccurrences();
+        await fetchOccurrences();
         setSelectedOccurrence(newOcc);
         setLocalPhotos([]);
         setShowDetailModal(true);
@@ -194,7 +194,7 @@ export default function OcorrenciasScreen() {
         setSelectedOccurrence(updated);
         setShowPersonModal(false);
         resetPersonForm();
-        fetchOccurrences();
+        await fetchOccurrences();
       }
     } catch (error) {
       console.error('Add person error:', error);
@@ -315,7 +315,7 @@ export default function OcorrenciasScreen() {
       if (response.ok) {
         const updated = await response.json();
         setSelectedOccurrence(updated);
-        fetchOccurrences();
+        await fetchOccurrences();
       }
     } catch (error) {
       console.error('Update status error:', error);

@@ -59,12 +59,12 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     }
   }, [existingShift, visible]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let finalType = selectedType;
 
     // Se criou novo turno
     if (newShiftName) {
-      createShiftType({
+      await createShiftType({
         name: newShiftName,
         color: newShiftColor,
         startTime,
