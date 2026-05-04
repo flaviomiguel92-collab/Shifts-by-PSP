@@ -301,7 +301,11 @@ export default function CalendarScreen() {
   };
 
   const handleShiftDelete = async () => {
-    if (!selectedShift) return;
+    console.log('[DEBUG] handleShiftDelete called, selectedShift:', selectedShift);
+    if (!selectedShift) {
+      console.warn('[DEBUG] selectedShift is null, returning');
+      return;
+    }
     Alert.alert('Eliminar turno', 'Tem a certeza que quer eliminar este turno?', [
       { text: 'Cancelar', style: 'cancel' },
       {
