@@ -125,7 +125,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               {/* Show gratification indicator as floating star */}
               {gratification && (
                 <View style={styles.gratificationStar}>
-                  <Ionicons name="star-sharp" size={12} color="#10B981" />
+                  <Ionicons name="star-sharp" size={12} color="#F59E0B" />
                 </View>
               )}
             </TouchableOpacity>

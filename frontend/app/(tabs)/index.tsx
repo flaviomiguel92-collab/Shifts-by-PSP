@@ -475,7 +475,7 @@ export default function CalendarScreen() {
 
                   {hasGratification && (
                     <View style={styles.gratifiedDotWrap}>
-                      <Ionicons name="star-sharp" size={12} color="#10B981" />
+                      <Ionicons name="star-sharp" size={12} color="#F59E0B" />
                       {gratifiedCount > 1 && (
                         <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
                       )}
