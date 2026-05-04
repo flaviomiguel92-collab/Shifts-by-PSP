@@ -139,6 +139,7 @@ export default function OcorrenciasScreen() {
           location: formLocation,
           description: formDescription,
           classification: formClassification,
+          photos: localPhotos.length > 0 ? localPhotos : undefined,
         }),
         credentials: 'include',
       });
