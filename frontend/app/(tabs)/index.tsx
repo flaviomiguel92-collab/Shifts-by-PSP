@@ -62,6 +62,8 @@ export default function CalendarScreen() {
   const [showDayDetailModal, setShowDayDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteGratifiedId, setDeleteGratifiedId] = useState<string | null>(null);
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
   const shiftTypesMap = useMemo(() => {
@@ -166,23 +168,20 @@ export default function CalendarScreen() {
   };
 
   const handleDeleteGratifiedEntry = (entryId: string) => {
-    Alert.alert('Eliminar gratificado', 'Queres remover este gratificado deste dia?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteGratifiedEntry(entryId);
-            await fetchShifts(currentMonth);
-            setShowDayDetailModal(false);
-          } catch (error) {
-            console.error('Error deleting gratified entry:', error);
-            Alert.alert('Erro', 'Não foi possível remover o gratificado');
-          }
-        },
-      },
-    ]);
+    setDeleteGratifiedId(entryId);
+  };
+
+  const confirmDeleteGratified = async () => {
+    if (!deleteGratifiedId) return;
+    try {
+      await deleteGratifiedEntry(deleteGratifiedId);
+      await fetchShifts(currentMonth);
+      setShowDayDetailModal(false);
+      setDeleteGratifiedId(null);
+    } catch (error) {
+      console.error('Error deleting gratified entry:', error);
+      Alert.alert('Erro', 'Não foi possível remover o gratificado');
+    }
   };
 
   // Apply cycle between two dates
@@ -301,29 +300,22 @@ export default function CalendarScreen() {
   };
 
   const handleShiftDelete = async () => {
-    console.log('[DEBUG] handleShiftDelete called, selectedShift:', selectedShift);
-    if (!selectedShift) {
-      console.warn('[DEBUG] selectedShift is null, returning');
-      return;
+    if (!selectedShift) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteShift = async () => {
+    if (!selectedShift) return;
+    try {
+      await deleteShift(selectedShift.id);
+      await fetchShifts(currentMonth);
+      setShowShiftModal(false);
+      setShowDayDetailModal(false);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Error deleting shift:', error);
+      Alert.alert('Erro', 'Não foi possível eliminar o turno');
     }
-    Alert.alert('Eliminar turno', 'Tem a certeza que quer eliminar este turno?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteShift(selectedShift.id);
-            await fetchShifts(currentMonth);
-            setShowShiftModal(false);
-            setShowDayDetailModal(false);
-          } catch (error) {
-            console.error('Error deleting shift:', error);
-            Alert.alert('Erro', 'Não foi possível eliminar o turno');
-          }
-        },
-      },
-    ]);
   };
 
   const handleQuickSelect = (type: string) => {
@@ -804,6 +796,54 @@ export default function CalendarScreen() {
           })()
         }
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal visible={showDeleteConfirm} animationType="fade" transparent>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: '#1F2937', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Eliminar turno</Text>
+            <Text style={{ color: '#9CA3AF', marginBottom: 20 }}>Tem a certeza que quer eliminar este turno?</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#374151', padding: 10, borderRadius: 8, alignItems: 'center' }}
+                onPress={() => setShowDeleteConfirm(false)}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#EF4444', padding: 10, borderRadius: 8, alignItems: 'center' }}
+                onPress={confirmDeleteShift}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Gratification Confirmation Modal */}
+      <Modal visible={deleteGratifiedId !== null} animationType="fade" transparent>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: '#1F2937', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Eliminar gratificado</Text>
+            <Text style={{ color: '#9CA3AF', marginBottom: 20 }}>Tem a certeza que quer eliminar este gratificado?</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#374151', padding: 10, borderRadius: 8, alignItems: 'center' }}
+                onPress={() => setDeleteGratifiedId(null)}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#EF4444', padding: 10, borderRadius: 8, alignItems: 'center' }}
+                onPress={confirmDeleteGratified}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
