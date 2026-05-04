@@ -9,13 +9,42 @@ export default function RootLayout() {
   const loadData = useDataStore((s) => s.loadData);
 
   useEffect(() => {
-    try {
-      loadData();
-    } catch (err) {
-      console.error('Error in loadData:', err);
-      setError(String(err));
-    }
-  }, []);
+    const initializeApp = async () => {
+      try {
+        // Ensure authentication token exists before loading data
+        const { storage } = await import('../src/utils/storage');
+        const token = await storage.getItem('session_token');
+
+        if (!token) {
+          // Get demo token from backend
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
+          try {
+            const authResponse = await fetch(`${apiUrl}/api/auth/demo`, {
+              method: 'POST',
+              credentials: 'include',
+            });
+
+            if (authResponse.ok) {
+              const authData = await authResponse.json();
+              if (authData.session_token) {
+                await storage.setItem('session_token', authData.session_token);
+              }
+            }
+          } catch (authError) {
+            console.warn('Demo auth failed:', authError);
+          }
+        }
+
+        // Load app data
+        await loadData();
+      } catch (err) {
+        console.error('Error initializing app:', err);
+        setError(String(err));
+      }
+    };
+
+    initializeApp();
+  }, [loadData]);
 
   if (error) {
     return (

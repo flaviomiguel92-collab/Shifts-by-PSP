@@ -173,6 +173,19 @@ export const createGratification = async (data) => {
   return response.json();
 };
 
+export const deleteGratification = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/gratifications/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete gratification: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 export const getMonthlyStats = async (month) => {
   const response = await fetch(`${API_BASE_URL}/stats/monthly/${month}`, {
     method: 'GET',

@@ -421,9 +421,19 @@ export const useDataStore = create((set, get) => ({
   },
 
   deleteGratification: async (id) => {
-    set((state) => ({
-      gratifications: state.gratifications.filter((g) => g.id !== id),
-    }));
-    get().saveData();
+    try {
+      await api.deleteGratification(id);
+      set((state) => ({
+        gratifications: state.gratifications.filter((g) => g.id !== id),
+      }));
+      get().saveData();
+    } catch (error) {
+      console.error('Error deleting gratification:', error);
+      set((state) => ({
+        gratifications: state.gratifications.filter((g) => g.id !== id),
+      }));
+      get().saveData();
+      throw error;
+    }
   },
 }));
