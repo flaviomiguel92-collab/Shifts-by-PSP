@@ -171,7 +171,9 @@ export default function CalendarScreen() {
       {
         text: 'Eliminar',
         style: 'destructive',
-        onPress: () => deleteGratifiedEntry(entryId),
+        onPress: async () => {
+          await deleteGratifiedEntry(entryId);
+        },
       },
     ]);
   };
