@@ -7,7 +7,9 @@ export default function RootLayout() {
   const loadData = useDataStore((s) => s.loadData);
 
   useEffect(() => {
-    loadData();
+    loadData().catch((error) => {
+      console.error('Error loading data:', error);
+    });
   }, []);
 
   return (
