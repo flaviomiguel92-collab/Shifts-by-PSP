@@ -40,7 +40,6 @@ export default function CalendarScreen() {
     gratifiedEntries,
     deleteGratifiedEntry,
     fetchShifts,
-    fetchGratifications,
     createShift,
     updateShift,
     deleteShift,
@@ -174,7 +173,7 @@ export default function CalendarScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteGratifiedEntry(entryId);
-          await fetchGratifications(currentMonth, currentMonth.split('-')[0]);
+          setShowDayDetailModal(false);
         },
       },
     ]);
