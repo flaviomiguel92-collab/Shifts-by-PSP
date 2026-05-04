@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '../utils/helpers';
@@ -72,6 +73,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       });
 
       finalType = newShiftName;
+    }
+
+    if (!finalType) {
+      Alert.alert('Aviso', 'Por favor, seleciona ou cria um tipo de turno');
+      return;
     }
 
     onSave({

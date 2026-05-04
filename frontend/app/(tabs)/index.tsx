@@ -174,6 +174,7 @@ export default function CalendarScreen() {
         onPress: async () => {
           try {
             await deleteGratifiedEntry(entryId);
+            await fetchShifts(currentMonth);
             setShowDayDetailModal(false);
           } catch (error) {
             console.error('Error deleting gratified entry:', error);

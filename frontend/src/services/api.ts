@@ -1,7 +1,12 @@
-const API_BASE_URL = 'https://shifts-by-psp-1.onrender.com/api';
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000') + '/api';
 
 const getHeaders = () => {
-  const token = localStorage.getItem('session_token');
+  let token = null;
+
+  if (typeof localStorage !== 'undefined') {
+    token = localStorage.getItem('session_token');
+  }
+
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
