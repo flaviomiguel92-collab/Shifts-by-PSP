@@ -1,4 +1,4 @@
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://shifts-by-psp-1.onrender.com') + '/api';
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com') + '/api';
 
 const getHeaders = () => {
   let token = null;
