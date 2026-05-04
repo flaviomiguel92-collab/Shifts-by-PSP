@@ -248,29 +248,6 @@ export const useDataStore = create((set, get) => ({
   // ==================== LOCAL STORAGE ====================
 
   loadData: async () => {
-    // Ensure authentication before loading data
-    try {
-      let token = await storage.getItem('session_token');
-
-      if (!token) {
-        // Try to get demo authentication
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
-        const authResponse = await fetch(`${apiUrl}/api/auth/demo`, {
-          method: 'POST',
-          credentials: 'include',
-        });
-
-        if (authResponse.ok) {
-          const authData = await authResponse.json();
-          if (authData.session_token) {
-            await storage.setItem('session_token', authData.session_token);
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Demo auth failed, continuing without token:', error);
-    }
-
     const data = await storage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);

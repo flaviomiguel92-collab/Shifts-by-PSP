@@ -227,57 +227,6 @@ async def get_current_user(request: Request) -> User:
 
 # ==================== AUTH ENDPOINTS ====================
 
-@api_router.post("/auth/demo")
-async def auth_demo(response: Response):
-    """Demo authentication endpoint for testing/development"""
-    user_id = "demo_user_001"
-
-    # Get or create demo user
-    existing_user = await db.users.find_one(
-        {"user_id": user_id},
-        {"_id": 0}
-    )
-
-    if not existing_user:
-        user = User(
-            user_id=user_id,
-            email="demo@shifolama.local",
-            name="Demo User"
-        )
-        await db.users.insert_one(user.dict())
-    else:
-        user = User(**existing_user)
-
-    # Create session token
-    session_token = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-
-    session = UserSession(
-        user_id=user_id,
-        session_token=session_token,
-        expires_at=expires_at
-    )
-
-    # Delete old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user_id})
-
-    # Insert new session
-    await db.user_sessions.insert_one(session.dict())
-
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        path="/",
-        max_age=30 * 24 * 60 * 60
-    )
-
-    return {
-        "user": user.dict(),
-        "session_token": session_token,
-        "message": "Demo session created"
-    }
-
 @api_router.post("/auth/session")
 async def create_session(session_request: SessionRequest, response: Response):
     """Exchange session_id for session_token via Emergent Auth"""
