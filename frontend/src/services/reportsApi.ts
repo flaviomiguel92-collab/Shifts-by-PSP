@@ -15,7 +15,7 @@ export const generateReportPdf = async (
   payload: ReportGeneratePayload
 ): Promise<ReportGenerateResponse> => {
   const headers = await getHeaders();
-  const response = await fetch(`${API_BASE_URL}/reports/generate`, {
+  const response = await fetch(`${API_BASE_URL}/api/reports/generate`, {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
