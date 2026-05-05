@@ -1,15 +1,10 @@
 import { ReportGeneratePayload, ReportGenerateResponse } from '../reports/reportTypes';
+import { storage } from '../utils/storage';
 
-const API_BASE_URL = 'https://shifts-by-psp-1.onrender.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 
-const getHeaders = () => {
-  let token: string | null = null;
-  try {
-    token = typeof localStorage !== 'undefined' ? localStorage.getItem('session_token') : null;
-  } catch {
-    token = null;
-  }
-
+const getHeaders = async () => {
+  const token = await storage.getItem('session_token');
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -19,9 +14,10 @@ const getHeaders = () => {
 export const generateReportPdf = async (
   payload: ReportGeneratePayload
 ): Promise<ReportGenerateResponse> => {
+  const headers = await getHeaders();
   const response = await fetch(`${API_BASE_URL}/reports/generate`, {
     method: 'POST',
-    headers: getHeaders(),
+    headers,
     body: JSON.stringify(payload),
   });
 
