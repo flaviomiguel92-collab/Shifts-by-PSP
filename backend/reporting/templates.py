@@ -96,18 +96,18 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
         "ordem_missao_cumprida": "Sim" if data.ordemMissaoCumprida else ("Não" if data.ordemMissaoCumprida is False else "Não respondido"),
         "justificacao": data.justificacao or "",
         "observacao": data.observacao or "",
-        # Demais efetivo - 3 linhas fixas
-        **{f"demais_{i}_matricula": normalized_demais[i]["matricula"] if i < len(normalized_demais) else "" for i in range(3)},
-        **{f"demais_{i}_categoria": normalized_demais[i]["categoria"] if i < len(normalized_demais) else "Agente" for i in range(3)},
-        **{f"demais_{i}_nome": normalized_demais[i]["nome"] if i < len(normalized_demais) else "" for i in range(3)},
-        # Expediente - 3 linhas fixas
-        **{f"exp_{i}_npp": normalized_expediente[i]["npp"] if i < len(normalized_expediente) else "/" for i in range(3)},
-        **{f"exp_{i}_nuipc": normalized_expediente[i]["nuipc"] if i < len(normalized_expediente) else "" for i in range(3)},
-        **{f"exp_{i}_tipificacao": normalized_expediente[i]["tipificacao"] if i < len(normalized_expediente) else "" for i in range(3)},
-        # Contactados - 8 linhas fixas
-        **{f"contactados_{i}_hora": contactados_data[i].get("hora", "") if i < len(contactados_data) else "" for i in range(8)},
-        **{f"contactados_{i}_local": contactados_data[i].get("local", "") if i < len(contactados_data) else "" for i in range(8)},
-        **{f"contactados_{i}_nome": contactados_data[i].get("nome", "") if i < len(contactados_data) else "" for i in range(8)},
-        **{f"contactados_{i}_matricula": contactados_data[i].get("matricula", "") if i < len(contactados_data) else "" for i in range(8)},
-        **{f"contactados_{i}_categoria": contactados_data[i].get("categoria", "") if i < len(contactados_data) else "" for i in range(8)},
+        # Demais efetivo - 4 linhas fixas
+        **{f"demais_{i}_matricula": normalized_demais[i]["matricula"] if i < len(normalized_demais) else "" for i in range(4)},
+        **{f"demais_{i}_categoria": normalized_demais[i]["categoria"] if i < len(normalized_demais) else "Agente" for i in range(4)},
+        **{f"demais_{i}_nome": normalized_demais[i]["nome"] if i < len(normalized_demais) else "" for i in range(4)},
+        # Expediente - 4 linhas fixas
+        **{f"exp_{i}_npp": normalized_expediente[i]["npp"] if i < len(normalized_expediente) else "/" for i in range(4)},
+        **{f"exp_{i}_nuipc": normalized_expediente[i]["nuipc"] if i < len(normalized_expediente) else "" for i in range(4)},
+        **{f"exp_{i}_tipificacao": normalized_expediente[i]["tipificacao"] if i < len(normalized_expediente) else "" for i in range(4)},
+        # Contactados - 9 linhas fixas
+        **{f"contactados_{i}_hora": contactados_data[i].get("hora", "") if i < len(contactados_data) else "" for i in range(9)},
+        **{f"contactados_{i}_local": contactados_data[i].get("local", "") if i < len(contactados_data) else "" for i in range(9)},
+        **{f"contactados_{i}_nome": contactados_data[i].get("nome", "") if i < len(contactados_data) else "" for i in range(9)},
+        **{f"contactados_{i}_matricula": contactados_data[i].get("matricula", "") if i < len(contactados_data) else "" for i in range(9)},
+        **{f"contactados_{i}_categoria": contactados_data[i].get("categoria", "") if i < len(contactados_data) else "" for i in range(9)},
     }
