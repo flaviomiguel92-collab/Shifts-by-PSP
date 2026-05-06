@@ -6,16 +6,29 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, ActivityIndicator } from 'react-native';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
+const DEVICE_ID_KEY = 'device_id';
+
+async function getOrCreateDeviceId(): Promise<string> {
+  // Each device/browser gets a unique ID to separate data
+  let deviceId = await storage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = `device_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    await storage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+}
 
 async function ensureSessionToken(): Promise<string | null> {
   // Always request a fresh demo token on app startup so we never carry
   // an expired/invalid session_token into subsequent API calls.
-  console.log('[auth] Requesting demo token from', `${API_URL}/api/auth/demo`);
+  const deviceId = await getOrCreateDeviceId();
+  console.log('[auth] Requesting demo token for device:', deviceId);
   try {
     const authResponse = await fetch(`${API_URL}/api/auth/demo`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: deviceId }),
     });
 
     console.log('[auth] /api/auth/demo status:', authResponse.status);

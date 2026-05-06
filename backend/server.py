@@ -227,10 +227,20 @@ async def get_current_user(request: Request) -> User:
 
 # ==================== AUTH ENDPOINTS ====================
 
+class DemoAuthRequest(BaseModel):
+    device_id: Optional[str] = None
+
 @api_router.post("/auth/demo")
-async def auth_demo(response: Response):
+async def auth_demo(request: Request, response: Response):
     """Demo authentication endpoint for development/testing"""
-    user_id = "demo_user_001"
+    try:
+        body = await request.json()
+        device_id = body.get("device_id")
+    except:
+        device_id = None
+
+    # Use device_id if provided, otherwise generate one
+    user_id = device_id or f"demo_user_{int(datetime.now(timezone.utc).timestamp())}"
 
     # Get or create demo user
     existing_user = await db.users.find_one(
