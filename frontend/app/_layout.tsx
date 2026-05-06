@@ -14,24 +14,32 @@ export default function RootLayout() {
     const initializeApp = async () => {
       try {
         console.log('[init] Starting initialization...');
-        const { checkAuth } = useAuthStore.getState();
+        const { checkAuth, isAuthenticated: currentAuth } = useAuthStore.getState();
         const { loadData } = useDataStore.getState();
 
+        console.log('[init] Current auth state:', currentAuth);
+
         const authenticated = await checkAuth();
-        console.log('[init] Auth result:', authenticated);
+        const { isAuthenticated: newAuth } = useAuthStore.getState();
+        console.log('[init] checkAuth returned:', authenticated);
+        console.log('[init] New auth state:', newAuth);
 
         if (authenticated) {
           console.log('[init] Loading data...');
           try {
             await loadData();
+            console.log('[init] Data loaded successfully');
           } catch (err) {
             console.warn('[init] Data load error:', err);
           }
+        } else {
+          console.log('[init] NOT authenticated - will show login');
         }
       } catch (err) {
         console.error('[init] Init error:', err);
       } finally {
         setIsInitialized(true);
+        console.log('[init] Initialization complete');
       }
     };
 

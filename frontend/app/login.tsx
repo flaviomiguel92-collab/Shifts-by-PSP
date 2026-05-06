@@ -11,7 +11,9 @@ export default function LoginScreen() {
   const login = useAuthStore((s) => s.login);
 
   const handleLogin = async () => {
+    console.log('[login] Login button clicked');
     if (!email || !password) {
+      console.log('[login] Missing email or password');
       setError('Por favor preencha todos os campos');
       return;
     }
@@ -20,10 +22,14 @@ export default function LoginScreen() {
     setError('');
 
     try {
+      console.log('[login] Calling login with email:', email);
       await login(email, password);
+      console.log('[login] Login successful, navigating...');
       router.replace('/(tabs)');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao fazer login');
+      console.error('[login] Login failed:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Erro ao fazer login';
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
