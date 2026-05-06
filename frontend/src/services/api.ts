@@ -11,44 +11,19 @@ const getHeaders = async () => {
   };
 };
 
-// Request a fresh demo session token. Called on startup and on 401 retry.
-const refreshSessionToken = async (): Promise<string | null> => {
-  try {
-    console.log('[api] Refreshing demo session token...');
-    const res = await fetch(`${API_ROOT}/api/auth/demo`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) {
-      console.warn('[api] /api/auth/demo failed with', res.status);
-      return null;
-    }
-    const data = await res.json();
-    const token = data?.session_token ?? null;
-    if (token) {
-      await storage.setItem('session_token', token);
-      console.log('[api] session_token refreshed');
-    }
-    return token;
-  } catch (err) {
-    console.error('[api] refreshSessionToken error:', err);
-    return null;
-  }
+// On 401, clear the invalid token. User should log in again.
+const handleUnauthorized = async (): Promise<void> => {
+  console.warn('[api] 401 Unauthorized - clearing token');
+  await storage.removeItem('session_token');
 };
 
-// Wrapper around fetch that auto-retries once with a fresh session token on 401.
+// Wrapper around fetch that clears invalid tokens on 401.
 const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
   const headers = { ...(init.headers || {}), ...(await getHeaders()) };
-  let response = await fetch(url, { ...init, headers });
+  const response = await fetch(url, { ...init, headers });
 
   if (response.status === 401) {
-    console.warn('[api] 401 from', url, '- attempting token refresh and retry');
-    const token = await refreshSessionToken();
-    if (token) {
-      const retryHeaders = { ...(init.headers || {}), ...(await getHeaders()) };
-      response = await fetch(url, { ...init, headers: retryHeaders });
-    }
+    await handleUnauthorized();
   }
 
   return response;
