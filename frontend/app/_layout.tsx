@@ -1,4 +1,4 @@
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
@@ -6,38 +6,38 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<'auth' | 'app'>('auth');
   const checkAuth = useAuthStore((s) => s.checkAuth);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const loadData = useDataStore((s) => s.loadData);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Check if user has a valid session
         const authenticated = await checkAuth();
 
         if (authenticated) {
-          // Load cached data
-          await loadData();
-          // Navigate to tabs
-          router.replace('/(tabs)');
+          try {
+            await loadData();
+          } catch (err) {
+            console.warn('[init] Error loading cached data:', err);
+          }
+          setInitialRoute('app');
         } else {
-          // Navigate to login
-          router.replace('/login');
+          setInitialRoute('auth');
         }
       } catch (err) {
-        console.error('[init] Error initializing app:', err);
-        router.replace('/login');
+        console.error('[init] Auth check failed:', err);
+        setInitialRoute('auth');
       } finally {
-        setReady(true);
+        setIsReady(true);
       }
     };
 
     initializeApp();
   }, [checkAuth, loadData]);
 
-  if (!ready) {
+  if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111827' }}>
         <ActivityIndicator size="large" color="#fff" />
@@ -47,7 +47,10 @@ export default function RootLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack
+        screenOptions={{ headerShown: false }}
+        initialRouteName={initialRoute === 'auth' ? 'login' : '(tabs)'}
+      >
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
         <Stack.Screen name="index" />
