@@ -93,5 +93,5 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
         "observacao": data.observacao or "",
         "demais_efetivo": normalized_demais,
         "expediente_efetuado": normalized_expediente,
-        "contactados": [],  # Placeholder for contacted persons (to prevent 'item' undefined error in template)
+        "contactados": [{"hora": "", "local": "", "nome": "", "matricula": "", "categoria": ""}],
     }
