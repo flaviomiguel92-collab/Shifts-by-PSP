@@ -4,31 +4,39 @@ import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
+import LoginScreen from './login';
+import RegisterScreen from './register';
+import TabsLayout from './(tabs)/_layout';
+import HomeScreen from './index';
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
-  const [initialRoute, setInitialRoute] = useState<'auth' | 'app'>('auth');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const checkAuth = useAuthStore((s) => s.checkAuth);
   const loadData = useDataStore((s) => s.loadData);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        console.log('[init] Checking authentication...');
         const authenticated = await checkAuth();
+        console.log('[init] Auth check result:', authenticated);
 
         if (authenticated) {
           try {
+            console.log('[init] Loading cached data...');
             await loadData();
           } catch (err) {
             console.warn('[init] Error loading cached data:', err);
           }
-          setInitialRoute('app');
+          setIsAuthenticated(true);
         } else {
-          setInitialRoute('auth');
+          console.log('[init] User not authenticated, showing login');
+          setIsAuthenticated(false);
         }
       } catch (err) {
         console.error('[init] Auth check failed:', err);
-        setInitialRoute('auth');
+        setIsAuthenticated(false);
       } finally {
         setIsReady(true);
       }
@@ -45,14 +53,33 @@ export default function RootLayout() {
     );
   }
 
+  // If not authenticated, show login/register screens only
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="login"
+            listeners={{
+              beforeRemove: (e) => {
+                // Prevent going back from login
+                if (e.data.action.type === 'GO_BACK') {
+                  e.preventDefault();
+                }
+              },
+            }}
+          />
+          <Stack.Screen name="register" />
+        </Stack>
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
+  // If authenticated, show app screens
   return (
     <>
-      <Stack
-        screenOptions={{ headerShown: false }}
-        initialRouteName={initialRoute === 'auth' ? 'login' : '(tabs)'}
-      >
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
       </Stack>
