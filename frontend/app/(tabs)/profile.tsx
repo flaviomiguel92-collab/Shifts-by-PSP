@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, SafeAreaView, Platform } from 'react-native';
-import { router } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
@@ -49,18 +48,11 @@ export default function ProfileScreen() {
             setIsLoggingOut(true);
             console.log('[profile] Starting logout...');
             await logout();
-            console.log('[profile] Logout completed, navigating to login');
-            // Use a small delay to ensure state is updated before navigation
-            setTimeout(() => {
-              router.replace('/login');
-            }, 100);
+            console.log('[profile] Logout completed - layout will handle navigation');
           } catch (err) {
             console.error('[profile] Logout error:', err);
-            console.log('[profile] Attempting to navigate anyway due to error');
-            // Still try to navigate even on error
-            setTimeout(() => {
-              router.replace('/login');
-            }, 100);
+          } finally {
+            setIsLoggingOut(false);
           }
         },
       },
