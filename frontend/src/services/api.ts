@@ -165,6 +165,18 @@ export const deleteShift = async (id) => {
   return response.json();
 };
 
+export const resetShifts = async () => {
+  const response = await apiFetch(`${API_BASE_URL}/shifts/reset`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to reset shifts: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 export const getGratifications = async (month, year) => {
   let url = `${API_BASE_URL}/gratifications`;
   const params = new URLSearchParams();

@@ -297,6 +297,12 @@ export const useDataStore = create((set, get) => ({
   },
 
   resetCalendarData: async () => {
+    try {
+      await api.resetShifts();
+    } catch (error) {
+      console.error('Error resetting shifts on backend:', error);
+      throw error;
+    }
     set({
       shifts: [],
       shiftTypes: [],
