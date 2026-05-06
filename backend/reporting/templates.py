@@ -76,6 +76,11 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
         if cat:
             efetivo_count[cat] = efetivo_count.get(cat, 0) + 1
 
+    # Build empty contactados structure for 8 fixed lines
+    contactados_data = []
+    if hasattr(data, 'contactados') and data.contactados:
+        contactados_data = [item.model_dump() if hasattr(item, 'model_dump') else item for item in data.contactados]
+
     return {
         "generated_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         "servico_remunerado": data.servicoRemunerado or "",
@@ -91,7 +96,18 @@ def build_servico_remunerado_context(data: ServicoRemuneradoData) -> Dict[str, A
         "ordem_missao_cumprida": "Sim" if data.ordemMissaoCumprida else ("Não" if data.ordemMissaoCumprida is False else "Não respondido"),
         "justificacao": data.justificacao or "",
         "observacao": data.observacao or "",
-        "demais_efetivo": normalized_demais,
-        "expediente_efetuado": normalized_expediente,
-        "contactados": [{"hora": "", "local": "", "nome": "", "matricula": "", "categoria": ""}],
+        # Demais efetivo - 3 linhas fixas
+        **{f"demais_{i}_matricula": normalized_demais[i]["matricula"] if i < len(normalized_demais) else "" for i in range(3)},
+        **{f"demais_{i}_categoria": normalized_demais[i]["categoria"] if i < len(normalized_demais) else "Agente" for i in range(3)},
+        **{f"demais_{i}_nome": normalized_demais[i]["nome"] if i < len(normalized_demais) else "" for i in range(3)},
+        # Expediente - 3 linhas fixas
+        **{f"exp_{i}_npp": normalized_expediente[i]["npp"] if i < len(normalized_expediente) else "/" for i in range(3)},
+        **{f"exp_{i}_nuipc": normalized_expediente[i]["nuipc"] if i < len(normalized_expediente) else "" for i in range(3)},
+        **{f"exp_{i}_tipificacao": normalized_expediente[i]["tipificacao"] if i < len(normalized_expediente) else "" for i in range(3)},
+        # Contactados - 8 linhas fixas
+        **{f"contactados_{i}_hora": contactados_data[i].get("hora", "") if i < len(contactados_data) else "" for i in range(8)},
+        **{f"contactados_{i}_local": contactados_data[i].get("local", "") if i < len(contactados_data) else "" for i in range(8)},
+        **{f"contactados_{i}_nome": contactados_data[i].get("nome", "") if i < len(contactados_data) else "" for i in range(8)},
+        **{f"contactados_{i}_matricula": contactados_data[i].get("matricula", "") if i < len(contactados_data) else "" for i in range(8)},
+        **{f"contactados_{i}_categoria": contactados_data[i].get("categoria", "") if i < len(contactados_data) else "" for i in range(8)},
     }
