@@ -60,7 +60,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Shift Olama</Text>
+          <Text style={styles.headerTitle}>GestPol</Text>
           <Text style={styles.headerSubtitle}>Gestão de Turnos</Text>
         </View>
 

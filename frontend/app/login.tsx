@@ -32,7 +32,7 @@ export default function LoginScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#111827', padding: 20, justifyContent: 'center' }}>
       <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#fff', marginBottom: 30, textAlign: 'center' }}>
-        Turnos
+        GestPol
       </Text>
 
       <View style={{ marginBottom: 20 }}>
