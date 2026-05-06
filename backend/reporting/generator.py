@@ -83,8 +83,10 @@ def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
     command = [
         office_bin,
         "--headless",
+        "--norestore",
+        "--nofirststartwizard",
         "--convert-to",
-        "pdf",
+        "pdf:writer_pdf_Export:EmbedStandardFonts=true,ReduceImageResolution=false",
         "--outdir",
         str(output_dir),
         str(docx_path),
