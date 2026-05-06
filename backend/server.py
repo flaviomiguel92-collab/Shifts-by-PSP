@@ -1129,6 +1129,7 @@ async def generate_report(request_data: ReportGenerateRequest):
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error))
     except Exception as error:
+        logger.error(f"Erro ao gerar relatório: {error}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Erro ao gerar relatório: {error}")
 
     return ReportGenerateResponse(file_name=output_name, pdf_base64=pdf_base64)
