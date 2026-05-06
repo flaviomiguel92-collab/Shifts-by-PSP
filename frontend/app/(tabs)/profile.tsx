@@ -47,11 +47,13 @@ export default function ProfileScreen() {
         onPress: async () => {
           try {
             setIsLoggingOut(true);
+            console.log('[profile] Starting logout...');
             await logout();
+            console.log('[profile] Logout completed, navigating to login');
             router.replace('/login');
           } catch (err) {
+            console.error('[profile] Logout error:', err);
             Alert.alert('Erro', 'Falha ao terminar a sessão');
-          } finally {
             setIsLoggingOut(false);
           }
         },

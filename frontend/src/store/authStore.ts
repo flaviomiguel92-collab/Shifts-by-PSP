@@ -186,21 +186,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     try {
       const storedToken = await storage.getItem('session_token');
-      
+
       if (storedToken) {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${storedToken}`,
-          },
-          credentials: 'include',
-        });
+        try {
+          await fetch(`${API_URL}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${storedToken}`,
+            },
+            credentials: 'include',
+          });
+        } catch (fetchError) {
+          console.warn('Backend logout failed (continuing anyway):', fetchError);
+        }
       }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+
+      // Always clear local state regardless of backend response
       await storage.removeItem('session_token');
       set({ user: null, isAuthenticated: false, sessionToken: null });
+      return true;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
     }
   },
 }));
