@@ -954,10 +954,11 @@ class PersonCreate(BaseModel):
 @api_router.get("/occurrences", response_model=List[dict])
 async def get_occurrences(
     status: Optional[str] = None,
-    classification: Optional[str] = None
+    classification: Optional[str] = None,
+    user: User = Depends(get_current_user)
 ):
-    """Get all occurrences"""
-    query = {}
+    """Get all occurrences for the current user"""
+    query = {"user_id": user.user_id}
 
     if status:
         query["status"] = status
@@ -968,10 +969,10 @@ async def get_occurrences(
     return occurrences
 
 @api_router.get("/occurrences/{occurrence_id}")
-async def get_occurrence(occurrence_id: str):
+async def get_occurrence(occurrence_id: str, user: User = Depends(get_current_user)):
     """Get a specific occurrence"""
     occurrence = await db.occurrences.find_one(
-        {"id": occurrence_id},
+        {"id": occurrence_id, "user_id": user.user_id},
         {"_id": 0}
     )
 
@@ -981,10 +982,10 @@ async def get_occurrence(occurrence_id: str):
     return occurrence
 
 @api_router.post("/occurrences", response_model=dict)
-async def create_occurrence(occ_data: OccurrenceCreate):
+async def create_occurrence(occ_data: OccurrenceCreate, user: User = Depends(get_current_user)):
     """Create a new occurrence"""
     occurrence = Occurrence(
-        user_id="demo_user",
+        user_id=user.user_id,
         date=occ_data.date,
         time=occ_data.time,
         location=occ_data.location,
@@ -1001,11 +1002,12 @@ async def create_occurrence(occ_data: OccurrenceCreate):
 @api_router.put("/occurrences/{occurrence_id}", response_model=dict)
 async def update_occurrence(
     occurrence_id: str,
-    occ_data: OccurrenceUpdate
+    occ_data: OccurrenceUpdate,
+    user: User = Depends(get_current_user)
 ):
     """Update an existing occurrence"""
     existing = await db.occurrences.find_one(
-        {"id": occurrence_id}
+        {"id": occurrence_id, "user_id": user.user_id}
     )
 
     if not existing:
@@ -1016,18 +1018,21 @@ async def update_occurrence(
 
     if update_data:
         await db.occurrences.update_one(
-            {"id": occurrence_id},
+            {"id": occurrence_id, "user_id": user.user_id},
             {"$set": update_data}
         )
 
-    updated = await db.occurrences.find_one({"id": occurrence_id}, {"_id": 0})
+    updated = await db.occurrences.find_one(
+        {"id": occurrence_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
     return updated
 
 @api_router.delete("/occurrences/{occurrence_id}")
-async def delete_occurrence(occurrence_id: str):
+async def delete_occurrence(occurrence_id: str, user: User = Depends(get_current_user)):
     """Delete an occurrence"""
     result = await db.occurrences.delete_one(
-        {"id": occurrence_id}
+        {"id": occurrence_id, "user_id": user.user_id}
     )
 
     if result.deleted_count == 0:
