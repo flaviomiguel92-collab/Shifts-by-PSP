@@ -8,14 +8,15 @@ import { View, ActivityIndicator } from 'react-native';
 export default function RootLayout() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const checkAuth = useAuthStore((s) => s.checkAuth);
-  const loadData = useDataStore((s) => s.loadData);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
         console.log('[init] Starting initialization...');
+        const { checkAuth } = useAuthStore.getState();
+        const { loadData } = useDataStore.getState();
+
         const authenticated = await checkAuth();
         console.log('[init] Auth result:', authenticated);
         console.log('[init] isAuthenticated state:', isAuthenticated);
@@ -29,7 +30,6 @@ export default function RootLayout() {
           }
         } else {
           console.log('[init] NOT authenticated - redirecting to login');
-          // Force navigation to login
           router.replace('/login');
         }
       } catch (err) {
@@ -41,7 +41,7 @@ export default function RootLayout() {
     };
 
     initializeApp();
-  }, [checkAuth, loadData, router]);
+  }, []);
 
   // Loading screen
   if (!isInitialized) {
