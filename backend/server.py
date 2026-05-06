@@ -244,63 +244,6 @@ async def get_current_user(request: Request) -> User:
 class DemoAuthRequest(BaseModel):
     device_id: Optional[str] = None
 
-@api_router.post("/auth/demo")
-async def auth_demo(request: Request, response: Response):
-    """Demo authentication endpoint for development/testing"""
-    try:
-        body = await request.json()
-        device_id = body.get("device_id")
-    except:
-        device_id = None
-
-    # Use device_id if provided, otherwise generate one
-    user_id = device_id or f"demo_user_{int(datetime.now(timezone.utc).timestamp())}"
-
-    # Get or create demo user
-    existing_user = await db.users.find_one(
-        {"user_id": user_id},
-        {"_id": 0}
-    )
-
-    if not existing_user:
-        user = User(
-            user_id=user_id,
-            email="demo@shifolama.local",
-            name="Demo User"
-        )
-        await db.users.insert_one(user.dict())
-    else:
-        user = User(**existing_user)
-
-    # Create session token
-    session_token = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-
-    session = UserSession(
-        user_id=user_id,
-        session_token=session_token,
-        expires_at=expires_at
-    )
-
-    # Delete old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user_id})
-
-    # Insert new session
-    await db.user_sessions.insert_one(session.dict())
-
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        path="/",
-        max_age=30 * 24 * 60 * 60
-    )
-
-    return {
-        "user": user.dict(),
-        "session_token": session_token
-    }
-
 @api_router.post("/auth/register")
 async def register(data: RegisterRequest, response: Response):
     """Register a new user with email and password"""

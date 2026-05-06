@@ -187,6 +187,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const storedToken = await storage.getItem('session_token');
 
+      // Try to logout on backend
       if (storedToken) {
         try {
           await fetch(`${API_URL}/api/auth/logout`, {
@@ -197,16 +198,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             credentials: 'include',
           });
         } catch (fetchError) {
-          console.warn('Backend logout failed (continuing anyway):', fetchError);
+          console.warn('[auth] Backend logout failed (continuing anyway):', fetchError);
         }
       }
 
-      // Always clear local state regardless of backend response
+      // Always clear all local state regardless of backend response
       await storage.removeItem('session_token');
+      await storage.removeItem('device_id');
       set({ user: null, isAuthenticated: false, sessionToken: null });
+
+      console.log('[auth] Local logout complete');
       return true;
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[auth] Logout error:', error);
+      // Still clear local state even on error
+      try {
+        await storage.removeItem('session_token');
+        await storage.removeItem('device_id');
+        set({ user: null, isAuthenticated: false, sessionToken: null });
+      } catch (e) {
+        console.error('[auth] Failed to clear storage:', e);
+      }
       throw error;
     }
   },

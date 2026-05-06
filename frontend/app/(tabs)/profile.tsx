@@ -50,11 +50,17 @@ export default function ProfileScreen() {
             console.log('[profile] Starting logout...');
             await logout();
             console.log('[profile] Logout completed, navigating to login');
-            router.replace('/login');
+            // Use a small delay to ensure state is updated before navigation
+            setTimeout(() => {
+              router.replace('/login');
+            }, 100);
           } catch (err) {
             console.error('[profile] Logout error:', err);
-            Alert.alert('Erro', 'Falha ao terminar a sessão');
-            setIsLoggingOut(false);
+            console.log('[profile] Attempting to navigate anyway due to error');
+            // Still try to navigate even on error
+            setTimeout(() => {
+              router.replace('/login');
+            }, 100);
           }
         },
       },
