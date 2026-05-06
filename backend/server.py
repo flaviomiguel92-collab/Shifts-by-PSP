@@ -1063,6 +1063,25 @@ async def generate_report(request_data: ReportGenerateRequest):
 
     return ReportGenerateResponse(file_name=output_name, pdf_base64=pdf_base64)
 
+@api_router.post("/cleanup/all-data")
+async def cleanup_all_data():
+    """DANGER: Delete all shifts and cycles for all users. Use with caution!"""
+    try:
+        shifts_deleted = await db.shifts.delete_many({})
+        cycles_deleted = await db.cycles.delete_many({})
+        occurrences_deleted = await db.occurrences.delete_many({})
+        gratifications_deleted = await db.gratifications.delete_many({})
+
+        return {
+            "message": "All data cleaned successfully",
+            "shifts_deleted": shifts_deleted.deleted_count,
+            "cycles_deleted": cycles_deleted.deleted_count,
+            "occurrences_deleted": occurrences_deleted.deleted_count,
+            "gratifications_deleted": gratifications_deleted.deleted_count,
+        }
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(error)}")
+
 @api_router.get("/")
 async def root():
     return {"message": "ShiftExtra API", "version": "1.0.0"}
