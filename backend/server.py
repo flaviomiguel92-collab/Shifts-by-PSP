@@ -10,6 +10,7 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
+from passlib.context import CryptContext
 from reporting import (
     ReportGenerateRequest,
     ReportGenerateResponse,
@@ -58,6 +59,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 report_templates_registry = build_template_registry(build_servico_remunerado_context)
 
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # ==================== MODELS ====================
 
 class User(BaseModel):
@@ -65,6 +69,7 @@ class User(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
+    password_hash: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserSession(BaseModel):
@@ -76,6 +81,15 @@ class UserSession(BaseModel):
 
 class SessionRequest(BaseModel):
     session_id: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 # Shift Types: Manhã, Tarde, Noite, Férias, Folga, Excesso
 
@@ -284,6 +298,114 @@ async def auth_demo(request: Request, response: Response):
 
     return {
         "user": user.dict(),
+        "session_token": session_token
+    }
+
+@api_router.post("/auth/register")
+async def register(data: RegisterRequest, response: Response):
+    """Register a new user with email and password"""
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email já registado")
+
+    # Hash password
+    password_hash = pwd_context.hash(data.password)
+
+    # Create user
+    user_id = str(uuid.uuid4())
+    user = {
+        "user_id": user_id,
+        "email": data.email,
+        "name": data.name,
+        "password_hash": password_hash,
+        "created_at": datetime.now(timezone.utc)
+    }
+
+    await db.users.insert_one(user)
+
+    # Create session
+    session_token = str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+
+    session = {
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    }
+
+    await db.user_sessions.insert_one(session)
+
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        path="/",
+        max_age=30 * 24 * 60 * 60
+    )
+
+    return {
+        "user": {
+            "user_id": user_id,
+            "email": user["email"],
+            "name": user["name"],
+            "picture": None,
+            "created_at": user["created_at"].isoformat()
+        },
+        "session_token": session_token
+    }
+
+@api_router.post("/auth/login")
+async def login(data: LoginRequest, response: Response):
+    """Login with email and password"""
+    # Find user by email
+    user = await db.users.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+
+    # Verify password
+    if not user.get("password_hash") or not pwd_context.verify(data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+
+    user_id = user["user_id"]
+
+    # Delete old sessions
+    await db.user_sessions.delete_many({"user_id": user_id})
+
+    # Create new session
+    session_token = str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+
+    session = {
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    }
+
+    await db.user_sessions.insert_one(session)
+
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        path="/",
+        max_age=30 * 24 * 60 * 60
+    )
+
+    return {
+        "user": {
+            "user_id": user_id,
+            "email": user["email"],
+            "name": user["name"],
+            "picture": user.get("picture"),
+            "created_at": user["created_at"].isoformat()
+        },
         "session_token": session_token
     }
 

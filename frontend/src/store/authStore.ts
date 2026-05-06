@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { storage } from '../utils/storage';
 import { User } from '../types';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 
 interface AuthState {
   user: User | null;
@@ -13,6 +13,8 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setSessionToken: (token: string | null) => void;
   checkAuth: () => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
   exchangeSession: (sessionId: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
@@ -30,10 +32,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     try {
       set({ isLoading: true });
-      
+
       // Get stored session token
       const storedToken = await storage.getItem('session_token');
-      
+
       if (!storedToken) {
         set({ user: null, isAuthenticated: false, isLoading: false });
         return false;
@@ -53,17 +55,93 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const userData = await response.json();
-      set({ 
-        user: userData, 
-        isAuthenticated: true, 
+      set({
+        user: userData,
+        isAuthenticated: true,
         isLoading: false,
-        sessionToken: storedToken 
+        sessionToken: storedToken
       });
       return true;
     } catch (error) {
       console.error('Auth check error:', error);
       set({ user: null, isAuthenticated: false, isLoading: false });
       return false;
+    }
+  },
+
+  login: async (email: string, password: string) => {
+    try {
+      set({ isLoading: true });
+
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Login failed');
+      }
+
+      const data = await response.json();
+
+      // Store session token
+      await storage.setItem('session_token', data.session_token);
+
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isLoading: false,
+        sessionToken: data.session_token
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  register: async (name: string, email: string, password: string) => {
+    try {
+      set({ isLoading: true });
+
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Registration failed');
+      }
+
+      const data = await response.json();
+
+      // Store session token
+      await storage.setItem('session_token', data.session_token);
+
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isLoading: false,
+        sessionToken: data.session_token
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Register error:', error);
+      set({ isLoading: false });
+      throw error;
     }
   },
 

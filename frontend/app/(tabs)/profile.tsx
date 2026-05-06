@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, SafeAreaView, Platform } from 'react-native';
+import { router } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { storage } from '../../src/utils/storage';
 
@@ -17,6 +19,7 @@ const buildOccurrencesEndpoint = () => {
 
 export default function ProfileScreen() {
   const store = useDataStore() as any;
+  const logout = useAuthStore((s) => s.logout);
   const {
     shiftTypes,
     deleteShiftType,
@@ -33,6 +36,28 @@ export default function ProfileScreen() {
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isResetExpanded, setIsResetExpanded] = useState(false);
   const [activeReset, setActiveReset] = useState<ResetScope | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    Alert.alert('Terminar Sessão', 'Tem a certeza que deseja terminar a sessão?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Terminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsLoggingOut(true);
+            await logout();
+            router.replace('/login');
+          } catch (err) {
+            Alert.alert('Erro', 'Falha ao terminar a sessão');
+          } finally {
+            setIsLoggingOut(false);
+          }
+        },
+      },
+    ]);
+  };
   const [cfg, setCfg] = useState({
     baseSmall4h: String(gratifiedConfig?.baseSmall4h ?? ''),
     baseLarge4h: String(gratifiedConfig?.baseLarge4h ?? ''),
@@ -394,6 +419,22 @@ export default function ProfileScreen() {
           </View>
         )}
       />
+
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#EF4444',
+          padding: 14,
+          borderRadius: 8,
+          alignItems: 'center',
+          marginTop: 20,
+          marginBottom: 20,
+          opacity: isLoggingOut ? 0.6 : 1,
+        }}
+        onPress={handleLogout}
+        disabled={isLoggingOut}
+      >
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Terminar Sessão</Text>
+      </TouchableOpacity>
     </ScrollView>
     </SafeAreaView>
   );
