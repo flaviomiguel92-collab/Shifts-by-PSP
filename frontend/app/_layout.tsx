@@ -5,42 +5,46 @@ import { useDataStore } from '../src/store/dataStore';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 
-type RootRoute = 'login' | 'register' | 'home' | 'tabs';
-
 export default function RootLayout() {
   const router = useRouter();
-  const [initialRoute, setInitialRoute] = useState<RootRoute | null>(null);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkAuth = useAuthStore((s) => s.checkAuth);
   const loadData = useDataStore((s) => s.loadData);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('[init] Checking authentication...');
+        console.log('[init] Starting initialization...');
         const authenticated = await checkAuth();
-        console.log('[init] Auth check result:', authenticated);
+        console.log('[init] Auth result:', authenticated);
+        console.log('[init] isAuthenticated state:', isAuthenticated);
 
         if (authenticated) {
+          console.log('[init] Loading data...');
           try {
             await loadData();
           } catch (err) {
-            console.warn('[init] Error loading data:', err);
+            console.warn('[init] Data load error:', err);
           }
-          setInitialRoute('tabs');
         } else {
-          setInitialRoute('login');
+          console.log('[init] NOT authenticated - redirecting to login');
+          // Force navigation to login
+          router.replace('/login');
         }
       } catch (err) {
-        console.error('[init] Error:', err);
-        setInitialRoute('login');
+        console.error('[init] Init error:', err);
+        router.replace('/login');
+      } finally {
+        setIsInitialized(true);
       }
     };
 
     initializeApp();
-  }, [checkAuth, loadData]);
+  }, [checkAuth, loadData, router]);
 
-  // Show loading until we know where to route
-  if (!initialRoute) {
+  // Loading screen
+  if (!isInitialized) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111827' }}>
         <ActivityIndicator size="large" color="#fff" />
@@ -48,11 +52,12 @@ export default function RootLayout() {
     );
   }
 
-  // Route to the appropriate screen
-  if (initialRoute === 'login') {
+  // Protected: only show app if authenticated
+  if (!isAuthenticated) {
+    console.log('[layout] Not authenticated, showing login routes only');
     return (
       <>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false }} initialRouteName="login">
           <Stack.Screen name="login" />
           <Stack.Screen name="register" />
         </Stack>
@@ -61,17 +66,15 @@ export default function RootLayout() {
     );
   }
 
-  if (initialRoute === 'tabs') {
-    return (
-      <>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="index" />
-        </Stack>
-        <StatusBar style="light" />
-      </>
-    );
-  }
-
-  return null;
+  // Authenticated: show app
+  console.log('[layout] Authenticated, showing app');
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="index" />
+      </Stack>
+      <StatusBar style="light" />
+    </>
+  );
 }
