@@ -475,6 +475,14 @@ async def delete_shift(shift_id: str, user: User = Depends(get_current_user)):
 
     return {"message": "Shift deleted successfully"}
 
+@api_router.post("/shifts/reset")
+async def reset_all_shifts(user: User = Depends(get_current_user)):
+    """Delete all shifts for current user (reset)"""
+    result = await db.shifts.delete_many(
+        {"user_id": user.user_id}
+    )
+    return {"message": f"Reset: deleted {result.deleted_count} shifts"}
+
 # ==================== BULK SHIFTS ENDPOINT ====================
 
 class BulkShiftItem(BaseModel):
