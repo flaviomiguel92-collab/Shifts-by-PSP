@@ -19,7 +19,6 @@ export default function RootLayout() {
 
         const authenticated = await checkAuth();
         console.log('[init] Auth result:', authenticated);
-        console.log('[init] isAuthenticated state:', isAuthenticated);
 
         if (authenticated) {
           console.log('[init] Loading data...');
@@ -28,13 +27,9 @@ export default function RootLayout() {
           } catch (err) {
             console.warn('[init] Data load error:', err);
           }
-        } else {
-          console.log('[init] NOT authenticated - redirecting to login');
-          router.replace('/login');
         }
       } catch (err) {
         console.error('[init] Init error:', err);
-        router.replace('/login');
       } finally {
         setIsInitialized(true);
       }
