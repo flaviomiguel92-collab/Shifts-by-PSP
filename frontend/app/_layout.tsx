@@ -18,26 +18,32 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        console.log('[init] ========== INITIALIZING APP ==========');
         console.log('[init] Checking authentication...');
         const authenticated = await checkAuth();
         console.log('[init] Auth check result:', authenticated);
+        console.log('[init] Setting isAuthenticated to:', authenticated);
 
         if (authenticated) {
           try {
             console.log('[init] Loading cached data...');
             await loadData();
+            console.log('[init] Cached data loaded');
           } catch (err) {
             console.warn('[init] Error loading cached data:', err);
           }
+          console.log('[init] ROUTING TO APP (tabs)');
           setIsAuthenticated(true);
         } else {
-          console.log('[init] User not authenticated, showing login');
+          console.log('[init] ROUTING TO LOGIN');
           setIsAuthenticated(false);
         }
       } catch (err) {
         console.error('[init] Auth check failed:', err);
+        console.log('[init] ROUTING TO LOGIN (error)');
         setIsAuthenticated(false);
       } finally {
+        console.log('[init] Setting isReady to true');
         setIsReady(true);
       }
     };

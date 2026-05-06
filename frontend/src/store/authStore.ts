@@ -35,26 +35,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Get stored session token
       const storedToken = await storage.getItem('session_token');
+      console.log('[checkAuth] Stored token:', storedToken ? 'EXISTS' : 'NONE');
 
       if (!storedToken) {
+        console.log('[checkAuth] No token found, not authenticated');
         set({ user: null, isAuthenticated: false, isLoading: false });
         return false;
       }
 
+      console.log('[checkAuth] Validating token with backend...');
       const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
         },
         credentials: 'include',
       });
 
+      console.log('[checkAuth] Backend response:', response.status);
+
       if (!response.ok) {
+        console.log('[checkAuth] Token invalid, removing');
         await storage.removeItem('session_token');
         set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
         return false;
       }
 
       const userData = await response.json();
+      console.log('[checkAuth] Token valid, user:', userData?.email || userData?.user_id);
       set({
         user: userData,
         isAuthenticated: true,
@@ -63,7 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       return true;
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('[checkAuth] Error:', error);
       set({ user: null, isAuthenticated: false, isLoading: false });
       return false;
     }
