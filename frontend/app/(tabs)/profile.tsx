@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, SafeAreaView, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
@@ -13,6 +14,7 @@ const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend
 const buildOccurrencesEndpoint = () => `${API_ROOT.replace(/\/$/, '')}/api/occurrences`;
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const store = useDataStore() as any;
   const logout = useAuthStore((s) => s.logout);
   const {
@@ -44,10 +46,12 @@ export default function ProfileScreen() {
             setIsLoggingOut(true);
             console.log('[profile] Starting logout...');
             await logout();
-            console.log('[profile] Logout completed - layout will handle navigation');
+            console.log('[profile] Logout completed - navigating to login');
+            // Explicitly navigate to login after logout
+            router.replace('/login');
           } catch (err) {
             console.error('[profile] Logout error:', err);
-          } finally {
+            Alert.alert('Erro', 'Erro ao terminar a sessão');
             setIsLoggingOut(false);
           }
         },

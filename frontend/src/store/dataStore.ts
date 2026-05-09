@@ -7,8 +7,8 @@ const STORAGE_KEY = 'app_data';
 /** Keys persisted locally only (never trust disk for server-backed entities — avoids “ghost” rows). */
 const persistLocalSlice = (state: Record<string, unknown>) => ({
   shiftTypes: state.shiftTypes,
-  cycles: state.cycles,
-  gratifiedConfig: state.gratifiedConfig,
+  cycles: state.cycles,  shifts: state.shifts,
+  gratifications: state.gratifications,  gratifiedConfig: state.gratifiedConfig,
   gratifiedTemplates: state.gratifiedTemplates,
   gratifiedEntries: state.gratifiedEntries,
 });
@@ -231,6 +231,8 @@ export const useDataStore = create((set, get) => ({
     set({
       shiftTypes: parsed?.shiftTypes ?? [],
       cycles: parsed?.cycles ?? [],
+      shifts: parsed?.shifts ?? [],
+      gratifications: parsed?.gratifications ?? [],
       gratifiedConfig: parsed?.gratifiedConfig ?? get().gratifiedConfig,
       gratifiedTemplates: parsed?.gratifiedTemplates ?? [],
       gratifiedEntries: parsed?.gratifiedEntries ?? [],
