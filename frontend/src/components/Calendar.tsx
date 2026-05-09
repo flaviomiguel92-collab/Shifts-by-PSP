@@ -6,6 +6,7 @@ import { Shift, Gratification, GratificationType, GRATIFICATION_COLORS } from '.
 import { getCalendarDays, formatMonth, dateToString, WEEKDAYS, getNextMonth, getPrevMonth } from '../utils/helpers';
 import { getHolidaysMap } from '../utils/holidays';
 import { useDataStore } from '../store/dataStore';
+import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '../theme/colors';
 
 interface CalendarProps {
   month: string;
@@ -150,39 +151,46 @@ export const Calendar: React.FC<CalendarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1F2937',
-    borderRadius: 16,
-    padding: 12,
-    marginHorizontal: 16,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
   },
   navButton: {
-    padding: 8,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.backgroundTertiary,
   },
   monthTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TYPOGRAPHY.sizes.xl,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.primary,
     textTransform: 'capitalize',
   },
   weekdays: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: SPACING.sm,
   },
   weekdayCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: SPACING.sm,
   },
   weekdayText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: COLORS.textMuted,
   },
   daysGrid: {
     flexDirection: 'row',
@@ -191,51 +199,51 @@ const styles = StyleSheet.create({
   dayCell: {
     width: '14.28%',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: SPACING.xs,
     minHeight: 56,
     position: 'relative',
     overflow: 'visible',
   },
   todayCell: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderRadius: 8,
+    backgroundColor: COLORS.overlayLight,
+    borderRadius: BORDER_RADIUS.md,
   },
   dayText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#FFFFFF',
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.medium,
+    color: COLORS.textPrimary,
     marginBottom: 2,
   },
   todayText: {
-    color: '#3B82F6',
-    fontWeight: '700',
+    color: COLORS.primary,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   holidayText: {
-    color: '#EF4444',
-    fontWeight: '700',
+    color: COLORS.error,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   shiftBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.sm,
     minWidth: 24,
     alignItems: 'center',
   },
   shiftBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.bold,
     color: '#FFFFFF',
   },
   holidayBadge: {
-    paddingHorizontal: 4,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.overlayLight,
   },
   holidayBadgeText: {
     fontSize: 8,
-    fontWeight: '600',
-    color: '#EF4444',
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: COLORS.error,
   },
   emptyBadge: {
     height: 18,
@@ -250,21 +258,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: SPACING.lg,
     gap: 20,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SPACING.xs,
   },
   underlineIndicator: {
     width: 16,
     height: 3,
-    borderRadius: 2,
+    borderRadius: BORDER_RADIUS.sm,
   },
   legendText: {
-    fontSize: 10,
-    color: '#6B7280',
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.textMuted,
   },
 });

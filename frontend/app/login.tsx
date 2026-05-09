@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../src/store/authStore';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../src/theme/colors';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -36,85 +37,189 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#111827', padding: 20, justifyContent: 'center' }}>
-      <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#fff', marginBottom: 30, textAlign: 'center' }}>
-        GestPol
-      </Text>
-
-      <View style={{ marginBottom: 20 }}>
-        <Text style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 8 }}>Email</Text>
-        <TextInput
-          style={{
-            backgroundColor: '#1F2937',
-            borderRadius: 8,
-            padding: 12,
-            color: '#fff',
-            borderWidth: 1,
-            borderColor: '#374151',
-            fontSize: 16,
-          }}
-          placeholder="seu@email.com"
-          placeholderTextColor="#6B7280"
-          value={email}
-          onChangeText={setEmail}
-          editable={!isLoading}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+    <View style={styles.container}>
+      {/* Logo & Branding */}
+      <View style={styles.logoSection}>
+        <View style={styles.logoBadge}>
+          <Text style={styles.logoText}>🛡️</Text>
+        </View>
+        <Text style={styles.appTitle}>PSP Turnos</Text>
+        <Text style={styles.appSubtitle}>Gestão de Turnos Profissionais</Text>
       </View>
 
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 8 }}>Senha</Text>
-        <TextInput
-          style={{
-            backgroundColor: '#1F2937',
-            borderRadius: 8,
-            padding: 12,
-            color: '#fff',
-            borderWidth: 1,
-            borderColor: '#374151',
-            fontSize: 16,
-          }}
-          placeholder="••••••••"
-          placeholderTextColor="#6B7280"
-          value={password}
-          onChangeText={setPassword}
-          editable={!isLoading}
-          secureTextEntry
-        />
-      </View>
+      {/* Form */}
+      <View style={styles.form}>
+        {/* Email Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="seu@email.com"
+            placeholderTextColor={COLORS.textMuted}
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
 
-      {error && (
-        <Text style={{ color: '#EF4444', marginBottom: 16, textAlign: 'center' }}>
-          {error}
-        </Text>
-      )}
+        {/* Password Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Palavra-Passe</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor={COLORS.textMuted}
+            value={password}
+            onChangeText={setPassword}
+            editable={!isLoading}
+            secureTextEntry
+          />
+        </View>
 
-      <TouchableOpacity
-        style={{
-          backgroundColor: '#3B82F6',
-          borderRadius: 8,
-          padding: 14,
-          alignItems: 'center',
-          marginBottom: 16,
-          opacity: isLoading ? 0.6 : 1,
-        }}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Entrar</Text>
+        {/* Error Message */}
+        {error && (
+          <Text style={styles.error}>
+            {error}
+          </Text>
         )}
-      </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-        <Text style={{ color: '#9CA3AF' }}>Não tem conta?</Text>
-        <TouchableOpacity onPress={() => router.push('/register')} disabled={isLoading}>
-          <Text style={{ color: '#3B82F6', fontWeight: '600' }}>Criar conta</Text>
+        {/* Login Button */}
+        <TouchableOpacity
+          style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Aceder</Text>
+          )}
         </TouchableOpacity>
+
+        {/* Register Link */}
+        <View style={styles.registerRow}>
+          <Text style={styles.registerText}>Não tem conta?</Text>
+          <TouchableOpacity onPress={() => router.push('/register')} disabled={isLoading}>
+            <Text style={styles.registerLink}>Criar conta</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: SPACING['3xl'],
+  },
+  logoBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.primaryDark,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    borderWidth: 2,
+    borderColor: COLORS.primaryLight,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  logoText: {
+    fontSize: 40,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  appTitle: {
+    fontSize: TYPOGRAPHY.sizes['2xl'],
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
+  },
+  appSubtitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  form: {
+    width: '100%',
+    maxWidth: 400,
+  },
+  formGroup: {
+    marginBottom: SPACING.lg,
+  },
+  label: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: SPACING.sm,
+  },
+  input: {
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    color: COLORS.textPrimary,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    fontSize: TYPOGRAPHY.sizes.base,
+  },
+  error: {
+    color: COLORS.error,
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  registerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  registerText: {
+    color: COLORS.textMuted,
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
+  registerLink: {
+    color: COLORS.primary,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
+});
 }
