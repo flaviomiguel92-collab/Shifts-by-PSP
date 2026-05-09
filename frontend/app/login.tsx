@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../src/store/authStore';
+import { PSPLogo } from '../src/components/PSPLogo';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../src/theme/colors';
 
 export default function LoginScreen() {
@@ -40,9 +41,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       {/* Logo & Branding */}
       <View style={styles.logoSection}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>🛡️</Text>
-        </View>
+        <PSPLogo size={100} variant="badge" />
         <Text style={styles.appTitle}>PSP Turnos</Text>
         <Text style={styles.appSubtitle}>Gestão de Turnos Profissionais</Text>
       </View>

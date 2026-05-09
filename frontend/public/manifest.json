@@ -1,14 +1,14 @@
 {
-  "name": "Shift Olama - Gestão de Turnos",
-  "short_name": "Shift Olama",
-  "description": "Aplicação de gestão de turnos, gratificações e relatórios PDF",
+  "name": "PSP Turnos - Gestão de Turnos Profissionais",
+  "short_name": "PSP Turnos",
+  "description": "Sistema profissional de gestão de turnos, gratificações e relatórios para Polícia de Segurança Pública",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#111827",
-  "theme_color": "#1F2937",
-  "categories": ["productivity"],
+  "background_color": "#0F172A",
+  "theme_color": "#3B82F6",
+  "categories": ["productivity", "utilities"],
   "screenshots": [
     {
       "src": "/icon-192x192.png",
@@ -24,6 +24,11 @@
     }
   ],
   "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
     {
       "src": "/favicon.png",
       "sizes": "32x32",

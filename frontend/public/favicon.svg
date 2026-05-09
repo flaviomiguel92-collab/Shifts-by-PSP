@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!-- Background circle -->
+  <circle cx="96" cy="96" r="96" fill="#1E40AF"/>
+  
+  <!-- Outer ring -->
+  <circle cx="96" cy="96" r="88" fill="none" stroke="#60A5FA" stroke-width="3"/>
+  
+  <!-- Cap/Hat -->
+  <ellipse cx="96" cy="50" rx="45" ry="22" fill="#3B82F6"/>
+  <rect x="65" y="55" width="62" height="8" fill="#3B82F6"/>
+  
+  <!-- Star on cap -->
+  <g transform="translate(96, 45)">
+    <polygon points="0,-8 2.4,-2.4 8,-0.8 3.2,2.4 5.6,8 0,4.8 -5.6,8 -3.2,2.4 -8,-0.8 -2.4,-2.4" 
+             fill="#FFFFFF"/>
+  </g>
+  
+  <!-- Head (officer silhouette) -->
+  <circle cx="96" cy="80" r="16" fill="#FFFFFF"/>
+  
+  <!-- Shoulders/Body -->
+  <path d="M 75 100 Q 75 110 85 118 L 107 118 Q 117 110 117 100 Z" fill="#FFFFFF"/>
+  
+  <!-- Badge shield accent -->
+  <rect x="85" y="120" width="22" height="30" rx="4" fill="#60A5FA"/>
+  
+  <!-- Text arc (simplified - just PSP) -->
+  <text x="96" y="165" font-family="Arial, sans-serif" font-size="18" font-weight="bold" 
+        fill="#3B82F6" text-anchor="middle" letter-spacing="2">PSP</text>
+</svg>
