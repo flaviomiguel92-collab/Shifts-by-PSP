@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Shift } from '../types';
+import { fallbackColorForShiftTypeName } from '../utils/helpers';
 
 interface ShiftsSummaryProps {
   shifts: Shift[];
@@ -27,7 +28,7 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
       .map((name) => ({
         id: `from-shift-${name}`,
         name,
-        color: '#6B7280',
+        color: fallbackColorForShiftTypeName(name),
       }));
 
     return [...normalizedConfigured, ...unknownFromShifts];

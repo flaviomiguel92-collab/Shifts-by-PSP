@@ -22,7 +22,16 @@ import {
   ShiftType, 
   Shift,
 } from '../../src/types';
-import { formatMonth, getCalendarDays, dateToString, WEEKDAYS, getNextMonth, getPrevMonth, formatDate } from '../../src/utils/helpers';
+import {
+  formatMonth,
+  getCalendarDays,
+  dateToString,
+  WEEKDAYS,
+  getNextMonth,
+  getPrevMonth,
+  formatDate,
+  fallbackColorForShiftTypeName,
+} from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
 import { ShiftModal } from '../../src/components/ShiftModal';
 import { CycleModal } from '../../src/components/CycleModal';
@@ -74,8 +83,19 @@ export default function CalendarScreen() {
       if (!name) return;
       map.set(name, shiftType);
     });
+    // Tipos só existem no servidor (strings em shift.shift_type); se shiftTypes local falhou a hidratar,
+    // ainda mostramos cores distintas por nome em vez de tudo cinzento.
+    (shifts || []).forEach((s: any) => {
+      const n = String(s?.shift_type || '').trim();
+      if (!n || map.has(n)) return;
+      map.set(n, {
+        id: `fallback-${n}`,
+        name: n,
+        color: fallbackColorForShiftTypeName(n),
+      });
+    });
     return map;
-  }, [shiftTypes]);
+  }, [shiftTypes, shifts]);
 
   const year = parseInt(currentMonth.split('-')[0]);
   const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);

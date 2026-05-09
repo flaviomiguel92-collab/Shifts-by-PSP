@@ -69,3 +69,31 @@ export const dateToString = (date: Date): string => {
 };
 
 export const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+/** Cores quando não há tipo configurado em `shiftTypes` (ex.: storage vazio após reload). */
+const FALLBACK_SHIFT_PALETTE = [
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#8B5CF6',
+  '#EC4899',
+  '#06B6D4',
+  '#84CC16',
+];
+
+export function hashStringToUint(str: string): number {
+  let h = 0;
+  const s = String(str || '');
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+export function fallbackColorForShiftTypeName(name: string): string {
+  const key = String(name || '').trim();
+  if (!key) return '#6B7280';
+  const idx = hashStringToUint(key) % FALLBACK_SHIFT_PALETTE.length;
+  return FALLBACK_SHIFT_PALETTE[idx];
+}

@@ -105,6 +105,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Store session token
       await storage.setItem('session_token', data.session_token);
       useDataStore.getState().clearSyncedCollections();
+      try {
+        await useDataStore.getState().loadData();
+      } catch (e) {
+        console.warn('[auth] loadData after login:', e);
+      }
 
       set({
         user: data.user,
@@ -144,6 +149,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Store session token
       await storage.setItem('session_token', data.session_token);
       useDataStore.getState().clearSyncedCollections();
+      try {
+        await useDataStore.getState().loadData();
+      } catch (e) {
+        console.warn('[auth] loadData after register:', e);
+      }
 
       set({
         user: data.user,
@@ -183,6 +193,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Store session token
       await storage.setItem('session_token', data.session_token);
       useDataStore.getState().clearSyncedCollections();
+      try {
+        await useDataStore.getState().loadData();
+      } catch (e) {
+        console.warn('[auth] loadData after session exchange:', e);
+      }
       
       set({ 
         user: data.user, 
