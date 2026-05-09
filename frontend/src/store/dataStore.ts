@@ -154,6 +154,10 @@ export const useDataStore = create((set, get) => ({
     }));
   },
 
+  bulkUpsertShifts: async (items: api.BulkShiftItem[]) => {
+    return api.bulkUpsertShifts(items);
+  },
+
   // ==================== GRATIFICATIONS ====================
 
   fetchGratifications: async (month, year) => {

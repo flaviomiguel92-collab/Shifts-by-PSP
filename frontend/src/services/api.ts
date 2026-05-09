@@ -152,6 +152,29 @@ export const resetShifts = async () => {
   return response.json();
 };
 
+export type BulkShiftItem = {
+  date: string;
+  shift_type: string;
+  start_time?: string | null;
+  end_time?: string | null;
+};
+
+export const bulkUpsertShifts = async (
+  shifts: BulkShiftItem[]
+): Promise<{ created?: number; updated?: number; total?: number; message?: string }> => {
+  const response = await apiFetch(`${API_BASE_URL}/shifts/bulk`, {
+    method: 'POST',
+    body: JSON.stringify({ shifts }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Failed to bulk upsert shifts: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 export const getGratifications = async (month, year) => {
   let url = `${API_BASE_URL}/gratifications`;
   const params = new URLSearchParams();

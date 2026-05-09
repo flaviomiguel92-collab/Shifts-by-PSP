@@ -42,6 +42,7 @@ export default function CalendarScreen() {
     fetchShifts,
     createShift,
     updateShift,
+    bulkUpsertShifts,
     deleteShift,
     currentMonth,
     setCurrentMonth,
@@ -215,60 +216,32 @@ export default function CalendarScreen() {
 
       let currentDate = new Date(start);
       let i = 0;
-      let createdCount = 0;
-      let updatedCount = 0;
-      let failedCount = 0;
-      const existingByDate = new Map<string, Shift>();
-      shifts.forEach((s: any) => existingByDate.set(s.date, s));
 
+      const bulkItems: { date: string; shift_type: string }[] = [];
       while (currentDate <= end) {
         const shiftType = normalizedCycle[i % normalizedCycle.length];
-        const dateStr = formatLocalDate(currentDate);
-
-        try {
-          const existingShift = existingByDate.get(dateStr);
-
-          if (existingShift) {
-            await updateShift(existingShift.id, { shift_type: shiftType });
-            existingByDate.set(dateStr, { ...existingShift, shift_type: shiftType } as Shift);
-            updatedCount++;
-          } else {
-            const createdShift = await createShift({
-              date: dateStr,
-              shift_type: shiftType,
-            });
-            if (createdShift) {
-              existingByDate.set(dateStr, createdShift as Shift);
-            }
-            createdCount++;
-          }
-        } catch (dayError) {
-          failedCount++;
-          console.error(`Erro ao aplicar ciclo em ${dateStr}:`, dayError);
-        }
-
+        bulkItems.push({
+          date: formatLocalDate(currentDate),
+          shift_type: shiftType,
+        });
         currentDate.setDate(currentDate.getDate() + 1);
         i++;
       }
 
-      // Refresh shifts to show the newly created ones
+      const result = await bulkUpsertShifts(bulkItems);
+      const createdCount = result?.created ?? 0;
+      const updatedCount = result?.updated ?? 0;
+
       await fetchShifts(currentMonth);
 
       setEditMode('none');
       setSelectedCycle(null);
       setCycleStartDate(null);
 
-      if (failedCount > 0) {
-        Alert.alert(
-          'Ciclo aplicado com avisos',
-          `Criados: ${createdCount}\nAtualizados: ${updatedCount}\nFalhas: ${failedCount}`
-        );
-      } else {
-        Alert.alert(
-          'Sucesso!',
-          `Ciclo aplicado com sucesso!\nCriados: ${createdCount}\nAtualizados: ${updatedCount}`
-        );
-      }
+      Alert.alert(
+        'Sucesso!',
+        `Ciclo aplicado com sucesso!\nCriados: ${createdCount}\nAtualizados: ${updatedCount}`
+      );
     } catch (error) {
       console.error('Cycle error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';

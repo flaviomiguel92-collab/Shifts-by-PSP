@@ -588,14 +588,15 @@ async def create_or_update_shifts_bulk(
         end_time = shift_item.end_time
 
         if existing:
-            # Update existing shift
+            # Only patch times when provided so bulk cycle updates don't wipe existing horários
+            update_fields = {"shift_type": shift_item.shift_type}
+            if shift_item.start_time is not None:
+                update_fields["start_time"] = shift_item.start_time
+            if shift_item.end_time is not None:
+                update_fields["end_time"] = shift_item.end_time
             await db.shifts.update_one(
                 {"id": existing["id"]},
-                {"$set": {
-                    "shift_type": shift_item.shift_type,
-                    "start_time": start_time,
-                    "end_time": end_time
-                }}
+                {"$set": update_fields}
             )
             updated_count += 1
         else:
