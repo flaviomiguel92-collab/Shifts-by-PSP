@@ -6,15 +6,11 @@ import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { storage } from '../../src/utils/storage';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
-const RAW_API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://shifts-by-psp.onrender.com';
 
-const buildOccurrencesEndpoint = () => {
-  const normalized = RAW_API_URL.endsWith('/api')
-    ? RAW_API_URL.slice(0, -4)
-    : RAW_API_URL;
+/** Same base as `src/services/api.ts` — occurrences purge must hit the real backend. */
+const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 
-  return `${normalized}/api/occurrences`;
-};
+const buildOccurrencesEndpoint = () => `${API_ROOT.replace(/\/$/, '')}/api/occurrences`;
 
 export default function ProfileScreen() {
   const store = useDataStore() as any;

@@ -18,7 +18,12 @@ export default function RootLayout() {
         const { loadData } = useDataStore.getState();
         const authenticated = await checkAuth();
         if (authenticated) {
-          try { await loadData(); } catch (err) { console.warn('[init] Data load error:', err); }
+          useDataStore.getState().clearSyncedCollections();
+          try {
+            await loadData();
+          } catch (err) {
+            console.warn('[init] Data load error:', err);
+          }
         }
       } catch (err) {
         console.error('[init] Init error:', err);

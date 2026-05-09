@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { storage } from '../utils/storage';
 import { User } from '../types';
+import { useDataStore } from './dataStore';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (!storedToken) {
         console.log('[checkAuth] No token found, not authenticated');
+        useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, isLoading: false });
         return false;
       }
@@ -58,6 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!response.ok) {
         console.log('[checkAuth] Token invalid, removing');
         await storage.removeItem('session_token');
+        useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
         return false;
       }
@@ -73,6 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return true;
     } catch (error) {
       console.error('[checkAuth] Error:', error);
+      useDataStore.getState().clearSyncedCollections();
       set({ user: null, isAuthenticated: false, isLoading: false });
       return false;
     }
@@ -100,6 +104,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Store session token
       await storage.setItem('session_token', data.session_token);
+      useDataStore.getState().clearSyncedCollections();
 
       set({
         user: data.user,
@@ -138,6 +143,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Store session token
       await storage.setItem('session_token', data.session_token);
+      useDataStore.getState().clearSyncedCollections();
 
       set({
         user: data.user,
@@ -176,6 +182,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Store session token
       await storage.setItem('session_token', data.session_token);
+      useDataStore.getState().clearSyncedCollections();
       
       set({ 
         user: data.user, 
@@ -214,6 +221,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Always clear all local state regardless of backend response
       await storage.removeItem('session_token');
       await storage.removeItem('device_id');
+      useDataStore.getState().clearSyncedCollections();
       set({ user: null, isAuthenticated: false, sessionToken: null });
 
       console.log('[auth] Local logout complete');
@@ -224,6 +232,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         await storage.removeItem('session_token');
         await storage.removeItem('device_id');
+        useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, sessionToken: null });
       } catch (e) {
         console.error('[auth] Failed to clear storage:', e);

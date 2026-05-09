@@ -3,6 +3,15 @@ import * as api from '../services/api';
 import { storage } from '../utils/storage';
 
 const STORAGE_KEY = 'app_data';
+
+/** Keys persisted locally only (never trust disk for server-backed entities — avoids “ghost” rows). */
+const persistLocalSlice = (state: Record<string, unknown>) => ({
+  shiftTypes: state.shiftTypes,
+  cycles: state.cycles,
+  gratifiedConfig: state.gratifiedConfig,
+  gratifiedTemplates: state.gratifiedTemplates,
+  gratifiedEntries: state.gratifiedEntries,
+});
 const DEFAULT_GRATIFIED_CONFIG = {
   baseSmall4h: 52.73,
   baseLarge4h: 75.89,
@@ -30,6 +39,14 @@ export const useDataStore = create((set, get) => ({
   setCurrentMonth: (month) => set({ currentMonth: month }),
   setCurrentYear: (year) => set({ currentYear: year }),
 
+  /** Clears lists synced with the API — call on logout / session invalid / login to avoid cross-user or stale UI. */
+  clearSyncedCollections: () =>
+    set({
+      shifts: [],
+      gratifications: [],
+      occurrences: [],
+    }),
+
   // ==================== OCCURRENCES ====================
 
   createOccurrence: async (data) => {
@@ -38,7 +55,6 @@ export const useDataStore = create((set, get) => ({
       set((state) => ({
         occurrences: [result, ...state.occurrences],
       }));
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error creating occurrence:', error);
@@ -50,7 +66,6 @@ export const useDataStore = create((set, get) => ({
     try {
       const result = await api.getOccurrences(status, classification);
       set({ occurrences: result });
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error fetching occurrences:', error);
@@ -66,7 +81,6 @@ export const useDataStore = create((set, get) => ({
           o.id === id ? result : o
         ),
       }));
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error updating occurrence:', error);
@@ -80,7 +94,6 @@ export const useDataStore = create((set, get) => ({
       set((state) => ({
         occurrences: state.occurrences.filter((o) => o.id !== id),
       }));
-      get().saveData();
     } catch (error) {
       console.error('Error deleting occurrence:', error);
       throw error;
@@ -93,7 +106,6 @@ export const useDataStore = create((set, get) => ({
     try {
       const result = await api.getShifts(month);
       set({ shifts: result });
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error fetching shifts:', error);
@@ -113,24 +125,9 @@ export const useDataStore = create((set, get) => ({
         }
         return { shifts: [...state.shifts, result] };
       });
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error creating shift:', error);
-      const newShift = {
-        ...shift,
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      };
-      set((state) => {
-        const existingIndex = state.shifts.findIndex((s) => s.date === shift.date);
-        if (existingIndex >= 0) {
-          const updated = [...state.shifts];
-          updated[existingIndex] = { ...updated[existingIndex], ...shift };
-          return { shifts: updated };
-        }
-        return { shifts: [...state.shifts, newShift] };
-      });
-      get().saveData();
       throw error;
     }
   },
@@ -143,35 +140,18 @@ export const useDataStore = create((set, get) => ({
           s.id === id ? result : s
         ),
       }));
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error updating shift:', error);
-      set((state) => ({
-        shifts: state.shifts.map((s) =>
-          s.id === id ? { ...s, ...data } : s
-        ),
-      }));
-      get().saveData();
       throw error;
     }
   },
 
   deleteShift: async (id) => {
-    try {
-      await api.deleteShift(id);
-      set((state) => ({
-        shifts: state.shifts.filter((s) => s.id !== id),
-      }));
-      get().saveData();
-    } catch (error) {
-      console.error('Error deleting shift:', error);
-      set((state) => ({
-        shifts: state.shifts.filter((s) => s.id !== id),
-      }));
-      get().saveData();
-      throw error;
-    }
+    await api.deleteShift(id);
+    set((state) => ({
+      shifts: state.shifts.filter((s) => s.id !== id),
+    }));
   },
 
   // ==================== GRATIFICATIONS ====================
@@ -180,7 +160,6 @@ export const useDataStore = create((set, get) => ({
     try {
       const result = await api.getGratifications(month, year);
       set({ gratifications: result });
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error fetching gratifications:', error);
@@ -194,15 +173,9 @@ export const useDataStore = create((set, get) => ({
       set((state) => ({
         gratifications: [result, ...state.gratifications],
       }));
-      get().saveData();
       return result;
     } catch (error) {
       console.error('Error creating gratification:', error);
-      const newItem = { ...data, id: Date.now().toString() };
-      set((state) => ({
-        gratifications: [newItem, ...state.gratifications],
-      }));
-      get().saveData();
       throw error;
     }
   },
@@ -249,37 +222,21 @@ export const useDataStore = create((set, get) => ({
 
   loadData: async () => {
     const data = await storage.getItem(STORAGE_KEY);
-    if (data) {
-      const parsed = JSON.parse(data);
-      set({
-        ...parsed,
-        cycles: parsed?.cycles ?? [],
-        shifts: parsed?.shifts ?? [],
-        shiftTypes: parsed?.shiftTypes ?? [],
-        gratifications: parsed?.gratifications ?? [],
-        occurrences: parsed?.occurrences ?? [],
-        gratifiedConfig: parsed?.gratifiedConfig ?? get().gratifiedConfig,
-        gratifiedTemplates: parsed?.gratifiedTemplates ?? [],
-        gratifiedEntries: parsed?.gratifiedEntries ?? [],
-      });
-    }
+    if (!data) return;
+    const parsed = JSON.parse(data);
+    set({
+      shiftTypes: parsed?.shiftTypes ?? [],
+      cycles: parsed?.cycles ?? [],
+      gratifiedConfig: parsed?.gratifiedConfig ?? get().gratifiedConfig,
+      gratifiedTemplates: parsed?.gratifiedTemplates ?? [],
+      gratifiedEntries: parsed?.gratifiedEntries ?? [],
+    });
+    await get().saveData();
   },
 
   saveData: async () => {
     const state = get();
-    await storage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        shifts: state.shifts,
-        shiftTypes: state.shiftTypes,
-        gratifications: state.gratifications,
-        cycles: state.cycles,
-        occurrences: state.occurrences,
-        gratifiedConfig: state.gratifiedConfig,
-        gratifiedTemplates: state.gratifiedTemplates,
-        gratifiedEntries: state.gratifiedEntries,
-      })
-    );
+    await storage.setItem(STORAGE_KEY, JSON.stringify(persistLocalSlice(state)));
   },
 
   resetData: async () => {
@@ -427,19 +384,9 @@ export const useDataStore = create((set, get) => ({
   },
 
   deleteGratification: async (id) => {
-    try {
-      await api.deleteGratification(id);
-      set((state) => ({
-        gratifications: state.gratifications.filter((g) => g.id !== id),
-      }));
-      get().saveData();
-    } catch (error) {
-      console.error('Error deleting gratification:', error);
-      set((state) => ({
-        gratifications: state.gratifications.filter((g) => g.id !== id),
-      }));
-      get().saveData();
-      throw error;
-    }
+    await api.deleteGratification(id);
+    set((state) => ({
+      gratifications: state.gratifications.filter((g) => g.id !== id),
+    }));
   },
 }));
