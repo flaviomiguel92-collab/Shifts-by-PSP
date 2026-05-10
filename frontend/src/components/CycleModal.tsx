@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../store/dataStore';
+import { COLORS } from '../theme/colors';
 
 type CycleDraft = {
   name: string;
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   container: {
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.backgroundSecondary,
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -159,24 +160,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    color: 'white',
+    color: COLORS.textPrimary,
     fontSize: 18,
     fontWeight: '700',
   },
   sectionTitle: {
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     marginTop: 12,
     marginBottom: 6,
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#111827',
-    color: 'white',
+    backgroundColor: COLORS.background,
+    color: COLORS.textPrimary,
     padding: 10,
     borderRadius: 8,
   },
   patternRow: {
-    backgroundColor: '#111827',
+    backgroundColor: COLORS.background,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 10,
@@ -190,10 +191,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#374151',
+    backgroundColor: COLORS.backgroundTertiary,
   },
   chipText: {
-    color: '#FFFFFF',
+    color: COLORS.textPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -206,15 +207,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: '#111827',
+    backgroundColor: COLORS.background,
   },
   smallBtnText: {
-    color: '#D1D5DB',
+    color: COLORS.textSecondary,
     fontWeight: '600',
     fontSize: 12,
   },
   disabledText: {
-    color: '#6B7280',
+    color: COLORS.textMuted,
   },
   typeGrid: {
     flexDirection: 'row',
@@ -226,19 +227,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
-    backgroundColor: '#111827',
+    backgroundColor: COLORS.background,
   },
   typeButtonText: {
     fontWeight: '700',
   },
   emptyHint: {
-    color: '#6B7280',
+    color: COLORS.textMuted,
     fontSize: 12,
     marginTop: 6,
   },
   saveBtn: {
     marginTop: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   saveText: {
-    color: 'white',
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
 });

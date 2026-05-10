@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Shift } from '../types';
 import { fallbackColorForShiftTypeName } from '../utils/helpers';
+import { COLORS } from '../theme/colors';
 
 interface ShiftsSummaryProps {
   shifts: Shift[];
@@ -95,7 +96,7 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 16,
     padding: 16,
     width: '100%',

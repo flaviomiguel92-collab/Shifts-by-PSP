@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { COLORS } from '../theme/colors';
 
 interface HeaderWithBackProps {
   title: string;
@@ -29,12 +30,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.backgroundSecondary,
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 40 : 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: COLORS.backgroundTertiary,
   },
   backButton: {
     padding: 8,

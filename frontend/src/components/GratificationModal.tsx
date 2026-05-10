@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { GratificationType, GRATIFICATION_LABELS, GRATIFICATION_COLORS, Gratification } from '../types';
 import { formatDate, dateToString } from '../utils/helpers';
+import { COLORS } from '../theme/colors';
 
 interface GratificationModalProps {
   visible: boolean;
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.backgroundSecondary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.textPrimary,
   },
   closeBtn: {
     padding: 4,
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     marginBottom: 12,
     marginTop: 8,
   },
@@ -212,25 +213,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#374151',
-    backgroundColor: '#111827',
+    borderColor: COLORS.backgroundTertiary,
+    backgroundColor: COLORS.background,
   },
   typeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
   },
   typeButtonTextSelected: {
-    color: '#FFFFFF',
+    color: COLORS.textPrimary,
   },
   input: {
-    backgroundColor: '#111827',
+    backgroundColor: COLORS.background,
     borderRadius: 12,
     padding: 14,
-    color: '#FFFFFF',
+    color: COLORS.textPrimary,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: COLORS.backgroundTertiary,
   },
   valueContainer: {
     flexDirection: 'row',

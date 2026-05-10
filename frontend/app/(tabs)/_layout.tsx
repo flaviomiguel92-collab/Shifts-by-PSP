@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, useWindowDimensions, StyleSheet } from 'react-native';
+import { COLORS } from '../../src/theme/colors';
 
 const CalendarIcon = ({ color, size }: { color: string; size: number }) => (
   <Ionicons name="calendar" size={size} color={color} />
@@ -41,8 +42,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1F2937',
-          borderTopColor: '#374151',
+          backgroundColor: COLORS.backgroundSecondary,
+          borderTopColor: COLORS.backgroundTertiary,
           borderTopWidth: 1,
           height: tabBarHeight,
           paddingBottom: isMobileSize ? (Platform.OS === 'ios' ? 24 : 10) : 16,
@@ -59,8 +60,8 @@ export default function TabLayout() {
           maxWidth: '100%',
           overflow: 'hidden',
         },
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#6B7280',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: {
           fontSize: fontSize,
           fontWeight: '600',

@@ -4,6 +4,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
+import { COLORS } from '../src/theme/colors';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -46,8 +47,8 @@ export default function RootLayout() {
 
   if (!isInitialized) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111827' }}>
-        <ActivityIndicator size="large" color="#fff" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatCurrency } from '../utils/helpers';
+import { COLORS } from '../theme/colors';
 
 interface StatsCardProps {
   title: string;
@@ -38,7 +39,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,

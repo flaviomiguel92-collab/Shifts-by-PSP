@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '../utils/helpers';
 import { useDataStore } from '../store/dataStore';
+import { COLORS } from '../theme/colors';
 
 interface ShiftModalProps {
   visible: boolean;
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   container: {
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.backgroundSecondary,
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -231,15 +232,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    color: 'white',
+    color: COLORS.textPrimary,
     fontSize: 18,
   },
   dateText: {
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     marginBottom: 10,
   },
   sectionTitle: {
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     marginTop: 10,
     marginBottom: 5,
   },
@@ -252,30 +253,30 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: COLORS.backgroundTertiary,
   },
   typeButtonText: {
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
   },
   typeButtonTextSelected: {
-    color: '#FFF',
+    color: COLORS.textPrimary,
   },
   input: {
-    backgroundColor: '#111827',
-    color: 'white',
+    backgroundColor: COLORS.background,
+    color: COLORS.textPrimary,
     padding: 10,
     borderRadius: 8,
     flex: 1,
   },
   saveBtn: {
     marginTop: 15,
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   saveText: {
-    color: 'white',
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
 });
