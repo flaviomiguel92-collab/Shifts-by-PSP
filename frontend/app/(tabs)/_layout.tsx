@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { CustomTabBar } from '../../src/components/TabBar';
+import { SearchModal } from '../../src/components/SearchModal';
+import { search } from '../../src/utils/search';
 
 // Inject Inter font on web
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -24,16 +26,32 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 }
 
 export default function TabLayout() {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        search.open();
+      }
+      if (e.key === 'Escape') search.close();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="gratificados" />
-      <Tabs.Screen name="ocorrencias" />
-      <Tabs.Screen name="stats" />
-      <Tabs.Screen name="profile" />
-    </Tabs>
+    <>
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
+      >
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="gratificados" />
+        <Tabs.Screen name="ocorrencias" />
+        <Tabs.Screen name="stats" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
+      <SearchModal />
+    </>
   );
 }

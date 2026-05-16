@@ -37,6 +37,7 @@ import { ShiftsSummary } from '../../src/components/ShiftsSummary';
 import { SkeletonCalendarRow } from '../../src/components/ui/Skeleton';
 import { FAB } from '../../src/components/ui/FAB';
 import { toast } from '../../src/utils/toast';
+import { search } from '../../src/utils/search';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
@@ -497,17 +498,26 @@ export default function CalendarScreen() {
           <Text style={styles.customHeaderTitle}>Turnos</Text>
           <Text style={styles.customHeaderSubtitle}>{formatMonth(currentMonth)}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.toggleOptionsBtn}
-          onPress={() => setIsOptionsExpanded((prev) => !prev)}
-          activeOpacity={0.85}
-        >
-          <Ionicons
-            name={isOptionsExpanded ? 'close' : 'add'}
-            size={24}
-            color="#3B82F6"
-          />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.searchBtn}
+            onPress={() => search.open()}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="search-outline" size={20} color="#94A3B8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.toggleOptionsBtn}
+            onPress={() => setIsOptionsExpanded((prev) => !prev)}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name={isOptionsExpanded ? 'close' : 'add'}
+              size={24}
+              color="#3B82F6"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -1191,6 +1201,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#93C5FD',
     textTransform: 'capitalize',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   toggleOptionsBtn: {
     width: 44,

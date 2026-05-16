@@ -111,27 +111,40 @@
 
 ---
 
-## PENDING
+## COMPLETED (Session 5)
 
 ### Phase 9 — Dashboard Charts
-- [ ] Donut chart for shift type distribution
-- [ ] Area/line chart for monthly evolution
-- [ ] Yearly comparison chart (this year vs last year)
-- [ ] Overtime hours calculation and display
+- [x] Donut/PieChart for shift type distribution (center label with total hours)
+- [x] Area/LineChart for monthly evolution (this year, 12-month)
+- [x] Yearly comparison LineChart (this year vs last year, `data2` prop)
+- [x] Overtime hours KPI + overtime shift detection by type name heuristic
+- [x] `shiftDurationMins()` helper — parses HH:MM strings, handles overnight shifts
 
 ### Phase 10 — Gratificados Improvements
-- [ ] Search / filter entries by name or date range
-- [ ] Recurring entries (auto-repeat)
-- [ ] Income simulation (project future earnings)
-- [ ] Excel (.xlsx) export
+- [x] Search / filter entries by name in month card (TextInput with clear button)
+- [x] Excel (.xlsx) export via SheetJS — web: Blob download; native: FileSystem + Sharing
 
 ### Phase 11 — Global Search
-- [ ] Search across shifts, gratificados, and occurrences
-- [ ] Keyboard shortcut on web (Cmd+K / Ctrl+K)
+- [x] `src/utils/search.ts` — Zustand store (isOpen / open / close / toggle)
+- [x] `src/components/SearchModal.tsx` — animated modal, searches shifts + gratificados + occurrences, grouped results, max 40, min 2 chars
+- [x] Wired into `app/(tabs)/_layout.tsx` — `<SearchModal />` mounted globally, Cmd+K / Ctrl+K + Escape keyboard listener on web
+- [x] Search button (🔍) added to calendar header in `index.tsx`
 
-### Phase 12 — Profile / Settings
+### Other
+- [x] App renamed from "Shift Olama" → **"Turnos"** (app.json name + slug)
+- [x] PSP badge logo applied across all asset sizes (icon.png 1024, adaptive-icon.png 1024, splash-image.png 512, favicon.png 48)
+- [x] Animated splash screen uses real logo image instead of letter
+- [x] Ionicons web fix — added `'Ionicons'` to font-family fallback stack so PUA glyphs render correctly
+- [x] Logout double-navigation bug fixed (removed redundant `router.replace` in `doLogout`)
+
+---
+
+## PENDING
+
+### Phase 12 — Profile / Settings *(on hold)*
+- [ ] Full JSON backup — export all store data (shifts, gratificados, occurrences, cycles, shiftTypes) as downloadable `.json`
+- [ ] JSON restore — file picker import, replace store state
 - [ ] Active sessions list with revoke
-- [ ] Data backup (export full JSON) + restore
 - [ ] Theme / language preferences
 
 ### Backend
@@ -170,6 +183,20 @@
 | frontend/tsconfig.json | Session 4 | Removed noImplicitAny:false — strict:true clean |
 | backend/server.py | Session 4 | Auth fixes, route ordering, session duration |
 | backend/requirements.txt | Session 4 | Removed 6 unused heavy dependencies |
+| frontend/app/(tabs)/stats.tsx | Session 5 | PieChart donut, LineChart area + yearly comparison, overtime KPI |
+| frontend/app/(tabs)/gratificados.tsx | Session 5 | Search/filter bar, XLSX export button |
+| frontend/app/(tabs)/index.tsx | Session 5 | Search trigger button in header |
+| frontend/app/(tabs)/_layout.tsx | Session 5 | SearchModal mount + Cmd+K/Escape keyboard listener, Ionicons font fix |
+| frontend/app/(tabs)/profile.tsx | Session 5 | Logout double-nav bug fixed |
+| frontend/app/_layout.tsx | Session 5 | Animated splash uses real logo image |
+| frontend/app.json | Session 5 | Renamed app to "Turnos", slug to "turnos-psp" |
+| frontend/assets/images/icon.png | Session 5 | PSP badge logo 1024×1024 |
+| frontend/assets/images/adaptive-icon.png | Session 5 | PSP badge logo 1024×1024 |
+| frontend/assets/images/splash-image.png | Session 5 | PSP badge logo 512×512 |
+| frontend/assets/images/favicon.png | Session 5 | PSP badge logo 48×48 |
+| frontend/src/utils/search.ts | Session 5 | Created: Zustand search modal store |
+| frontend/src/components/SearchModal.tsx | Session 5 | Created: global animated search modal |
+| frontend/src/utils/exportUtils.ts | Session 5 | Added exportGratifiedToXLSX (SheetJS) |
 
 ---
 
