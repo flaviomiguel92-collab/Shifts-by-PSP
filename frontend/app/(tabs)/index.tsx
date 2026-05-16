@@ -858,12 +858,12 @@ export default function CalendarScreen() {
       {/* Delete Confirmation Modal */}
       <Modal visible={showDeleteConfirm} animationType="fade" transparent>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ backgroundColor: '#1F2937', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
+          <View style={{ backgroundColor: 'rgba(11, 17, 32, 0.85)', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Eliminar turno</Text>
             <Text style={{ color: '#9CA3AF', marginBottom: 20 }}>Tem a certeza que quer eliminar este turno?</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#374151', padding: 10, borderRadius: 8, alignItems: 'center' }}
+                style={{ flex: 1, backgroundColor: 'rgba(30, 41, 59, 0.8)', padding: 10, borderRadius: 8, alignItems: 'center' }}
                 onPress={() => setShowDeleteConfirm(false)}
               >
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cancelar</Text>
@@ -882,12 +882,12 @@ export default function CalendarScreen() {
       {/* Delete Gratification Confirmation Modal */}
       <Modal visible={deleteGratifiedId !== null} animationType="fade" transparent>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ backgroundColor: '#1F2937', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
+          <View style={{ backgroundColor: 'rgba(11, 17, 32, 0.85)', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Eliminar gratificado</Text>
             <Text style={{ color: '#9CA3AF', marginBottom: 20 }}>Tem a certeza que quer eliminar este gratificado?</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#374151', padding: 10, borderRadius: 8, alignItems: 'center' }}
+                style={{ flex: 1, backgroundColor: 'rgba(30, 41, 59, 0.8)', padding: 10, borderRadius: 8, alignItems: 'center' }}
                 onPress={() => setDeleteGratifiedId(null)}
               >
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cancelar</Text>
@@ -909,7 +909,7 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#050816',
   },
   customHeader: {
     flexDirection: 'row',
@@ -918,9 +918,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 12,
-    backgroundColor: '#1F2937',
+    backgroundColor: '#050816',
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   customHeaderTitle: {
     fontSize: 20,
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
   quickBar: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#1F2937',
+    backgroundColor: 'rgba(11, 17, 32, 0.85)',
     marginHorizontal: 12,
     borderRadius: 12,
     marginBottom: 8,
@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
   cyclesBar: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#1F2937',
+    backgroundColor: 'rgba(11, 17, 32, 0.85)',
     marginHorizontal: 12,
     borderRadius: 12,
     marginBottom: 8,
@@ -1066,7 +1066,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     minHeight: 42,
     justifyContent: 'center',
   },
@@ -1082,13 +1082,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   calendarCard: {
-    backgroundColor: '#1F2937',
+    backgroundColor: 'rgba(11, 17, 32, 0.85)',
     borderRadius: 16,
     padding: 10,
     marginHorizontal: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: 'rgba(59, 130, 246, 0.1)',
   },
   optionsOverlay: {
     flex: 1,
@@ -1099,13 +1099,13 @@ const styles = StyleSheet.create({
     zIndex: 40,
   },
   optionsPanelFloating: {
-    backgroundColor: '#1F2937',
+    backgroundColor: 'rgba(11, 17, 32, 0.85)',
     borderRadius: 16,
     padding: 12,
     width: '100%',
     maxHeight: '60%',
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: 'rgba(59, 130, 246, 0.1)',
     zIndex: 50,
     elevation: 8,
     shadowColor: '#000000',
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
   },
   optionsDivider: {
     height: 1,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     marginVertical: 12,
   },
   calendarHeader: {
@@ -1174,14 +1174,18 @@ const styles = StyleSheet.create({
   dayCell: {
     width: '14.28%',
     alignItems: 'center',
-    paddingVertical: 3,
-    minHeight: 56,
-    borderRadius: 8,
+    paddingVertical: 4,
+    minHeight: 58,
+    borderRadius: 10,
     position: 'relative',
   },
   todayCell: {
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.85)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(59, 130, 246, 0.9)',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   gratifiedDotWrap: {
     position: 'absolute',
@@ -1285,7 +1289,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   dayDetailModal: {
-    backgroundColor: '#1F2937',
+    backgroundColor: 'rgba(11, 17, 32, 0.85)',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
@@ -1307,7 +1311,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   modalDateWeekday: {
     fontSize: 12,
@@ -1326,7 +1330,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -1361,7 +1365,7 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     marginBottom: 16,
   },
   emptyStateRow: {
@@ -1372,7 +1376,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   shiftDetailCard: {
-    backgroundColor: '#111827',
+    backgroundColor: '#050816',
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
@@ -1463,7 +1467,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   gratDetailCard: {
-    backgroundColor: '#111827',
+    backgroundColor: '#050816',
     borderRadius: 12,
     padding: 14,
   },

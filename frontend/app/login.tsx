@@ -1,223 +1,285 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
 import { PSPLogo } from '../src/components/PSPLogo';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../src/theme/colors';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passFocused, setPassFocused] = useState(false);
   const login = useAuthStore((s) => s.login);
 
   const handleLogin = async () => {
-    console.log('[login] Login button clicked');
     if (!email || !password) {
-      console.log('[login] Missing email or password');
       setError('Por favor preencha todos os campos');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
-      console.log('[login] Calling login with email:', email);
       await login(email, password);
-      console.log('[login] Login successful, navigating...');
       router.replace('/(tabs)');
     } catch (err) {
-      console.error('[login] Login failed:', err);
-      const errorMsg = err instanceof Error ? err.message : 'Erro ao fazer login';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Logo & Branding */}
-      <View style={styles.logoSection}>
-        <PSPLogo size={100} variant="badge" />
-        <Text style={styles.appTitle}>PSP Turnos</Text>
-        <Text style={styles.appSubtitle}>Gestão de Turnos Profissionais</Text>
-      </View>
+    <View style={styles.root}>
+      <LinearGradient colors={['#050816', '#0B1120', '#111827']} style={StyleSheet.absoluteFill} />
+      <View style={styles.blob1} />
+      <View style={styles.blob2} />
 
-      {/* Form */}
-      <View style={styles.form}>
-        {/* Email Field */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="seu@email.com"
-            placeholderTextColor={COLORS.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            editable={!isLoading}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.logoSection}>
+            <View style={styles.logoBadge}>
+              <PSPLogo size={68} variant="badge" />
+              <View style={styles.badgeGlow} />
+            </View>
+            <Text style={styles.appTitle}>PSP Turnos</Text>
+            <Text style={styles.appSubtitle}>GESTÃO DE TURNOS PROFISSIONAIS</Text>
+          </View>
 
-        {/* Password Field */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Palavra-Passe</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor={COLORS.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            editable={!isLoading}
-            secureTextEntry
-          />
-        </View>
+          <View style={styles.card}>
+            <View style={styles.field}>
+              <Text style={styles.label}>EMAIL</Text>
+              <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
+                <Ionicons name="mail-outline" size={17} color={emailFocused ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="seu@email.com"
+                  placeholderTextColor="#334155"
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={!isLoading}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+              </View>
+            </View>
 
-        {/* Error Message */}
-        {error && (
-          <Text style={styles.error}>
-            {error}
-          </Text>
-        )}
+            <View style={styles.field}>
+              <Text style={styles.label}>PALAVRA-PASSE</Text>
+              <View style={[styles.inputWrap, passFocused && styles.inputWrapFocused]}>
+                <Ionicons name="lock-closed-outline" size={17} color={passFocused ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="••••••••"
+                  placeholderTextColor="#334155"
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!isLoading}
+                  secureTextEntry={!showPassword}
+                  onFocus={() => setPassFocused(true)}
+                  onBlur={() => setPassFocused(false)}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={17} color="#475569" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-        {/* Login Button */}
-        <TouchableOpacity
-          style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Aceder</Text>
-          )}
-        </TouchableOpacity>
+            {!!error && (
+              <View style={styles.errorBox}>
+                <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
-        {/* Register Link */}
-        <View style={styles.registerRow}>
-          <Text style={styles.registerText}>Não tem conta?</Text>
-          <TouchableOpacity onPress={() => router.push('/register')} disabled={isLoading}>
-            <Text style={styles.registerLink}>Criar conta</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            <TouchableOpacity style={[styles.btn, isLoading && styles.btnDisabled]} onPress={handleLogin} disabled={isLoading} activeOpacity={0.85}>
+              <LinearGradient colors={['#3B82F6', '#1D4ED8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.btnGradient}>
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.btnText}>Aceder</Text>
+                    <Ionicons name="arrow-forward" size={17} color="#fff" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.registerRow}>
+              <Text style={styles.registerText}>Não tem conta? </Text>
+              <TouchableOpacity onPress={() => router.push('/register')} disabled={isLoading}>
+                <Text style={styles.registerLink}>Criar conta</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.lg,
+  root: { flex: 1, backgroundColor: '#050816' },
+  kav: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 48,
+  },
+  blob1: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    backgroundColor: 'rgba(59, 130, 246, 0.07)',
+    top: -100,
+    left: -100,
+  },
+  blob2: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(139, 92, 246, 0.06)',
+    bottom: 40,
+    right: -60,
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: SPACING['3xl'],
+    marginBottom: 36,
   },
   logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: COLORS.primaryDark,
-    justifyContent: 'center',
+    position: 'relative',
+    marginBottom: 18,
     alignItems: 'center',
-    marginBottom: SPACING.lg,
-    borderWidth: 2,
-    borderColor: COLORS.primaryLight,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
+    justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 40,
-    fontWeight: TYPOGRAPHY.weights.bold,
+  badgeGlow: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
   },
   appTitle: {
-    fontSize: TYPOGRAPHY.sizes['2xl'],
-    fontWeight: TYPOGRAPHY.weights.bold,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#F1F5F9',
+    letterSpacing: -0.5,
+    marginBottom: 6,
   },
   appSubtitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.textMuted,
-    textAlign: 'center',
+    fontSize: 10,
+    color: '#334155',
+    letterSpacing: 2,
+    fontWeight: '600',
   },
-  form: {
+  card: {
     width: '100%',
-    maxWidth: 400,
-  },
-  formGroup: {
-    marginBottom: SPACING.lg,
-  },
-  label: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: SPACING.sm,
-  },
-  input: {
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    color: COLORS.textPrimary,
+    maxWidth: 420,
+    backgroundColor: 'rgba(11, 17, 32, 0.85)',
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    fontSize: TYPOGRAPHY.sizes.base,
+    borderColor: 'rgba(59, 130, 246, 0.12)',
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 28,
+    elevation: 16,
   },
-  error: {
-    color: COLORS.error,
-    marginBottom: SPACING.lg,
-    textAlign: 'center',
-    fontSize: TYPOGRAPHY.sizes.sm,
+  field: { marginBottom: 18 },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+    letterSpacing: 1.2,
+    marginBottom: 8,
   },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.md,
-    paddingVertical: SPACING.md,
+  inputWrap: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    backgroundColor: 'rgba(5, 8, 22, 0.6)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 14,
+    height: 52,
+  },
+  inputWrapFocused: {
+    borderColor: 'rgba(59, 130, 246, 0.45)',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 5,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  inputIcon: { marginRight: 10 },
+  input: {
+    flex: 1,
+    color: '#F1F5F9',
+    fontSize: 15,
   },
-  buttonText: {
+  eyeBtn: { padding: 4, marginLeft: 6 },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  errorText: { color: '#FCA5A5', fontSize: 13, flex: 1 },
+  btn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 20,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  btnDisabled: { opacity: 0.6, shadowOpacity: 0 },
+  btnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+  },
+  btnText: {
     color: '#fff',
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: SPACING.xs,
   },
-  registerText: {
-    color: COLORS.textMuted,
-    fontSize: TYPOGRAPHY.sizes.sm,
-  },
-  registerLink: {
-    color: COLORS.primary,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    fontSize: TYPOGRAPHY.sizes.sm,
-  },
+  registerText: { color: '#334155', fontSize: 13 },
+  registerLink: { color: '#60A5FA', fontSize: 13, fontWeight: '600' },
 });
