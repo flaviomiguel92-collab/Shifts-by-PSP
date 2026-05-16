@@ -20,7 +20,7 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = 8, style 
     );
     anim.start();
     return () => anim.stop();
-  }, []);
+  }, [opacity]);
 
   return (
     <Animated.View

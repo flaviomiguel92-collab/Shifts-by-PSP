@@ -13,7 +13,6 @@ interface ShiftsSummaryProps {
 export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes, month }) => {
   const { width } = useWindowDimensions();
   const isMobileSize = width < 480;
-  const isTabletSize = width >= 480 && width < 768;
   const shiftItems = useMemo(() => {
     const normalizedConfigured = (shiftTypes || [])
       .map((item) => ({

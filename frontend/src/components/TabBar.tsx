@@ -50,7 +50,7 @@ function TabItem({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [isFocused]);
+  }, [glowOpacity, isFocused, scale]);
 
   return (
     <TouchableOpacity style={styles.tab} onPress={onPress} activeOpacity={0.7}>

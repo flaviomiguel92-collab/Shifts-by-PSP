@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from passlib.context import CryptContext
+import base64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -191,6 +192,10 @@ class CustomCycleCreate(BaseModel):
 class CustomCycleUpdate(BaseModel):
     name: Optional[str] = None
     pattern: Optional[List[str]] = None
+
+class ReportGenerateRequest(BaseModel):
+    template_id: str
+    data: dict = Field(default_factory=dict)
 
 # ==================== AUTH HELPERS ====================
 
@@ -1158,6 +1163,104 @@ async def delete_shift_type(shift_type_id: str, current_user: User = Depends(get
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Tipo de turno não encontrado.")
     return {"message": "Tipo de turno eliminado."}
+
+
+# ==================== REPORTS ====================
+
+def _pdf_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def _build_simple_pdf(lines: List[str]) -> bytes:
+    text_commands = ["BT", "/F1 11 Tf", "50 790 Td", "14 TL"]
+    for line in lines[:48]:
+        safe_line = _pdf_escape(line[:110])
+        text_commands.append(f"({safe_line}) Tj")
+        text_commands.append("T*")
+    text_commands.append("ET")
+    content = "\n".join(text_commands).encode("latin-1", errors="replace")
+
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length " + str(len(content)).encode("ascii") + b" >>\nstream\n" + content + b"\nendstream",
+    ]
+
+    pdf = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for index, obj in enumerate(objects, start=1):
+        offsets.append(len(pdf))
+        pdf.extend(f"{index} 0 obj\n".encode("ascii"))
+        pdf.extend(obj)
+        pdf.extend(b"\nendobj\n")
+
+    xref_offset = len(pdf)
+    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    pdf.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    pdf.extend(
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode("ascii")
+    )
+    return bytes(pdf)
+
+
+@api_router.post("/reports/generate", response_model=dict)
+async def generate_report(report: ReportGenerateRequest):
+    """Generate a lightweight PDF report."""
+    report_data = report.data or {}
+    report_date = str(report_data.get("reportDate") or datetime.now(timezone.utc).date())
+    title = "Relatorio de Servico Remunerado"
+    lines = [
+        title,
+        f"Template: {report.template_id}",
+        f"Data: {report_date} {report_data.get('reportHour') or ''}".strip(),
+        "",
+        f"Nome: {report_data.get('remuneratedName') or ''}",
+        f"Tipo de servico: {report_data.get('serviceType') or ''}",
+        f"Local: {report_data.get('serviceLocation') or ''}",
+        f"Referencia: {report_data.get('serviceReference') or ''}",
+        f"Efetivo total: {report_data.get('efetivoTotal') or ''}",
+        f"Chefes: {report_data.get('chefesCount') or ''}",
+        f"Agentes: {report_data.get('agentesCount') or ''}",
+        "",
+        "Graduado",
+        f"Posto: {report_data.get('graduadoPosto') or ''}",
+        f"Nome: {report_data.get('graduadoNome') or ''}",
+        f"Matricula: {report_data.get('graduadoMatricula') or ''}",
+        f"Comando: {report_data.get('graduadoComando') or ''}",
+        "",
+        f"Observacoes: {report_data.get('observacoes') or ''}",
+        f"Justificacoes: {report_data.get('justificacoes') or ''}",
+    ]
+
+    demais_efetivo = report_data.get("demaisEfetivo") or []
+    if isinstance(demais_efetivo, list) and demais_efetivo:
+        lines.extend(["", "Demais efetivo"])
+        for item in demais_efetivo[:12]:
+            if isinstance(item, dict):
+                lines.append(
+                    f"- {item.get('posto') or ''} {item.get('nome') or ''} {item.get('matricula') or ''}".strip()
+                )
+
+    expediente = report_data.get("expedienteEfetuado") or []
+    if isinstance(expediente, list) and expediente:
+        lines.extend(["", "Expediente efetuado"])
+        for item in expediente[:12]:
+            if isinstance(item, dict):
+                lines.append(
+                    f"- {item.get('descricao') or ''} {item.get('referencia') or ''}".strip()
+                )
+
+    pdf_bytes = _build_simple_pdf(lines)
+    safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in report_date)
+    return {
+        "file_name": f"relatorio_{safe_name}.pdf",
+        "mime_type": "application/pdf",
+        "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii"),
+    }
 
 
 # ==================== ROOT ENDPOINT ====================

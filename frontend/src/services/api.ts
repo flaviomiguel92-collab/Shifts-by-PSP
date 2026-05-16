@@ -30,7 +30,7 @@ const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> 
   return response;
 };
 
-export const createOccurrence = async (data) => {
+export const createOccurrence = async (data: any) => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -43,7 +43,7 @@ export const createOccurrence = async (data) => {
   return response.json();
 };
 
-export const getOccurrences = async (status, classification) => {
+export const getOccurrences = async (status?: string, classification?: string) => {
   let url = `${API_BASE_URL}/occurrences`;
   const params = new URLSearchParams();
 
@@ -63,7 +63,7 @@ export const getOccurrences = async (status, classification) => {
   return response.json();
 };
 
-export const updateOccurrence = async (id, data) => {
+export const updateOccurrence = async (id: string, data: any) => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -76,7 +76,7 @@ export const updateOccurrence = async (id, data) => {
   return response.json();
 };
 
-export const deleteOccurrence = async (id) => {
+export const deleteOccurrence = async (id: string) => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, {
     method: 'DELETE',
   });
@@ -88,7 +88,7 @@ export const deleteOccurrence = async (id) => {
   return response.json();
 };
 
-export const getShifts = async (month) => {
+export const getShifts = async (month?: string) => {
   let url = `${API_BASE_URL}/shifts`;
   if (month) {
     url += `?month=${month}`;
@@ -103,7 +103,7 @@ export const getShifts = async (month) => {
   return response.json();
 };
 
-export const createShift = async (data) => {
+export const createShift = async (data: any) => {
   const response = await apiFetch(`${API_BASE_URL}/shifts`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -116,7 +116,7 @@ export const createShift = async (data) => {
   return response.json();
 };
 
-export const updateShift = async (id, data) => {
+export const updateShift = async (id: string, data: any) => {
   const response = await apiFetch(`${API_BASE_URL}/shifts/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -129,7 +129,7 @@ export const updateShift = async (id, data) => {
   return response.json();
 };
 
-export const deleteShift = async (id) => {
+export const deleteShift = async (id: string) => {
   const response = await apiFetch(`${API_BASE_URL}/shifts/${id}`, {
     method: 'DELETE',
   });
@@ -176,7 +176,7 @@ export const bulkUpsertShifts = async (
   return response.json();
 };
 
-export const getGratifications = async (month, year) => {
+export const getGratifications = async (month?: string, year?: string) => {
   let url = `${API_BASE_URL}/gratifications`;
   const params = new URLSearchParams();
 
@@ -196,7 +196,7 @@ export const getGratifications = async (month, year) => {
   return response.json();
 };
 
-export const createGratification = async (data) => {
+export const createGratification = async (data: any) => {
   const response = await apiFetch(`${API_BASE_URL}/gratifications`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -209,7 +209,7 @@ export const createGratification = async (data) => {
   return response.json();
 };
 
-export const deleteGratification = async (id) => {
+export const deleteGratification = async (id: string) => {
   const response = await apiFetch(`${API_BASE_URL}/gratifications/${id}`, {
     method: 'DELETE',
   });
@@ -221,7 +221,7 @@ export const deleteGratification = async (id) => {
   return response.json();
 };
 
-export const getMonthlyStats = async (month) => {
+export const getMonthlyStats = async (month: string) => {
   const response = await apiFetch(`${API_BASE_URL}/stats/monthly/${month}`, {
     method: 'GET',
   });
@@ -233,7 +233,7 @@ export const getMonthlyStats = async (month) => {
   return response.json();
 };
 
-export const getYearlyStats = async (year) => {
+export const getYearlyStats = async (year: string) => {
   const response = await apiFetch(`${API_BASE_URL}/stats/yearly/${year}`, {
     method: 'GET',
   });

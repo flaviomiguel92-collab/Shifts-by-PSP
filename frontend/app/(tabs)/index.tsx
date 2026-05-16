@@ -18,10 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useDataStore } from '../../src/store/dataStore';
-import { 
-  ShiftType, 
-  Shift,
-} from '../../src/types';
+import { Shift } from '../../src/types';
 import {
   formatMonth,
   getCalendarDays,
@@ -30,7 +27,6 @@ import {
   getNextMonth,
   getPrevMonth,
   formatDate,
-  fallbackColorForShiftTypeName,
   resolveShiftColor,
 } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
@@ -38,7 +34,7 @@ import { ShiftModal } from '../../src/components/ShiftModal';
 import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
-import { SkeletonCalendarRow, Skeleton } from '../../src/components/ui/Skeleton';
+import { SkeletonCalendarRow } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/utils/toast';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
@@ -136,7 +132,7 @@ export default function CalendarScreen() {
   useEffect(() => {
     setIsLoadingShifts(true);
     fetchShifts(currentMonth).finally(() => setIsLoadingShifts(false));
-  }, [currentMonth]);
+  }, [currentMonth, fetchShifts]);
 
   useEffect(() => {
     if (isOptionsExpanded) {
@@ -335,7 +331,7 @@ export default function CalendarScreen() {
       setShowShiftModal(false);
       setShowDayDetailModal(false);
       toast.success('Turno guardado');
-    } catch (error) {
+    } catch {
       toast.error('Não foi possível guardar o turno');
     }
   };
@@ -371,14 +367,6 @@ export default function CalendarScreen() {
       setCycleStartDate(null);
     }
     setIsOptionsExpanded(false);
-  };
-
-  const handleCycleSelect = (cycle: string[]) => {
-    // Legacy helper (kept for call sites, but cycles are now objects)
-    setEditMode('cycle_start');
-    setSelectedCycle({ id: 'legacy', name: 'legacy', pattern: cycle });
-    setCycleStartDate(null);
-    setSelectedShiftType(null);
   };
 
   const cancelEditMode = () => {
@@ -424,9 +412,6 @@ export default function CalendarScreen() {
 
   // Copy all shifts from current calendar week to the following week
   const handleCopyWeek = async () => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
     // Find Mon-Sun of the week containing today (or first day of visible month if today not in view)
     const refDate = new Date(currentMonth + '-01T12:00:00');
     const dayOfWeek = refDate.getDay(); // 0=Sun

@@ -52,7 +52,7 @@ export default function RootLayout() {
     } else {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isInitialized]);
+  }, [isAuthenticated, isInitialized, router]);
 
   if (!isInitialized || !fontsLoaded) {
     return (

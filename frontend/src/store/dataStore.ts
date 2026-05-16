@@ -25,7 +25,7 @@ const DEFAULT_GRATIFIED_CONFIG = {
   largeEnd: '06:00',
 };
 
-export const useDataStore = create((set, get) => ({
+export const useDataStore = create<any>((set, get) => ({
   shifts: [],
   shiftTypes: [],
   gratifications: [],

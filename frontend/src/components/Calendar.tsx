@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { Shift, Gratification, GratificationType, GRATIFICATION_COLORS } from '../types';
+import { Shift, Gratification } from '../types';
 import { getCalendarDays, formatMonth, dateToString, WEEKDAYS, getNextMonth, getPrevMonth, resolveShiftColor } from '../utils/helpers';
 import { getHolidaysMap } from '../utils/holidays';
 import { useDataStore } from '../store/dataStore';

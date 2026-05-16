@@ -124,7 +124,7 @@ export default function StatsScreen() {
       const st = (shiftTypes || []).find((t: any) => t.name === s.shift_type);
       shiftMap.set(s.date, resolveShiftColor(s.shift_type, st?.color));
     });
-    const months = [];
+    const months: { monthStr: string; cells: (string | null)[] }[] = [];
     for (let m = 1; m <= 12; m++) {
       const monthStr = `${currentYear}-${String(m).padStart(2, '0')}`;
       const daysInMonth = new Date(parseInt(currentYear), m, 0).getDate();

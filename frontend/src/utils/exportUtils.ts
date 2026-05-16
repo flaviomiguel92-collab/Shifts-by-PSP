@@ -1,7 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
-import { formatDate, formatMonth, resolveShiftColor } from './helpers';
+import { formatMonth, resolveShiftColor } from './helpers';
 
 interface Shift {
   date: string;
@@ -75,7 +75,7 @@ export async function shareCSV(csv: string, filename: string) {
     downloadCSVWeb(csv, filename);
     return;
   }
-  const { FileSystem } = await import('expo-file-system');
+  const FileSystem = await import('expo-file-system/legacy');
   const path = `${FileSystem.documentDirectory}${filename}`;
   await FileSystem.writeAsStringAsync(path, csv, { encoding: 'utf8' });
   if (await Sharing.isAvailableAsync()) {

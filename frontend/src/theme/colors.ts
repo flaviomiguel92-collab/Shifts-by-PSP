@@ -24,6 +24,7 @@ export const COLORS = {
   textSecondary: '#CBD5E1',
   textTertiary: '#94A3B8',
   textMuted: '#475569',
+  textInactive: '#64748B',
 
   // Status
   success: '#10B981',
@@ -137,6 +138,13 @@ export const SHADOWS = {
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 10,
+  },
+  button: {
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   float: {
     shadowColor: '#000',

@@ -22,7 +22,7 @@ function ToastCard({ toast }: { toast: ToastItem }) {
       Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 120, friction: 10 }),
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [opacity, translateY]);
 
   const handleDismiss = () => {
     Animated.parallel([

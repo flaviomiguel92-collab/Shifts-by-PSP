@@ -7,8 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../../src/store/dataStore';
 import { formatCurrency, formatMonth } from '../../src/utils/helpers';
 
-type MonthlyRow = { month: string; total: number; count: number };
-
 function GlassCard({ children, style }: any) {
   return <View style={[cardStyle.card, style]}>{children}</View>;
 }

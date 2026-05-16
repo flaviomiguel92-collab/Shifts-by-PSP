@@ -13,11 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../store/dataStore';
 import { COLORS } from '../theme/colors';
 
-type CycleDraft = {
-  name: string;
-  pattern: string[];
-};
-
 interface CycleModalProps {
   visible: boolean;
   onClose: () => void;

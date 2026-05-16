@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList,
+  View, Text, TextInput, TouchableOpacity,
   Alert, ScrollView, SafeAreaView, Platform, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -74,7 +74,7 @@ export default function ProfileScreen() {
       setIsLoggingOut(true);
       await logout();
       router.replace('/login');
-    } catch (err) {
+    } catch {
       Alert.alert('Erro', 'Erro ao terminar a sessão');
       setIsLoggingOut(false);
     }
@@ -121,7 +121,11 @@ export default function ProfileScreen() {
         try { await purgeOccurrencesFromApi(); } catch { warn = 'Dados locais limpos, mas não foi possível limpar ocorrências no servidor.'; }
         await resetData();
       }
-      warn ? Alert.alert('Concluído com aviso', warn) : Alert.alert('Sucesso', 'Dados apagados com sucesso.');
+      if (warn) {
+        Alert.alert('Concluído com aviso', warn);
+      } else {
+        Alert.alert('Sucesso', 'Dados apagados com sucesso.');
+      }
     } catch {
       Alert.alert('Erro', 'Não foi possível concluir o reset.');
     } finally {

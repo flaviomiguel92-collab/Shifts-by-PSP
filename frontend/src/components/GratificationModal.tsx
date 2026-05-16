@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GratificationType, GRATIFICATION_LABELS, GRATIFICATION_COLORS, Gratification } from '../types';
-import { formatDate, dateToString } from '../utils/helpers';
+import { dateToString } from '../utils/helpers';
 import { COLORS } from '../theme/colors';
 
 interface GratificationModalProps {
