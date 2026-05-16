@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Shift Olama",
-    "slug": "shift-olama",
+    "name": "Turnos",
+    "slug": "turnos-psp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

@@ -16,7 +16,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     const style = document.createElement('style');
     style.id = '__inter_global__';
     style.textContent = `
-      * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
+      * { font-family: 'Inter', 'Ionicons', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
       input, textarea, button { font-family: inherit !important; }
     `;
     document.head.appendChild(style);

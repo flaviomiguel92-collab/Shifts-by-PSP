@@ -70,12 +70,18 @@ export default function ProfileScreen() {
   ], []);
 
   const doLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
       await logout();
-      router.replace('/login');
-    } catch {
-      Alert.alert('Erro', 'Erro ao terminar a sessão');
+      // Navigation handled by _layout.tsx watching isAuthenticated
+    } catch (err) {
+      console.error('[logout]', err);
+      if (Platform.OS === 'web') {
+        window.alert('Erro ao terminar a sessão. Tente novamente.');
+      } else {
+        Alert.alert('Erro', 'Erro ao terminar a sessão');
+      }
       setIsLoggingOut(false);
     }
   };

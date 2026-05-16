@@ -1,16 +1,31 @@
 import React, { useMemo } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Platform, TouchableOpacity,
+  Platform, TouchableOpacity, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { BarChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import { useDataStore } from '../../src/store/dataStore';
 import { formatCurrency, formatMonth, resolveShiftColor } from '../../src/utils/helpers';
 import { StatCard, StatCardRow } from '../../src/components/ui/StatCard';
 import { SectionHeader } from '../../src/components/ui/SectionHeader';
 import { COLORS } from '../../src/theme/colors';
+
+const MONTHS_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const CHART_W = Math.min(Dimensions.get('window').width - 64, 740);
+
+function shiftDurationMins(st: any): number {
+  const start = String(st?.start_time || '');
+  const end = String(st?.end_time || '');
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const startMins = sh * 60 + (sm || 0);
+  let endMins = eh * 60 + (em || 0);
+  if (endMins <= startMins) endMins += 1440;
+  return endMins - startMins;
+}
 
 function GlassCard({ children, style }: any) {
   return <View style={[styles.card, style]}>{children}</View>;
@@ -19,6 +34,7 @@ function GlassCard({ children, style }: any) {
 export default function StatsScreen() {
   const { gratifiedEntries, shifts, shiftTypes, currentYear, currentMonth, setCurrentMonth } = useDataStore() as any;
 
+  // ── Gratificados ─────────────────────────────────────────────
   const yearGrats = useMemo(() =>
     (gratifiedEntries || []).filter((g: any) => String(g.date || '').startsWith(currentYear)),
     [gratifiedEntries, currentYear]);
@@ -30,7 +46,8 @@ export default function StatsScreen() {
   const monthlyMap = useMemo(() => {
     const map: Record<string, number> = {};
     yearGrats.forEach((g: any) => {
-      const month = g.date.slice(0, 7);
+      const month = String(g.date || '').slice(0, 7);
+      if (!month) return;
       if (!map[month]) map[month] = 0;
       map[month] += g.value || 0;
     });
@@ -58,7 +75,44 @@ export default function StatsScreen() {
     ? yearlyTotal / Math.max(Object.keys(monthlyMap).length, 1)
     : 0;
 
-  // ── New KPI metrics ──────────────────────────────────────────
+  // ── Year comparison data ──────────────────────────────────────
+  const prevYear = useMemo(() => String(parseInt(currentYear) - 1), [currentYear]);
+
+  const prevYearMonthlyMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    (gratifiedEntries || [])
+      .filter((g: any) => String(g.date || '').startsWith(prevYear))
+      .forEach((g: any) => {
+        const monthKey = String(g.date || '').slice(5, 7);
+        if (!monthKey) return;
+        map[monthKey] = (map[monthKey] || 0) + (g.value || 0);
+      });
+    return map;
+  }, [gratifiedEntries, prevYear]);
+
+  const areaChartData = useMemo(() =>
+    MONTHS_SHORT.map((label, i) => {
+      const key = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
+      return { value: monthlyMap[key] || 0, label };
+    }),
+    [currentYear, monthlyMap]);
+
+  const prevAreaChartData = useMemo(() =>
+    MONTHS_SHORT.map((_, i) => {
+      const key = String(i + 1).padStart(2, '0');
+      return { value: prevYearMonthlyMap[key] || 0 };
+    }),
+    [prevYearMonthlyMap]);
+
+  const hasAreaData = areaChartData.some(d => d.value > 0);
+  const hasPrevData = prevAreaChartData.some(d => d.value > 0);
+  const areaMaxValue = Math.max(
+    ...areaChartData.map(d => d.value),
+    ...(hasPrevData ? prevAreaChartData.map(d => d.value) : [0]),
+    100,
+  );
+
+  // ── Shift KPIs ───────────────────────────────────────────────
   const yearShifts = useMemo(() =>
     (shifts || []).filter((s: any) => String(s.date || '').startsWith(currentYear)),
     [shifts, currentYear]);
@@ -67,7 +121,6 @@ export default function StatsScreen() {
     (shifts || []).filter((s: any) => String(s.date || '').startsWith(currentMonth)),
     [shifts, currentMonth]);
 
-  // Night shifts: shift types where start_time >= 18:00 OR in a type named with noite/night heuristic
   const nightShiftNames = useMemo(() => {
     const names = new Set<string>();
     (shiftTypes || []).forEach((st: any) => {
@@ -86,7 +139,6 @@ export default function StatsScreen() {
     monthShifts.filter((s: any) => nightShiftNames.has(s.shift_type)).length,
     [monthShifts, nightShiftNames]);
 
-  // Days off: any shift type with name containing folga/off/descanso or is_working === false
   const offNames = useMemo(() => {
     const names = new Set<string>();
     (shiftTypes || []).forEach((st: any) => {
@@ -102,7 +154,27 @@ export default function StatsScreen() {
     monthShifts.filter((s: any) => offNames.has(s.shift_type)).length,
     [monthShifts, offNames]);
 
-  // Shift type distribution for current month
+  const overtimeTypes = useMemo(() => {
+    const names = new Set<string>();
+    (shiftTypes || []).forEach((st: any) => {
+      if (shiftDurationMins(st) > 480) names.add(st.name);
+    });
+    return names;
+  }, [shiftTypes]);
+
+  const overtimeMonth = useMemo(() =>
+    monthShifts.filter((s: any) => overtimeTypes.has(s.shift_type)).length,
+    [monthShifts, overtimeTypes]);
+
+  const totalHoursMonth = useMemo(() => {
+    let total = 0;
+    monthShifts.forEach((s: any) => {
+      const st = (shiftTypes || []).find((t: any) => t.name === s.shift_type);
+      total += shiftDurationMins(st) / 60;
+    });
+    return Math.round(total);
+  }, [monthShifts, shiftTypes]);
+
   const shiftTypeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     monthShifts.forEach((s: any) => {
@@ -117,7 +189,15 @@ export default function StatsScreen() {
       .sort((a, b) => b.count - a.count);
   }, [monthShifts, shiftTypes]);
 
-  // Yearly heatmap data
+  const donutData = useMemo(() =>
+    shiftTypeBreakdown.filter(item => item.count > 0).map(item => ({
+      value: item.count,
+      color: item.color,
+      text: '',
+    })),
+    [shiftTypeBreakdown]);
+
+  // ── Yearly heatmap ────────────────────────────────────────────
   const heatmapData = useMemo(() => {
     const shiftMap = new Map<string, string>();
     yearShifts.forEach((s: any) => {
@@ -146,7 +226,6 @@ export default function StatsScreen() {
     '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez',
   };
 
-  // Consecutive working days up to today in the current month
   const consecutiveWorkingDays = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const sortedShifts = monthShifts
@@ -164,6 +243,8 @@ export default function StatsScreen() {
     }
     return count;
   }, [monthShifts, offNames]);
+
+  const lineSpacing = Math.floor(CHART_W / 13);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -199,45 +280,55 @@ export default function StatsScreen() {
           </View>
         </LinearGradient>
 
-        {/* Monthly KPI cards */}
+        {/* Monthly KPI cards — 3 rows of 2 */}
         <SectionHeader
           title={`Resumo de ${formatMonth(currentMonth)}`}
           style={{ paddingHorizontal: 4 }}
         />
         <StatCardRow>
-          <StatCard
-            label="Turnos este mês"
-            value={monthShifts.length}
-            icon="calendar-outline"
-            color={COLORS.primary}
-            size="sm"
-          />
-          <StatCard
-            label="Noites"
-            value={nightShiftsMonth}
-            icon="moon-outline"
-            color={COLORS.secondary}
-            size="sm"
-          />
+          <StatCard label="Turnos este mês" value={monthShifts.length} icon="calendar-outline" color={COLORS.primary} size="sm" />
+          <StatCard label="Noites" value={nightShiftsMonth} icon="moon-outline" color={COLORS.secondary} size="sm" />
         </StatCardRow>
         <StatCardRow style={{ marginTop: 10 }}>
-          <StatCard
-            label="Folgas"
-            value={daysOffMonth}
-            icon="bed-outline"
-            color={COLORS.textTertiary}
-            size="sm"
-          />
-          <StatCard
-            label="Dias consecutivos"
-            value={consecutiveWorkingDays}
-            icon="flame-outline"
-            color={COLORS.warning}
-            size="sm"
-          />
+          <StatCard label="Folgas" value={daysOffMonth} icon="bed-outline" color={COLORS.textTertiary} size="sm" />
+          <StatCard label="Dias consecutivos" value={consecutiveWorkingDays} icon="flame-outline" color={COLORS.warning} size="sm" />
+        </StatCardRow>
+        <StatCardRow style={{ marginTop: 10 }}>
+          <StatCard label="Horas trabalhadas" value={`${totalHoursMonth}h`} icon="time-outline" color={COLORS.success} size="sm" />
+          <StatCard label="Turnos >8h" value={overtimeMonth} icon="trending-up-outline" color="#EA580C" size="sm" />
         </StatCardRow>
 
-        {/* Shift type breakdown */}
+        {/* Donut chart — shift type distribution */}
+        {donutData.length > 0 && (
+          <GlassCard>
+            <Text style={styles.cardTitle}>Distribuição · {formatMonth(currentMonth)}</Text>
+            <View style={styles.donutRow}>
+              <PieChart
+                donut
+                data={donutData}
+                radius={68}
+                innerRadius={44}
+                centerLabelComponent={() => (
+                  <View style={styles.donutCenter}>
+                    <Text style={styles.donutCenterValue}>{monthShifts.length}</Text>
+                    <Text style={styles.donutCenterLabel}>turnos</Text>
+                  </View>
+                )}
+              />
+              <View style={styles.donutLegend}>
+                {shiftTypeBreakdown.map(item => (
+                  <View key={item.name} style={styles.donutLegendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                    <Text style={styles.legendName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.legendCount}>{item.count}×</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </GlassCard>
+        )}
+
+        {/* Shift type breakdown — horizontal bars */}
         {shiftTypeBreakdown.length > 0 && (
           <GlassCard>
             <SectionHeader title="Turnos do mês por tipo" />
@@ -254,6 +345,83 @@ export default function StatsScreen() {
                 </View>
               );
             })}
+          </GlassCard>
+        )}
+
+        {/* Area chart — monthly gratificados evolution */}
+        {hasAreaData && (
+          <GlassCard>
+            <Text style={styles.cardTitle}>Evolução mensal · {currentYear}</Text>
+            {hasPrevData && (
+              <View style={styles.chartLegendRow}>
+                <View style={[styles.chartLegendDot, { backgroundColor: '#3B82F6' }]} />
+                <Text style={styles.chartLegendText}>{currentYear}</Text>
+                <View style={[styles.chartLegendDot, { backgroundColor: '#8B5CF6' }]} />
+                <Text style={styles.chartLegendText}>{prevYear}</Text>
+              </View>
+            )}
+            <LineChart
+              areaChart
+              data={areaChartData}
+              data2={hasPrevData ? prevAreaChartData : undefined}
+              width={CHART_W}
+              height={140}
+              spacing={lineSpacing}
+              initialSpacing={8}
+              color1="#3B82F6"
+              color2="#8B5CF6"
+              startFillColor="rgba(59,130,246,0.28)"
+              endFillColor="rgba(59,130,246,0.02)"
+              startFillColor2="rgba(139,92,246,0.18)"
+              endFillColor2="rgba(139,92,246,0.01)"
+              dataPointsColor1="#3B82F6"
+              dataPointsColor2="#8B5CF6"
+              dataPointsRadius={3}
+              curved
+              noOfSections={3}
+              maxValue={areaMaxValue}
+              xAxisThickness={0}
+              yAxisThickness={0}
+              yAxisTextStyle={{ color: '#475569', fontSize: 9 }}
+              xAxisLabelTextStyle={{ color: '#475569', fontSize: 9 }}
+              hideRules
+              isAnimated
+            />
+          </GlassCard>
+        )}
+
+        {/* Yearly comparison — two-line chart */}
+        {hasAreaData && hasPrevData && (
+          <GlassCard>
+            <Text style={styles.cardTitle}>Comparação anual</Text>
+            <View style={styles.chartLegendRow}>
+              <View style={[styles.chartLegendDot, { backgroundColor: '#3B82F6' }]} />
+              <Text style={styles.chartLegendText}>{currentYear}</Text>
+              <View style={[styles.chartLegendDot, { backgroundColor: '#8B5CF6', borderStyle: 'dashed' }]} />
+              <Text style={styles.chartLegendText}>{prevYear}</Text>
+            </View>
+            <LineChart
+              data={areaChartData}
+              data2={prevAreaChartData}
+              width={CHART_W}
+              height={130}
+              spacing={lineSpacing}
+              initialSpacing={8}
+              color1="#3B82F6"
+              color2="#8B5CF6"
+              dataPointsColor1="#3B82F6"
+              dataPointsColor2="#8B5CF6"
+              dataPointsRadius={3}
+              curved
+              noOfSections={3}
+              maxValue={areaMaxValue}
+              xAxisThickness={0}
+              yAxisThickness={0}
+              yAxisTextStyle={{ color: '#475569', fontSize: 9 }}
+              xAxisLabelTextStyle={{ color: '#475569', fontSize: 9 }}
+              hideRules
+              isAnimated
+            />
           </GlassCard>
         )}
 
@@ -284,7 +452,7 @@ export default function StatsScreen() {
           </View>
         </GlassCard>
 
-        {/* Bar chart */}
+        {/* Bar chart — gratificados by month */}
         {chartData.length > 0 && (
           <GlassCard>
             <Text style={styles.cardTitle}>Gratificados por mês</Text>
@@ -464,6 +632,30 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 14,
   },
+  // Donut chart
+  donutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  donutCenter: { alignItems: 'center' },
+  donutCenterValue: { color: '#F1F5F9', fontWeight: '800', fontSize: 20 },
+  donutCenterLabel: { color: '#475569', fontSize: 10 },
+  donutLegend: { flex: 1, gap: 10 },
+  donutLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  legendName: { flex: 1, color: '#94A3B8', fontSize: 12 },
+  legendCount: { color: '#475569', fontSize: 12, fontWeight: '600' },
+  // Line/area chart legend
+  chartLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  chartLegendDot: { width: 8, height: 8, borderRadius: 4 },
+  chartLegendText: { color: '#475569', fontSize: 11, marginRight: 10 },
+  // Tooltip
   tooltip: {
     backgroundColor: '#0B1120',
     borderRadius: 6,
@@ -473,6 +665,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(59,130,246,0.3)',
   },
   tooltipText: { color: '#60A5FA', fontSize: 10, fontWeight: '700' },
+  // Table rows
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,6 +684,8 @@ const styles = StyleSheet.create({
   },
   tableBar: { height: 4, backgroundColor: '#3B82F6', borderRadius: 2, minWidth: 4 },
   tableValue: { color: '#10B981', fontWeight: '700', fontSize: 13, width: 90, textAlign: 'right' },
+  typeDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  // Month nav
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -525,15 +720,9 @@ const styles = StyleSheet.create({
   entryName: { color: '#E2E8F0', fontWeight: '600', fontSize: 14 },
   entryMeta: { color: '#475569', fontSize: 11, marginTop: 2 },
   entryValue: { color: '#10B981', fontWeight: '800', fontSize: 14 },
-  typeDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  heatmapGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  heatmapMonth: {
-    width: '46%',
-  },
+  // Heatmap
+  heatmapGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  heatmapMonth: { width: '46%' },
   heatmapMonthLabel: {
     color: '#475569',
     fontSize: 10,
@@ -542,14 +731,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  heatmapDayGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 2,
-  },
-  heatmapDay: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-  },
+  heatmapDayGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
+  heatmapDay: { width: 12, height: 12, borderRadius: 2 },
 });

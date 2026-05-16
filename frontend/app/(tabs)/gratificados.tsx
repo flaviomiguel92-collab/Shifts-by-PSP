@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  TouchableOpacity, Platform,
+  TouchableOpacity, Platform, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../../src/store/dataStore';
@@ -9,6 +9,8 @@ import { formatCurrency, formatMonth } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { FAB } from '../../src/components/ui/FAB';
+import { exportGratifiedToXLSX } from '../../src/utils/exportUtils';
+import { toast } from '../../src/utils/toast';
 
 function GlassCard({ children, style }: any) {
   return <View style={[cardStyle.card, style]}>{children}</View>;
@@ -34,6 +36,8 @@ export default function GratificadosScreen() {
   const { gratifiedEntries, currentMonth, setCurrentMonth, currentYear } = store;
 
   const [showModal, setShowModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const year = parseInt(today.slice(0, 4));
   const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);
@@ -128,15 +132,63 @@ export default function GratificadosScreen() {
 
         {/* Month entries */}
         <GlassCard>
-          <Text style={styles.cardTitle}>Gratificados do mês</Text>
-          {monthEntries.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="cash-outline" size={28} color="#1E293B" />
-              <Text style={styles.emptyText}>Sem gratificados no mês selecionado.</Text>
-            </View>
-          ) : (
-            monthEntries.map((g: any, i: number) => (
-              <View key={g.id} style={[styles.entryRow, i === monthEntries.length - 1 && { borderBottomWidth: 0 }]}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>Gratificados do mês</Text>
+            <TouchableOpacity
+              style={styles.xlsxBtn}
+              onPress={async () => {
+                setIsExporting(true);
+                try {
+                  await exportGratifiedToXLSX(gratifiedEntries || [], currentYear);
+                  toast.success('Excel exportado');
+                } catch {
+                  toast.error('Erro ao exportar Excel');
+                } finally {
+                  setIsExporting(false);
+                }
+              }}
+              disabled={isExporting}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="download-outline" size={13} color="#10B981" />
+              <Text style={styles.xlsxBtnText}>Excel</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search bar */}
+          <View style={styles.searchRow}>
+            <Ionicons name="search-outline" size={15} color="#475569" style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Pesquisar por nome…"
+              placeholderTextColor="#334155"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={16} color="#475569" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const filtered = q
+              ? monthEntries.filter((g: any) => String(g?.name || '').toLowerCase().includes(q))
+              : monthEntries;
+            if (filtered.length === 0) {
+              return (
+                <View style={styles.emptyState}>
+                  <Ionicons name="cash-outline" size={28} color="#1E293B" />
+                  <Text style={styles.emptyText}>
+                    {q ? 'Nenhum resultado para esta pesquisa.' : 'Sem gratificados no mês selecionado.'}
+                  </Text>
+                </View>
+              );
+            }
+            return filtered.map((g: any, i: number) => (
+              <View key={g.id} style={[styles.entryRow, i === filtered.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.entryLeft}>
                   <Text style={styles.entryName}>{g.name || 'Gratificado'}</Text>
                   <View style={styles.entryMeta}>
@@ -155,8 +207,8 @@ export default function GratificadosScreen() {
                   <Text style={styles.entryValue}>{formatCurrency(Number(g.value || 0))}</Text>
                 </View>
               </View>
-            ))
-          )}
+            ));
+          })()}
         </GlassCard>
 
         {/* Annual summary */}
@@ -266,6 +318,41 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 14,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  xlsxBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.2)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  xlsxBtnText: { color: '#10B981', fontSize: 11, fontWeight: '700' },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(5,8,22,0.5)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#F1F5F9',
+    fontSize: 13,
+    padding: 0,
   },
   monthNav: {
     flexDirection: 'row',

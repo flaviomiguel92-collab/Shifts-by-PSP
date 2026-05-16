@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as XLSX from 'xlsx';
 import { Platform } from 'react-native';
 import { formatMonth, resolveShiftColor } from './helpers';
 
@@ -22,6 +23,7 @@ interface GratifiedEntry {
   value: number;
   start_time?: string;
   end_time?: string;
+  note?: string;
 }
 
 // ─── CSV Export ─────────────────────────────────────────────────────────────
@@ -80,6 +82,56 @@ export async function shareCSV(csv: string, filename: string) {
   await FileSystem.writeAsStringAsync(path, csv, { encoding: 'utf8' });
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: filename });
+  }
+}
+
+// ─── Excel (XLSX) Export ────────────────────────────────────────────────────
+
+export async function exportGratifiedToXLSX(entries: GratifiedEntry[], year: string): Promise<void> {
+  const filtered = [...entries]
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const rows: (string | number)[][] = [
+    ['Data', 'Nome', 'Início', 'Fim', 'Valor (€)', 'Nota'],
+    ...filtered.map((e) => [
+      e.date,
+      e.name,
+      e.start_time || '',
+      e.end_time || '',
+      Number(e.value || 0),
+      e.note || '',
+    ]),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 32 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 32 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Gratificados ${year}`);
+
+  const filename = `gratificados-${year}.xlsx`;
+  const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  if (Platform.OS === 'web') {
+    const buf: ArrayBuffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const blob = new Blob([buf], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const b64: string = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+  const FileSystem = await import('expo-file-system/legacy');
+  const path = `${FileSystem.documentDirectory}${filename}`;
+  await FileSystem.writeAsStringAsync(path, b64, { encoding: 'base64' as any });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(path, { mimeType, dialogTitle: filename });
   }
 }
 

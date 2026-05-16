@@ -3,13 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import { View, Text, Animated, StyleSheet, Image } from 'react-native';
 import { COLORS } from '../src/theme/colors';
 import { ToastContainer } from '../src/components/ui/Toast';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { InstallPrompt } from '../src/components/ui/InstallPrompt';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
+
+const logoImage = require('../assets/images/icon.png');
 
 function SplashScreen() {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -34,11 +36,7 @@ function SplashScreen() {
     <View style={splashStyles.container}>
       <Animated.View style={[splashStyles.logoWrap, { opacity, transform: [{ scale }] }]}>
         <Animated.View style={[splashStyles.logoGlow, { transform: [{ scale: pulse }] }]} />
-        <View style={splashStyles.logoBox}>
-          <Text style={splashStyles.logoLetter}>S</Text>
-        </View>
-        <Text style={splashStyles.appName}>Shift</Text>
-        <Text style={splashStyles.appSub}>Gestão de Turnos</Text>
+        <Image source={logoImage} style={splashStyles.logoImage} resizeMode="contain" />
       </Animated.View>
     </View>
   );
@@ -53,43 +51,17 @@ const splashStyles = StyleSheet.create({
   },
   logoWrap: {
     alignItems: 'center',
-    gap: 12,
   },
   logoGlow: {
     position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(59, 130, 246, 0.12)',
-    top: -10,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
   },
-  logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoLetter: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#3B82F6',
-    letterSpacing: -1,
-  },
-  appName: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    letterSpacing: -0.5,
-  },
-  appSub: {
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
-    letterSpacing: 0.5,
+  logoImage: {
+    width: 200,
+    height: 200,
   },
 });
 
