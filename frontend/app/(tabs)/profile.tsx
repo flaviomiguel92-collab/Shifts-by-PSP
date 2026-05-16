@@ -69,22 +69,27 @@ export default function ProfileScreen() {
     { key: 'all' as ResetScope, title: 'Tudo', desc: 'Apaga todos os dados da aplicação neste perfil.', icon: 'trash-outline' },
   ], []);
 
-  const handleLogout = async () => {
+  const doLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      router.replace('/login');
+    } catch (err) {
+      Alert.alert('Erro', 'Erro ao terminar a sessão');
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Terminar sessão? Irá sair da aplicação.')) {
+        doLogout();
+      }
+      return;
+    }
     Alert.alert('Terminar Sessão', 'Tem a certeza que deseja terminar a sessão?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Terminar', style: 'destructive',
-        onPress: async () => {
-          try {
-            setIsLoggingOut(true);
-            await logout();
-            router.replace('/login');
-          } catch (err) {
-            Alert.alert('Erro', 'Erro ao terminar a sessão');
-            setIsLoggingOut(false);
-          }
-        },
-      },
+      { text: 'Terminar', style: 'destructive', onPress: doLogout },
     ]);
   };
 

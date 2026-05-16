@@ -6,11 +6,14 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { COLORS } from '../src/theme/colors';
 import { ToastContainer } from '../src/components/ui/Toast';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RootLayout() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [fontsLoaded] = useFonts(Ionicons.font);
 
   // Inicialização - corre só uma vez
   useEffect(() => {
@@ -51,7 +54,7 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, isInitialized]);
 
-  if (!isInitialized) {
+  if (!isInitialized || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
