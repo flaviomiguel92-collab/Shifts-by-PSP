@@ -39,6 +39,7 @@ import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
 import { SkeletonCalendarRow, Skeleton } from '../../src/components/ui/Skeleton';
+import { toast } from '../../src/utils/toast';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
@@ -333,8 +334,9 @@ export default function CalendarScreen() {
       await fetchShifts(currentMonth);
       setShowShiftModal(false);
       setShowDayDetailModal(false);
+      toast.success('Turno guardado');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível guardar o turno');
+      toast.error('Não foi possível guardar o turno');
     }
   };
 
@@ -351,9 +353,10 @@ export default function CalendarScreen() {
       setShowShiftModal(false);
       setShowDayDetailModal(false);
       setShowDeleteConfirm(false);
+      toast.success('Turno eliminado');
     } catch (error) {
       console.error('Error deleting shift:', error);
-      Alert.alert('Erro', 'Não foi possível eliminar o turno');
+      toast.error('Não foi possível eliminar o turno');
     }
   };
 
@@ -385,6 +388,91 @@ export default function CalendarScreen() {
     setCycleStartDate(null);
     setSelectedDates(new Set());
     setMultiSelectShiftPicker(false);
+  };
+
+  // Duplicate current day's shift to the next calendar day
+  const handleDuplicateShift = async () => {
+    if (!selectedShift || !selectedDate) return;
+    const next = new Date(selectedDate + 'T12:00:00');
+    next.setDate(next.getDate() + 1);
+    const nextDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+    try {
+      const existing = shiftsMap.get(nextDate);
+      if (existing) {
+        await updateShift(existing.id, {
+          shift_type: selectedShift.shift_type,
+          start_time: selectedShift.start_time,
+          end_time: selectedShift.end_time,
+          note: selectedShift.note,
+        });
+      } else {
+        await createShift({
+          date: nextDate,
+          shift_type: selectedShift.shift_type,
+          start_time: selectedShift.start_time,
+          end_time: selectedShift.end_time,
+          note: selectedShift.note,
+        });
+      }
+      await fetchShifts(currentMonth);
+      setShowDayDetailModal(false);
+      toast.success(`Turno duplicado para ${nextDate.slice(8, 10)}/${nextDate.slice(5, 7)}`);
+    } catch {
+      toast.error('Não foi possível duplicar o turno');
+    }
+  };
+
+  // Copy all shifts from current calendar week to the following week
+  const handleCopyWeek = async () => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // Find Mon-Sun of the week containing today (or first day of visible month if today not in view)
+    const refDate = new Date(currentMonth + '-01T12:00:00');
+    const dayOfWeek = refDate.getDay(); // 0=Sun
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(refDate);
+    monday.setDate(refDate.getDate() + mondayOffset);
+
+    const weekShifts: { date: string; shift_type: string; start_time?: string; end_time?: string; note?: string }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const shift = shiftsMap.get(dateStr);
+      if (shift) {
+        weekShifts.push({
+          date: dateStr,
+          shift_type: shift.shift_type,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          note: shift.note,
+        });
+      }
+    }
+
+    if (weekShifts.length === 0) {
+      toast.warning('Sem turnos nesta semana para copiar');
+      return;
+    }
+
+    const nextWeekItems = weekShifts.map((s) => {
+      const d = new Date(s.date + 'T12:00:00');
+      d.setDate(d.getDate() + 7);
+      return {
+        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        shift_type: s.shift_type,
+      };
+    });
+
+    try {
+      setIsOptionsExpanded(false);
+      await bulkUpsertShifts(nextWeekItems);
+      await fetchShifts(currentMonth);
+      toast.success(`${nextWeekItems.length} turno(s) copiado(s) para a semana seguinte`);
+    } catch {
+      toast.error('Erro ao copiar semana');
+    }
   };
 
   // Check if date is in cycle range
@@ -666,6 +754,23 @@ export default function CalendarScreen() {
 
               <View style={styles.optionsDivider} />
 
+              {/* Copy week */}
+              <View style={styles.optionsPanelSection}>
+                <Text style={styles.optionsSectionTitle}>Ações rápidas</Text>
+                <TouchableOpacity style={styles.copyWeekBtn} onPress={handleCopyWeek} activeOpacity={0.8}>
+                  <View style={styles.copyWeekIcon}>
+                    <Ionicons name="copy-outline" size={16} color="#60A5FA" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.copyWeekLabel}>Copiar semana para próxima</Text>
+                    <Text style={styles.copyWeekHint}>Copia todos os turnos desta semana para a semana seguinte</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color="#475569" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.optionsDivider} />
+
               <View style={styles.optionsPanelSection}>
                 <Text style={styles.optionsSectionTitle}>Ciclos</Text>
                 <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
@@ -897,6 +1002,17 @@ export default function CalendarScreen() {
                     <Text style={styles.actionBtnText}>Gratificado</Text>
                   </TouchableOpacity>
                 </View>
+
+                {selectedShift && (
+                  <TouchableOpacity
+                    style={styles.duplicateBtn}
+                    onPress={handleDuplicateShift}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="copy-outline" size={15} color="#60A5FA" />
+                    <Text style={styles.duplicateBtnText}>Duplicar para amanhã</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Divider */}
@@ -1678,6 +1794,53 @@ const styles = StyleSheet.create({
     right: 10,
     top: 56,
     gap: 4,
+  },
+  duplicateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59, 130, 246, 0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.18)',
+    alignSelf: 'flex-start',
+  },
+  duplicateBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#60A5FA',
+  },
+  copyWeekBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.18)',
+  },
+  copyWeekIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copyWeekLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#E2E8F0',
+    marginBottom: 2,
+  },
+  copyWeekHint: {
+    fontSize: 11,
+    color: '#475569',
   },
 
   // Multi-select styles

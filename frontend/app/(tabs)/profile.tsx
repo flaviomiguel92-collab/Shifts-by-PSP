@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  Alert, ScrollView, SafeAreaView, Platform, StyleSheet,
+  Alert, ScrollView, SafeAreaView, Platform, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { storage } from '../../src/utils/storage';
+import { exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV } from '../../src/utils/exportUtils';
+import { toast } from '../../src/utils/toast';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
 
@@ -37,13 +39,15 @@ export default function ProfileScreen() {
   const user = useAuthStore((s: any) => s.user);
   const logout = useAuthStore((s: any) => s.logout);
   const {
-    shiftTypes, deleteShiftType, resetData, resetCalendarData,
+    shifts, shiftTypes, gratifiedEntries, currentMonth,
+    deleteShiftType, resetData, resetCalendarData,
     resetGratifiedData, resetOccurrencesData,
     gratifiedConfig, setGratifiedConfig, gratifiedTemplates, deleteGratifiedTemplate,
   } = store;
 
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isResetExpanded, setIsResetExpanded] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [activeReset, setActiveReset] = useState<ResetScope | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [cfg, setCfg] = useState({
@@ -117,6 +121,29 @@ export default function ProfileScreen() {
       Alert.alert('Erro', 'Não foi possível concluir o reset.');
     } finally {
       setActiveReset(null);
+    }
+  };
+
+  const handleExport = async (type: 'pdf' | 'shifts_csv' | 'gratified_csv') => {
+    setIsExporting(true);
+    try {
+      if (type === 'pdf') {
+        await exportMonthlyPDF(shifts || [], currentMonth, shiftTypes || [], currentMonth.slice(0, 4));
+        toast.success('PDF gerado');
+      } else if (type === 'shifts_csv') {
+        const csv = exportShiftsToCSV(shifts || [], currentMonth);
+        await shareCSV(csv, `turnos-${currentMonth}.csv`);
+        toast.success('CSV de turnos exportado');
+      } else {
+        const csv = exportGratifiedToCSV(gratifiedEntries || [], currentMonth);
+        await shareCSV(csv, `gratificados-${currentMonth}.csv`);
+        toast.success('CSV de gratificados exportado');
+      }
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Erro ao exportar');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -207,6 +234,39 @@ export default function ProfileScreen() {
                 </View>
               ))
             )}
+          </GlassCard>
+        </Section>
+
+        {/* Export */}
+        <Section title="Exportar dados" icon="download-outline">
+          <GlassCard>
+            <Text style={styles.exportMonthLabel}>Mês: {currentMonth}</Text>
+            {[
+              { type: 'pdf' as const, icon: 'document-text-outline' as const, label: 'PDF — Escala do mês', color: '#EF4444', desc: 'Calendário mensal formatado para imprimir' },
+              { type: 'shifts_csv' as const, icon: 'grid-outline' as const, label: 'CSV — Turnos do mês', color: '#10B981', desc: 'Tabela de turnos para Excel' },
+              { type: 'gratified_csv' as const, icon: 'cash-outline' as const, label: 'CSV — Gratificados do mês', color: '#F59E0B', desc: 'Tabela de gratificados para Excel' },
+            ].map((item, i, arr) => (
+              <TouchableOpacity
+                key={item.type}
+                style={[styles.exportBtn, i < arr.length - 1 && styles.exportBtnBorder]}
+                onPress={() => handleExport(item.type)}
+                disabled={isExporting}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.exportIcon, { backgroundColor: `${item.color}18` }]}>
+                  {isExporting ? (
+                    <ActivityIndicator size="small" color={item.color} />
+                  ) : (
+                    <Ionicons name={item.icon} size={16} color={item.color} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.exportLabel}>{item.label}</Text>
+                  <Text style={styles.exportDesc}>{item.desc}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color="#334155" />
+              </TouchableOpacity>
+            ))}
           </GlassCard>
         </Section>
 
@@ -469,4 +529,43 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logoutText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  exportMonthLabel: {
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    paddingVertical: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+    marginBottom: 4,
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+  },
+  exportBtnBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  exportIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportLabel: {
+    color: '#CBD5E1',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  exportDesc: {
+    color: '#475569',
+    fontSize: 12,
+    marginTop: 2,
+  },
 });

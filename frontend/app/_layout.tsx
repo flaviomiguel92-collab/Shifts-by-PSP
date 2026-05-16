@@ -5,6 +5,7 @@ import { useDataStore } from '../src/store/dataStore';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { COLORS } from '../src/theme/colors';
+import { ToastContainer } from '../src/components/ui/Toast';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
       </Stack>
       <StatusBar style="light" />
+      <ToastContainer />
     </>
   );
 }

@@ -58,32 +58,33 @@
 - [x] Night shift detection (by start_time or name heuristic)
 - [x] Days off detection (by name: folga/off/descanso or is_working=false)
 - [x] Consecutive working days calculation
+- [x] Yearly heatmap: 12-month 2-column grid, each day colored by shift type
+
+### Phase 4 — Loading & Feedback
+- [x] Toast notification system (Zustand store + animated slide-in Toast component)
+- [x] Toast wired into shift save, delete, duplicate, copy week, export
+- [x] Skeleton loaders for calendar grid (SkeletonCalendarRow)
+
+### Phase 5 — Export System
+- [x] `src/utils/exportUtils.ts` — exportShiftsToCSV, exportGratifiedToCSV, shareCSV, exportMonthlyPDF
+- [x] PDF export: styled HTML calendar with KPI boxes, open in print dialog (web) or share sheet (native)
+- [x] CSV export: Blob download (web), FileSystem write + Sharing (native)
+- [x] Export section in profile.tsx with 3 export buttons (PDF, Shifts CSV, Gratificados CSV)
+
+### Phase 6 — Quick Actions
+- [x] Duplicate shift: copies selected shift to next day (with update if exists)
+- [x] Copy week: copies current week's shifts to the following week via bulkUpsertShifts
 
 ---
 
 ## PENDING
 
-### Phase 2 — Calendar Enhancements
-- [ ] Multi-select days mode (tap multiple days, apply one shift to all)
-- [ ] Duplicate shift (long-press → copy to next day)
-- [ ] Quick-apply shift from type chip (single tap on day cell)
-- [ ] Monthly heatmap indicator (colored dots per day)
+### Phase 7 — PWA Polish
+- [ ] Offline banner indicator
+- [ ] App install prompt (web)
+- [ ] Splash screen animation
 
-### Phase 3 — Dashboard Expansion
-- [ ] More KPI cards: consecutive working days, night shifts count, days off
-- [ ] Yearly comparison chart
-- [ ] Monthly shift type breakdown (pie/donut)
-
-### Phase 4 — Loading & Feedback
-- [ ] Skeleton loaders for calendar and lists
-- [ ] Pull-to-refresh animations
-- [ ] Toast notifications (success/error feedback)
-
-### Phase 5 — Export System
-- [ ] PDF export for monthly schedule
-- [ ] CSV export for shifts and gratificados
-
-### Phase 6 — Quick Actions
+### Phase 8 — Quick Actions FAB
 - [ ] Floating Action Button (FAB) for new shift / new gratificado
 
 ### Phase 7 — PWA Polish
@@ -110,6 +111,13 @@
 | frontend/src/components/ShiftModal.tsx | Session 2 | Full redesign |
 | frontend/src/store/authStore.ts | Session 1 | Auth fixes |
 | frontend/src/store/dataStore.ts | Session 1 | Data loss fix |
+| frontend/src/components/ui/Toast.tsx | Session 3 | Created: animated toast notification |
+| frontend/src/utils/toast.ts | Session 3 | Created: Zustand toast store + imperative API |
+| frontend/src/utils/exportUtils.ts | Session 3 | Created: PDF/CSV export utilities |
+| frontend/app/_layout.tsx | Session 3 | Added ToastContainer globally |
+| frontend/app/(tabs)/index.tsx | Session 3 | Multi-select, duplicate, copy week, toasts, skeletons |
+| frontend/app/(tabs)/stats.tsx | Session 3 | KPI cards, shift breakdown, yearly heatmap |
+| frontend/app/(tabs)/profile.tsx | Session 3 | Export section (PDF + CSV) |
 
 ---
 

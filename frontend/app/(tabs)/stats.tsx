@@ -117,6 +117,35 @@ export default function StatsScreen() {
       .sort((a, b) => b.count - a.count);
   }, [monthShifts, shiftTypes]);
 
+  // Yearly heatmap data
+  const heatmapData = useMemo(() => {
+    const shiftMap = new Map<string, string>();
+    yearShifts.forEach((s: any) => {
+      const st = (shiftTypes || []).find((t: any) => t.name === s.shift_type);
+      shiftMap.set(s.date, resolveShiftColor(s.shift_type, st?.color));
+    });
+    const months = [];
+    for (let m = 1; m <= 12; m++) {
+      const monthStr = `${currentYear}-${String(m).padStart(2, '0')}`;
+      const daysInMonth = new Date(parseInt(currentYear), m, 0).getDate();
+      const firstDayOfWeek = new Date(`${monthStr}-01T12:00:00`).getDay();
+      const cells: (string | null)[] = [];
+      for (let pad = 0; pad < firstDayOfWeek; pad++) cells.push(null);
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${monthStr}-${String(d).padStart(2, '0')}`;
+        cells.push(shiftMap.get(dateStr) ?? '');
+      }
+      months.push({ monthStr, cells });
+    }
+    return months;
+  }, [yearShifts, shiftTypes, currentYear]);
+
+  const MONTH_ABBR: Record<string, string> = {
+    '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr',
+    '05': 'Mai', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+    '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez',
+  };
+
   // Consecutive working days up to today in the current month
   const consecutiveWorkingDays = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -227,6 +256,33 @@ export default function StatsScreen() {
             })}
           </GlassCard>
         )}
+
+        {/* Yearly heatmap */}
+        <GlassCard>
+          <Text style={styles.cardTitle}>Calendário anual de turnos · {currentYear}</Text>
+          <View style={styles.heatmapGrid}>
+            {heatmapData.map((month) => (
+              <View key={month.monthStr} style={styles.heatmapMonth}>
+                <Text style={styles.heatmapMonthLabel}>{MONTH_ABBR[month.monthStr.slice(5, 7)]}</Text>
+                <View style={styles.heatmapDayGrid}>
+                  {month.cells.map((color, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.heatmapDay,
+                        color === null
+                          ? { backgroundColor: 'transparent' }
+                          : color
+                          ? { backgroundColor: color, opacity: 0.85 }
+                          : { backgroundColor: 'rgba(255,255,255,0.05)' },
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        </GlassCard>
 
         {/* Bar chart */}
         {chartData.length > 0 && (
@@ -470,4 +526,30 @@ const styles = StyleSheet.create({
   entryMeta: { color: '#475569', fontSize: 11, marginTop: 2 },
   entryValue: { color: '#10B981', fontWeight: '800', fontSize: 14 },
   typeDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  heatmapGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  heatmapMonth: {
+    width: '46%',
+  },
+  heatmapMonthLabel: {
+    color: '#475569',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  heatmapDayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  heatmapDay: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
 });
