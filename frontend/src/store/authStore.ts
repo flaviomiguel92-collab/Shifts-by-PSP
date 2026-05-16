@@ -3,7 +3,10 @@ import { storage } from '../utils/storage';
 import { User } from '../types';
 import { useDataStore } from './dataStore';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.error('[auth] ERRO: EXPO_PUBLIC_API_URL não definida. Configure no .env');
+}
+const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 
 interface AuthState {
   user: User | null;

@@ -2,7 +2,10 @@ import { storage } from '../utils/storage';
 import { ShiftTypeConfig, Shift, Gratification } from '../types';
 import { Occurrence } from '../types/occurrence';
 
-const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.error('[api] ERRO: EXPO_PUBLIC_API_URL não definida. Configure no .env');
+}
+const API_ROOT = process.env.EXPO_PUBLIC_API_URL || '';
 const API_BASE_URL = API_ROOT + '/api';
 
 const getHeaders = async () => {

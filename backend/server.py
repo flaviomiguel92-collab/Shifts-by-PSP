@@ -5,15 +5,37 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from passlib.context import CryptContext
 import base64
+import re
 
 ROOT_DIR = Path(__file__).parent
+
+# Date format validation helpers (anti-NoSQL-injection)
+MONTH_RE = re.compile(r'^\d{4}-(?:0[1-9]|1[0-2])$')
+YEAR_RE = re.compile(r'^\d{4}$')
+DATE_RE = re.compile(r'^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$')
+
+def validate_month_format(month: str) -> None:
+    """Raise HTTPException if month is not valid YYYY-MM."""
+    if not MONTH_RE.match(month):
+        raise HTTPException(status_code=400, detail=f"Formato de mês inválido: {month}. Use YYYY-MM")
+
+def validate_year_format(year: str) -> None:
+    """Raise HTTPException if year is not valid YYYY."""
+    if not YEAR_RE.match(year):
+        raise HTTPException(status_code=400, detail=f"Formato de ano inválido: {year}. Use YYYY")
+
+def validate_date_format(date: str) -> None:
+    """Raise HTTPException if date is not valid YYYY-MM-DD."""
+    if not DATE_RE.match(date):
+        raise HTTPException(status_code=400, detail=f"Formato de data inválido: {date}. Use YYYY-MM-DD")
+
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
@@ -25,13 +47,16 @@ db = client[os.environ.get('DB_NAME', 'shiftextra_db')]
 # Create the main app
 
 app = FastAPI()
+
+# CORS config (move to env var in production)
+CORS_ORIGINS = os.environ.get(
+    'CORS_ORIGINS',
+    'https://shifts-by-psp.vercel.app,http://localhost:3000,http://localhost:8000'
+).split(',')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://shifts-by-psp.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:8000",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,6 +108,16 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
     name: str
+
+    @validator('password')
+    def validate_password_strength(cls, v):
+        if len(v) < 8:
+            raise ValueError('A password deve ter pelo menos 8 caracteres')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('A password deve conter pelo menos uma letra maiúscula')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('A password deve conter pelo menos um número')
+        return v
 
 class LoginRequest(BaseModel):
     email: str
@@ -353,10 +388,14 @@ async def login(data: LoginRequest, response: Response):
 @api_router.post("/auth/session")
 async def create_session(session_request: SessionRequest, response: Response):
     """Exchange session_id for session_token via Emergent Auth"""
+    auth_api_url = os.environ.get(
+        'AUTH_API_URL',
+        'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data'
+    )
     try:
         async with httpx.AsyncClient() as client_http:
             auth_response = await client_http.get(
-                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                auth_api_url,
                 headers={"X-Session-ID": session_request.session_id}
             )
 
@@ -365,7 +404,8 @@ async def create_session(session_request: SessionRequest, response: Response):
 
             auth_data = auth_response.json()
     except httpx.RequestError as e:
-        logger.error(f"Auth request error: {e}")
+        # Sanitize: don't log the full error details that could contain sensitive info
+        logger.error("Auth service request failed")
         raise HTTPException(status_code=500, detail="Authentication service unavailable")
 
     user_id = f"user_{uuid.uuid4().hex[:12]}"
@@ -478,6 +518,7 @@ async def get_shifts(
     query = {"user_id": user.user_id}
 
     if month:
+        validate_month_format(month)
         query["date"] = {"$regex": f"^{month}"}
 
     shifts = await db.shifts.find(query, {"_id": 0}).sort("date", 1).to_list(1000)
@@ -602,8 +643,10 @@ async def get_gratifications(
     query = {"user_id": user.user_id}
 
     if month:
+        validate_month_format(month)
         query["date"] = {"$regex": f"^{month}"}
     elif year:
+        validate_year_format(year)
         query["date"] = {"$regex": f"^{year}"}
 
     gratifications = await db.gratifications.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
@@ -670,6 +713,7 @@ async def delete_gratification(grat_id: str, user: User = Depends(get_current_us
 @api_router.get("/stats/monthly/{month}")
 async def get_monthly_stats(month: str, user: User = Depends(get_current_user)):
     """Get monthly statistics (month format: YYYY-MM)"""
+    validate_month_format(month)
     gratifications = await db.gratifications.find(
         {"user_id": user.user_id, "date": {"$regex": f"^{month}"}},
         {"_id": 0}
@@ -712,6 +756,7 @@ async def get_monthly_stats(month: str, user: User = Depends(get_current_user)):
 @api_router.get("/stats/yearly/{year}")
 async def get_yearly_stats(year: str, user: User = Depends(get_current_user)):
     """Get yearly statistics (year format: YYYY)"""
+    validate_year_format(year)
     gratifications = await db.gratifications.find(
         {"user_id": user.user_id, "date": {"$regex": f"^{year}"}},
         {"_id": 0}
@@ -863,7 +908,7 @@ class PersonCreate(BaseModel):
     photos: Optional[List[str]] = []
     notes: Optional[str] = None
 
-# ==================== OCCURRENCE ENDPOINTS (SEM AUTENTICACAO) ====================
+# ==================== OCCURRENCE ENDPOINTS ====================
 
 @api_router.get("/occurrences", response_model=List[dict])
 async def get_occurrences(
@@ -1227,7 +1272,23 @@ async def generate_report(report: ReportGenerateRequest, user: User = Depends(ge
     }
 
 
-# ==================== ROOT ENDPOINT ====================
+# ==================== HEALTH & ROOT ====================
+
+@api_router.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring (e.g., Render)."""
+    try:
+        # Quick MongoDB ping
+        await client.admin.command('ping')
+        db_status = "connected"
+    except Exception:
+        db_status = "error"
+    return {
+        "status": "ok",
+        "db": db_status,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 
 @api_router.post("/cleanup/all-data")
 async def cleanup_all_data(user: User = Depends(get_current_user)):
