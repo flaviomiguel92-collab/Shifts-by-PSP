@@ -242,9 +242,6 @@ async def get_current_user(request: Request) -> User:
 
 # ==================== AUTH ENDPOINTS ====================
 
-class DemoAuthRequest(BaseModel):
-    device_id: Optional[str] = None
-
 @api_router.post("/auth/register")
 async def register(data: RegisterRequest, response: Response):
     """Register a new user with email and password"""
@@ -401,7 +398,7 @@ async def create_session(session_request: SessionRequest, response: Response):
 
     # Create session
     session_token = auth_data.get("session_token", str(uuid.uuid4()))
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
     session = UserSession(
         user_id=user_id,
@@ -423,7 +420,7 @@ async def create_session(session_request: SessionRequest, response: Response):
         secure=True,
         samesite="none",
         path="/",
-        max_age=7 * 24 * 60 * 60  # 7 days
+        max_age=30 * 24 * 60 * 60
     )
 
     # Get user data to return
@@ -463,6 +460,15 @@ async def logout(request: Request, response: Response):
 
 # ==================== SHIFT ENDPOINTS ====================
 
+class BulkShiftItem(BaseModel):
+    date: str
+    shift_type: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+
+class BulkShiftsRequest(BaseModel):
+    shifts: List[BulkShiftItem]
+
 @api_router.get("/shifts", response_model=List[dict])
 async def get_shifts(
     month: Optional[str] = None,  # YYYY-MM format
@@ -472,29 +478,14 @@ async def get_shifts(
     query = {"user_id": user.user_id}
 
     if month:
-        # Filter by month (date starts with YYYY-MM)
         query["date"] = {"$regex": f"^{month}"}
 
     shifts = await db.shifts.find(query, {"_id": 0}).sort("date", 1).to_list(1000)
     return shifts
 
-@api_router.get("/shifts/{date}")
-async def get_shift_by_date(date: str, user: User = Depends(get_current_user)):
-    """Get shift for a specific date"""
-    shift = await db.shifts.find_one(
-        {"user_id": user.user_id, "date": date},
-        {"_id": 0}
-    )
-
-    if not shift:
-        return None
-
-    return shift
-
 @api_router.post("/shifts", response_model=dict)
 async def create_shift(shift_data: ShiftCreate, user: User = Depends(get_current_user)):
     """Create a new shift"""
-    # Check if shift already exists for this date
     existing = await db.shifts.find_one(
         {"user_id": user.user_id, "date": shift_data.date}
     )
@@ -502,78 +493,23 @@ async def create_shift(shift_data: ShiftCreate, user: User = Depends(get_current
     if existing:
         raise HTTPException(status_code=400, detail="Shift already exists for this date")
 
-    # Set default times based on shift type
-    start_time = shift_data.start_time
-    end_time = shift_data.end_time
-
     shift = Shift(
         user_id=user.user_id,
         date=shift_data.date,
         shift_type=shift_data.shift_type,
-        start_time=start_time,
-        end_time=end_time,
+        start_time=shift_data.start_time,
+        end_time=shift_data.end_time,
         note=shift_data.note
     )
 
     await db.shifts.insert_one(shift.dict())
-
     return shift.dict()
-
-@api_router.put("/shifts/{shift_id}", response_model=dict)
-async def update_shift(
-    shift_id: str,
-    shift_data: ShiftUpdate,
-    user: User = Depends(get_current_user)
-):
-    """Update an existing shift"""
-    existing = await db.shifts.find_one(
-        {"id": shift_id, "user_id": user.user_id}
-    )
-
-    if not existing:
-        raise HTTPException(status_code=404, detail="Shift not found")
-
-    update_data = {k: v for k, v in shift_data.dict().items() if v is not None}
-
-    if update_data:
-        await db.shifts.update_one(
-            {"id": shift_id},
-            {"$set": update_data}
-        )
-
-    updated = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
-    return updated
-
-@api_router.delete("/shifts/{shift_id}")
-async def delete_shift(shift_id: str, user: User = Depends(get_current_user)):
-    """Delete a shift"""
-    result = await db.shifts.delete_one(
-        {"id": shift_id, "user_id": user.user_id}
-    )
-
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Shift not found")
-
-    return {"message": "Shift deleted successfully"}
 
 @api_router.post("/shifts/reset")
 async def reset_all_shifts(user: User = Depends(get_current_user)):
     """Delete all shifts for current user (reset)"""
-    result = await db.shifts.delete_many(
-        {"user_id": user.user_id}
-    )
+    result = await db.shifts.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} shifts"}
-
-# ==================== BULK SHIFTS ENDPOINT ====================
-
-class BulkShiftItem(BaseModel):
-    date: str
-    shift_type: str
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-
-class BulkShiftsRequest(BaseModel):
-    shifts: List[BulkShiftItem]
 
 @api_router.post("/shifts/bulk", response_model=dict)
 async def create_or_update_shifts_bulk(
@@ -585,34 +521,25 @@ async def create_or_update_shifts_bulk(
     updated_count = 0
 
     for shift_item in bulk_data.shifts:
-        # Check if shift already exists for this date
         existing = await db.shifts.find_one(
             {"user_id": user.user_id, "date": shift_item.date}
         )
 
-        start_time = shift_item.start_time
-        end_time = shift_item.end_time
-
         if existing:
-            # Only patch times when provided so bulk cycle updates don't wipe existing horários
-            update_fields = {"shift_type": shift_item.shift_type}
+            update_fields: dict = {"shift_type": shift_item.shift_type}
             if shift_item.start_time is not None:
                 update_fields["start_time"] = shift_item.start_time
             if shift_item.end_time is not None:
                 update_fields["end_time"] = shift_item.end_time
-            await db.shifts.update_one(
-                {"id": existing["id"]},
-                {"$set": update_fields}
-            )
+            await db.shifts.update_one({"id": existing["id"]}, {"$set": update_fields})
             updated_count += 1
         else:
-            # Create new shift
             shift = Shift(
                 user_id=user.user_id,
                 date=shift_item.date,
                 shift_type=shift_item.shift_type,
-                start_time=start_time,
-                end_time=end_time
+                start_time=shift_item.start_time,
+                end_time=shift_item.end_time
             )
             await db.shifts.insert_one(shift.dict())
             created_count += 1
@@ -623,6 +550,45 @@ async def create_or_update_shifts_bulk(
         "updated": updated_count,
         "total": created_count + updated_count
     }
+
+@api_router.get("/shifts/{date}")
+async def get_shift_by_date(date: str, user: User = Depends(get_current_user)):
+    """Get shift for a specific date"""
+    shift = await db.shifts.find_one(
+        {"user_id": user.user_id, "date": date},
+        {"_id": 0}
+    )
+    return shift
+
+@api_router.put("/shifts/{shift_id}", response_model=dict)
+async def update_shift(
+    shift_id: str,
+    shift_data: ShiftUpdate,
+    user: User = Depends(get_current_user)
+):
+    """Update an existing shift"""
+    existing = await db.shifts.find_one({"id": shift_id, "user_id": user.user_id})
+
+    if not existing:
+        raise HTTPException(status_code=404, detail="Shift not found")
+
+    update_data = {k: v for k, v in shift_data.dict().items() if v is not None}
+
+    if update_data:
+        await db.shifts.update_one({"id": shift_id}, {"$set": update_data})
+
+    updated = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/shifts/{shift_id}")
+async def delete_shift(shift_id: str, user: User = Depends(get_current_user)):
+    """Delete a shift"""
+    result = await db.shifts.delete_one({"id": shift_id, "user_id": user.user_id})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Shift not found")
+
+    return {"message": "Shift deleted successfully"}
 
 # ==================== GRATIFICATION ENDPOINTS ====================
 
@@ -698,8 +664,6 @@ async def delete_gratification(grat_id: str, user: User = Depends(get_current_us
         raise HTTPException(status_code=404, detail="Gratification not found")
 
     return {"message": "Gratification deleted successfully"}
-
-# ==================== HOUR BANK ENDPOINTS ====================
 
 # ==================== STATISTICS ENDPOINTS ====================
 
@@ -1208,7 +1172,7 @@ def _build_simple_pdf(lines: List[str]) -> bytes:
 
 
 @api_router.post("/reports/generate", response_model=dict)
-async def generate_report(report: ReportGenerateRequest):
+async def generate_report(report: ReportGenerateRequest, user: User = Depends(get_current_user)):
     """Generate a lightweight PDF report."""
     report_data = report.data or {}
     report_date = str(report_data.get("reportDate") or datetime.now(timezone.utc).date())

@@ -1,19 +1,122 @@
 import { create } from 'zustand';
 import * as api from '../services/api';
 import { storage } from '../utils/storage';
-import { ShiftTypeConfig } from '../types';
+import { ShiftTypeConfig, Shift, Gratification } from '../types';
+import { Occurrence } from '../types/occurrence';
 
 const STORAGE_KEY = 'app_data';
 
-/** Keys persisted locally only (never trust disk for server-backed entities — avoids “ghost” rows). */
-const persistLocalSlice = (state: Record<string, unknown>) => ({
+export interface GratifiedConfig {
+  baseSmall4h: number;
+  baseLarge4h: number;
+  fractionSmallPerHour: number;
+  fractionLargePerHour: number;
+  discountPercent: number;
+  smallStart: string;
+  smallEnd: string;
+  largeStart: string;
+  largeEnd: string;
+}
+
+export interface Cycle {
+  id: string;
+  name?: string;
+  pattern: string[];
+  startDate?: string;
+  color?: string;
+}
+
+export interface GratifiedTemplate {
+  name: string;
+  posto?: string;
+  nome?: string;
+  matricula?: string;
+  comando?: string;
+  [key: string]: unknown;
+}
+
+export interface GratifiedEntry {
+  id: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  hours?: number;
+  type?: string;
+  value?: number;
+  note?: string;
+  [key: string]: unknown;
+}
+
+interface DataStore {
+  shifts: Shift[];
+  shiftTypes: ShiftTypeConfig[];
+  gratifications: Gratification[];
+  cycles: Cycle[];
+  occurrences: Occurrence[];
+  gratifiedConfig: GratifiedConfig;
+  gratifiedTemplates: GratifiedTemplate[];
+  gratifiedEntries: GratifiedEntry[];
+  currentMonth: string;
+  currentYear: string;
+
+  setCurrentMonth: (month: string) => void;
+  setCurrentYear: (year: string) => void;
+  clearSyncedCollections: () => void;
+
+  createOccurrence: (data: Partial<Occurrence>) => Promise<Occurrence>;
+  fetchOccurrences: (status?: string, classification?: string) => Promise<Occurrence[]>;
+  updateOccurrence: (id: string, data: Partial<Occurrence>) => Promise<Occurrence>;
+  deleteOccurrence: (id: string) => Promise<void>;
+
+  fetchShifts: (month?: string) => Promise<Shift[]>;
+  createShift: (shift: Omit<Shift, 'id' | 'user_id' | 'created_at'>) => Promise<Shift>;
+  updateShift: (id: string, data: Partial<Shift>) => Promise<Shift>;
+  deleteShift: (id: string) => Promise<void>;
+  bulkUpsertShifts: (items: api.BulkShiftItem[]) => Promise<{ created?: number; updated?: number; total?: number; message?: string }>;
+
+  fetchGratifications: (month?: string, year?: string) => Promise<Gratification[]>;
+  createGratification: (data: Omit<Gratification, 'id' | 'user_id' | 'created_at'>) => Promise<Gratification>;
+  updateGratification: (id: string, data: Partial<Gratification>) => Promise<void>;
+  deleteGratification: (id: string) => Promise<void>;
+
+  fetchMonthlyStats: (month: string) => Promise<unknown>;
+  fetchYearlyStats: (year: string) => Promise<unknown>;
+  fetchDashboardStats: () => Promise<unknown>;
+  fetchComparisonStats: () => Promise<unknown>;
+
+  loadData: () => Promise<void>;
+  saveData: () => Promise<void>;
+  resetData: () => Promise<void>;
+  resetCalendarData: () => Promise<void>;
+  resetGratifiedData: () => Promise<void>;
+  resetOccurrencesData: () => Promise<void>;
+
+  fetchShiftTypes: () => Promise<ShiftTypeConfig[]>;
+  createShiftType: (shiftType: Partial<ShiftTypeConfig>) => Promise<void>;
+  deleteShiftType: (id: string) => Promise<void>;
+
+  createCycle: (cycle: Omit<Cycle, 'id'>) => Promise<void>;
+  deleteCycle: (id: string) => Promise<void>;
+
+  setGratifiedConfig: (partial: Partial<GratifiedConfig>) => Promise<void>;
+  upsertGratifiedTemplate: (template: GratifiedTemplate) => Promise<void>;
+  deleteGratifiedTemplate: (name: string) => Promise<void>;
+  createGratifiedEntry: (entry: Omit<GratifiedEntry, 'id'>) => Promise<void>;
+  deleteGratifiedEntry: (id: string) => Promise<void>;
+}
+
+/** Keys persisted locally only (never trust disk for server-backed entities — avoids "ghost" rows). */
+const persistLocalSlice = (state: DataStore) => ({
   shiftTypes: state.shiftTypes,
-  cycles: state.cycles,  shifts: state.shifts,
-  gratifications: state.gratifications,  gratifiedConfig: state.gratifiedConfig,
+  cycles: state.cycles,
+  shifts: state.shifts,
+  gratifications: state.gratifications,
+  gratifiedConfig: state.gratifiedConfig,
   gratifiedTemplates: state.gratifiedTemplates,
   gratifiedEntries: state.gratifiedEntries,
 });
-const DEFAULT_GRATIFIED_CONFIG = {
+
+const DEFAULT_GRATIFIED_CONFIG: GratifiedConfig = {
   baseSmall4h: 52.73,
   baseLarge4h: 75.89,
   fractionSmallPerHour: 13.4,
@@ -25,7 +128,7 @@ const DEFAULT_GRATIFIED_CONFIG = {
   largeEnd: '06:00',
 };
 
-export const useDataStore = create<any>((set, get) => ({
+export const useDataStore = create<DataStore>((set, get) => ({
   shifts: [],
   shiftTypes: [],
   gratifications: [],
@@ -40,72 +143,43 @@ export const useDataStore = create<any>((set, get) => ({
   setCurrentMonth: (month) => set({ currentMonth: month }),
   setCurrentYear: (year) => set({ currentYear: year }),
 
-  /** Clears lists synced with the API — call on logout / session invalid / login to avoid cross-user or stale UI. */
   clearSyncedCollections: () =>
-    set({
-      shifts: [],
-      gratifications: [],
-      occurrences: [],
-    }),
+    set({ shifts: [], gratifications: [], occurrences: [] }),
 
   // ==================== OCCURRENCES ====================
 
   createOccurrence: async (data) => {
-    try {
-      const result = await api.createOccurrence(data);
-      set((state) => ({
-        occurrences: [result, ...state.occurrences],
-      }));
-      return result;
-    } catch (error) {
-      console.error('Error creating occurrence:', error);
-      throw error;
-    }
+    const result: Occurrence = await api.createOccurrence(data);
+    set((state) => ({ occurrences: [result, ...state.occurrences] }));
+    return result;
   },
 
   fetchOccurrences: async (status, classification) => {
-    try {
-      const result = await api.getOccurrences(status, classification);
-      set({ occurrences: result });
-      return result;
-    } catch (error) {
-      console.error('Error fetching occurrences:', error);
-      throw error;
-    }
+    const result: Occurrence[] = await api.getOccurrences(status, classification);
+    set({ occurrences: result });
+    return result;
   },
 
   updateOccurrence: async (id, data) => {
-    try {
-      const result = await api.updateOccurrence(id, data);
-      set((state) => ({
-        occurrences: state.occurrences.map((o) =>
-          o.id === id ? result : o
-        ),
-      }));
-      return result;
-    } catch (error) {
-      console.error('Error updating occurrence:', error);
-      throw error;
-    }
+    const result: Occurrence = await api.updateOccurrence(id, data);
+    set((state) => ({
+      occurrences: state.occurrences.map((o) => (o.id === id ? result : o)),
+    }));
+    return result;
   },
 
   deleteOccurrence: async (id) => {
-    try {
-      await api.deleteOccurrence(id);
-      set((state) => ({
-        occurrences: state.occurrences.filter((o) => o.id !== id),
-      }));
-    } catch (error) {
-      console.error('Error deleting occurrence:', error);
-      throw error;
-    }
+    await api.deleteOccurrence(id);
+    set((state) => ({
+      occurrences: state.occurrences.filter((o) => o.id !== id),
+    }));
   },
 
   // ==================== SHIFTS ====================
 
   fetchShifts: async (month) => {
     try {
-      const result = await api.getShifts(month);
+      const result: Shift[] = await api.getShifts(month);
       set({ shifts: result });
       return result;
     } catch (error) {
@@ -115,55 +189,39 @@ export const useDataStore = create<any>((set, get) => ({
   },
 
   createShift: async (shift) => {
-    try {
-      const result = await api.createShift(shift);
-      set((state) => {
-        const existingIndex = state.shifts.findIndex((s) => s.date === shift.date);
-        if (existingIndex >= 0) {
-          const updated = [...state.shifts];
-          updated[existingIndex] = result;
-          return { shifts: updated };
-        }
-        return { shifts: [...state.shifts, result] };
-      });
-      return result;
-    } catch (error) {
-      console.error('Error creating shift:', error);
-      throw error;
-    }
+    const result: Shift = await api.createShift(shift);
+    set((state) => {
+      const existingIndex = state.shifts.findIndex((s) => s.date === shift.date);
+      if (existingIndex >= 0) {
+        const updated = [...state.shifts];
+        updated[existingIndex] = result;
+        return { shifts: updated };
+      }
+      return { shifts: [...state.shifts, result] };
+    });
+    return result;
   },
 
   updateShift: async (id, data) => {
-    try {
-      const result = await api.updateShift(id, data);
-      set((state) => ({
-        shifts: state.shifts.map((s) =>
-          s.id === id ? result : s
-        ),
-      }));
-      return result;
-    } catch (error) {
-      console.error('Error updating shift:', error);
-      throw error;
-    }
+    const result: Shift = await api.updateShift(id, data);
+    set((state) => ({
+      shifts: state.shifts.map((s) => (s.id === id ? result : s)),
+    }));
+    return result;
   },
 
   deleteShift: async (id) => {
     await api.deleteShift(id);
-    set((state) => ({
-      shifts: state.shifts.filter((s) => s.id !== id),
-    }));
+    set((state) => ({ shifts: state.shifts.filter((s) => s.id !== id) }));
   },
 
-  bulkUpsertShifts: async (items: api.BulkShiftItem[]) => {
-    return api.bulkUpsertShifts(items);
-  },
+  bulkUpsertShifts: (items) => api.bulkUpsertShifts(items),
 
   // ==================== GRATIFICATIONS ====================
 
   fetchGratifications: async (month, year) => {
     try {
-      const result = await api.getGratifications(month, year);
+      const result: Gratification[] = await api.getGratifications(month, year);
       set({ gratifications: result });
       return result;
     } catch (error) {
@@ -173,62 +231,40 @@ export const useDataStore = create<any>((set, get) => ({
   },
 
   createGratification: async (data) => {
-    try {
-      const result = await api.createGratification(data);
-      set((state) => ({
-        gratifications: [result, ...state.gratifications],
-      }));
-      return result;
-    } catch (error) {
-      console.error('Error creating gratification:', error);
-      throw error;
-    }
+    const result: Gratification = await api.createGratification(data);
+    set((state) => ({ gratifications: [result, ...state.gratifications] }));
+    return result;
+  },
+
+  updateGratification: async (id, data) => {
+    set((state) => ({
+      gratifications: state.gratifications.map((g) =>
+        g.id === id ? { ...g, ...data } : g
+      ),
+    }));
+    get().saveData();
+  },
+
+  deleteGratification: async (id) => {
+    await api.deleteGratification(id);
+    set((state) => ({
+      gratifications: state.gratifications.filter((g) => g.id !== id),
+    }));
   },
 
   // ==================== STATISTICS ====================
 
-  fetchMonthlyStats: async (month) => {
-    try {
-      return await api.getMonthlyStats(month);
-    } catch (error) {
-      console.error('Error fetching monthly stats:', error);
-      throw error;
-    }
-  },
-
-  fetchYearlyStats: async (year) => {
-    try {
-      return await api.getYearlyStats(year);
-    } catch (error) {
-      console.error('Error fetching yearly stats:', error);
-      throw error;
-    }
-  },
-
-  fetchDashboardStats: async () => {
-    try {
-      return await api.getDashboardStats();
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      throw error;
-    }
-  },
-
-  fetchComparisonStats: async () => {
-    try {
-      return await api.getComparisonStats();
-    } catch (error) {
-      console.error('Error fetching comparison stats:', error);
-      throw error;
-    }
-  },
+  fetchMonthlyStats: (month) => api.getMonthlyStats(month),
+  fetchYearlyStats: (year) => api.getYearlyStats(year),
+  fetchDashboardStats: () => api.getDashboardStats(),
+  fetchComparisonStats: () => api.getComparisonStats(),
 
   // ==================== LOCAL STORAGE ====================
 
   loadData: async () => {
     const data = await storage.getItem(STORAGE_KEY);
     if (!data) return;
-    const parsed = JSON.parse(data);
+    const parsed = JSON.parse(data) as Partial<DataStore>;
     set({
       shiftTypes: parsed?.shiftTypes ?? [],
       cycles: parsed?.cycles ?? [],
@@ -261,17 +297,8 @@ export const useDataStore = create<any>((set, get) => ({
   },
 
   resetCalendarData: async () => {
-    try {
-      await api.resetShifts();
-    } catch (error) {
-      console.error('Error resetting shifts on backend:', error);
-      throw error;
-    }
-    set({
-      shifts: [],
-      shiftTypes: [],
-      cycles: [],
-    });
+    await api.resetShifts();
+    set({ shifts: [], shiftTypes: [], cycles: [] });
     await get().saveData();
   },
 
@@ -298,9 +325,6 @@ export const useDataStore = create<any>((set, get) => ({
       const local: ShiftTypeConfig[] = get().shiftTypes;
 
       if (serverResult.length === 0 && local.length > 0) {
-        // Server has nothing but we have local data — push local entries to server.
-        // This covers: shift types created while backend was in cold start (local-... IDs)
-        // and the first login after migrating from a local-only version.
         const synced: ShiftTypeConfig[] = [];
         for (const st of local) {
           try {
@@ -314,7 +338,7 @@ export const useDataStore = create<any>((set, get) => ({
             });
             synced.push(created);
           } catch {
-            synced.push(st); // keep local entry if push fails
+            synced.push(st);
           }
         }
         const finalList = synced.length > 0 ? synced : local;
@@ -323,7 +347,6 @@ export const useDataStore = create<any>((set, get) => ({
         return finalList;
       }
 
-      // Server has data (or both are empty) — server is authoritative.
       set({ shiftTypes: serverResult });
       get().saveData();
       return serverResult;
@@ -336,32 +359,29 @@ export const useDataStore = create<any>((set, get) => ({
   createShiftType: async (shiftType) => {
     try {
       const created: ShiftTypeConfig = await api.createShiftTypeApi({
-        name: shiftType.name,
-        color: shiftType.color,
+        name: shiftType.name ?? '',
+        color: shiftType.color ?? '#6B7280',
         start_time: shiftType.start_time || shiftType.startTime,
         end_time: shiftType.end_time || shiftType.endTime,
         is_working: shiftType.is_working,
         order: shiftType.order,
       });
-      set((state) => ({
-        shiftTypes: [...state.shiftTypes, created],
-      }));
+      set((state) => ({ shiftTypes: [...state.shiftTypes, created] }));
       get().saveData();
     } catch (error) {
-      // Fallback: keep local if API fails
       console.warn('[dataStore] createShiftType API failed, using local fallback:', error);
       const localFallback: ShiftTypeConfig = {
-        ...shiftType,
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        name: shiftType.name ?? '',
+        color: shiftType.color ?? '#6B7280',
+        ...shiftType,
       };
-      set((state) => ({
-        shiftTypes: [...state.shiftTypes, localFallback],
-      }));
+      set((state) => ({ shiftTypes: [...state.shiftTypes, localFallback] }));
       get().saveData();
     }
   },
 
-  deleteShiftType: async (id: string) => {
+  deleteShiftType: async (id) => {
     set((state) => ({
       shiftTypes: state.shiftTypes.filter((s) => s.id !== id),
     }));
@@ -376,20 +396,18 @@ export const useDataStore = create<any>((set, get) => ({
   // ==================== CYCLES ====================
 
   createCycle: async (cycle) => {
-    const newCycle = {
+    const newCycle: Cycle = {
       ...cycle,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
     };
-    set((state) => ({
-      cycles: [newCycle, ...(state.cycles || [])],
-    }));
+    set((state) => ({ cycles: [newCycle, ...state.cycles] }));
     get().saveData();
   },
 
   deleteCycle: async (id) => {
     set((state) => ({
-      cycles: (state.cycles || []).filter((c) => c.id !== id),
+      cycles: state.cycles.filter((c) => c.id !== id),
     }));
     get().saveData();
   },
@@ -398,7 +416,7 @@ export const useDataStore = create<any>((set, get) => ({
 
   setGratifiedConfig: async (partial) => {
     set((state) => ({
-      gratifiedConfig: { ...state.gratifiedConfig, ...(partial || {}) },
+      gratifiedConfig: { ...state.gratifiedConfig, ...partial },
     }));
     get().saveData();
   },
@@ -407,8 +425,8 @@ export const useDataStore = create<any>((set, get) => ({
     const name = (template?.name || '').trim();
     if (!name) return;
     set((state) => {
-      const existingIndex = (state.gratifiedTemplates || []).findIndex((t) => t.name === name);
-      const next = [...(state.gratifiedTemplates || [])];
+      const existingIndex = state.gratifiedTemplates.findIndex((t) => t.name === name);
+      const next = [...state.gratifiedTemplates];
       const item = { ...template, name };
       if (existingIndex >= 0) {
         next[existingIndex] = { ...next[existingIndex], ...item };
@@ -421,42 +439,24 @@ export const useDataStore = create<any>((set, get) => ({
 
   deleteGratifiedTemplate: async (name) => {
     set((state) => ({
-      gratifiedTemplates: (state.gratifiedTemplates || []).filter((t) => t.name !== name),
+      gratifiedTemplates: state.gratifiedTemplates.filter((t) => t.name !== name),
     }));
     get().saveData();
   },
 
   createGratifiedEntry: async (entry) => {
-    const newItem = {
+    const newItem: GratifiedEntry = {
       ...entry,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     };
-    set((state) => ({
-      gratifiedEntries: [newItem, ...(state.gratifiedEntries || [])],
-    }));
+    set((state) => ({ gratifiedEntries: [newItem, ...state.gratifiedEntries] }));
     get().saveData();
   },
 
   deleteGratifiedEntry: async (id) => {
     set((state) => ({
-      gratifiedEntries: (state.gratifiedEntries || []).filter((e) => e.id !== id),
+      gratifiedEntries: state.gratifiedEntries.filter((e) => e.id !== id),
     }));
     get().saveData();
-  },
-
-  updateGratification: async (id, data) => {
-    set((state) => ({
-      gratifications: state.gratifications.map((g) =>
-        g.id === id ? { ...g, ...data } : g
-      ),
-    }));
-    get().saveData();
-  },
-
-  deleteGratification: async (id) => {
-    await api.deleteGratification(id);
-    set((state) => ({
-      gratifications: state.gratifications.filter((g) => g.id !== id),
-    }));
   },
 }));

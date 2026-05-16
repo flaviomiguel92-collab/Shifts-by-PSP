@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Platform,
   RefreshControl,
-  TextInput,
   Modal,
   Alert,
   Image,
@@ -22,16 +21,15 @@ import * as Sharing from 'expo-sharing';
 import { storage } from '../../src/utils/storage';
 import { formatDate } from '../../src/utils/helpers';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
+import { PersonFormModal } from '../../src/components/occurrence/PersonFormModal';
+import { CreateOccurrenceModal } from '../../src/components/occurrence/CreateOccurrenceModal';
 import {
   Occurrence,
   Person,
-  OCCURRENCE_CLASSIFICATIONS,
   OCCURRENCE_STATUS_LABELS,
   OCCURRENCE_STATUS_COLORS,
   DOCUMENT_TYPE_LABELS,
   DocumentType,
-  PERSON_ROLE_LABELS,
-  PersonRole,
 } from '../../src/types/occurrence';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL
@@ -48,27 +46,6 @@ export default function OcorrenciasScreen() {
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [localPhotos, setLocalPhotos] = useState<string[]>([]);
-  
-  // Form states
-  const [formDate, setFormDate] = useState('');
-  const [formTime, setFormTime] = useState('');
-  const [formLocation, setFormLocation] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formClassification, setFormClassification] = useState('');
-  
-  // Person form states
-  const [personRole, setPersonRole] = useState<PersonRole>('testemunha');
-  const [personName, setPersonName] = useState('');
-  const [personAddress, setPersonAddress] = useState('');
-  const [personPhone, setPersonPhone] = useState('');
-  const [personEmail, setPersonEmail] = useState('');
-  const [personNIF, setPersonNIF] = useState('');
-  const [personDocType, setPersonDocType] = useState<DocumentType>('cartao_cidadao');
-  const [personDocNumber, setPersonDocNumber] = useState('');
-  const [personDocIssue, setPersonDocIssue] = useState('');
-  const [personDocExpiry, setPersonDocExpiry] = useState('');
-  const [personNotes, setPersonNotes] = useState('');
-  const [personPhotos, setPersonPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const fetchOccurrences = async () => {
@@ -97,112 +74,16 @@ export default function OcorrenciasScreen() {
     setRefreshing(false);
   };
 
-  const resetForm = () => {
-    const today = new Date();
-    setFormDate(today.toISOString().slice(0, 10));
-    setFormTime(today.toTimeString().slice(0, 5));
-    setFormLocation('');
-    setFormDescription('');
-    setFormClassification('');
+  const handleOccurrenceCreated = async (newOcc: Occurrence) => {
+    await fetchOccurrences();
+    setSelectedOccurrence(newOcc);
+    setLocalPhotos(newOcc.photos || []);
+    setShowDetailModal(true);
   };
 
-  const resetPersonForm = () => {
-    setPersonRole('testemunha');
-    setPersonName('');
-    setPersonAddress('');
-    setPersonPhone('');
-    setPersonEmail('');
-    setPersonNIF('');
-    setPersonDocType('cartao_cidadao');
-    setPersonDocNumber('');
-    setPersonDocIssue('');
-    setPersonDocExpiry('');
-    setPersonNotes('');
-    setPersonPhotos([]);
-  };
-
-  const handleCreate = async () => {
-    if (!formLocation || !formDescription || !formClassification) {
-      Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    try {
-      const token = await storage.getItem('session_token');
-      const response = await fetch(`${API_URL}/api/occurrences`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date: formDate,
-          time: formTime,
-          location: formLocation,
-          description: formDescription,
-          classification: formClassification,
-          photos: localPhotos.length > 0 ? localPhotos : undefined,
-        }),
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const newOcc = await response.json();
-        setShowCreateModal(false);
-        resetForm();
-        await fetchOccurrences();
-        setSelectedOccurrence(newOcc);
-        setLocalPhotos([]);
-        setShowDetailModal(true);
-      }
-    } catch (error) {
-      console.error('Create occurrence error:', error);
-      Alert.alert('Erro', 'Não foi possível criar a ocorrência');
-    }
-  };
-
-  const handleAddPerson = async () => {
-    if (!personName || !selectedOccurrence) {
-      Alert.alert('Erro', 'Nome é obrigatório');
-      return;
-    }
-
-    try {
-      const token = await storage.getItem('session_token');
-      const response = await fetch(`${API_URL}/api/occurrences/${selectedOccurrence.id}/persons`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          role: personRole,
-          full_name: personName,
-          address: personAddress || undefined,
-          phone: personPhone || undefined,
-          email: personEmail || undefined,
-          tax_id: personNIF || undefined,
-          document_type: personDocType,
-          document_number: personDocNumber || undefined,
-          document_issue_date: personDocIssue || undefined,
-          document_expiry_date: personDocExpiry || undefined,
-          notes: personNotes || undefined,
-          photos: personPhotos.length > 0 ? personPhotos : undefined,
-        }),
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const updated = await response.json();
-        setSelectedOccurrence(updated);
-        setShowPersonModal(false);
-        resetPersonForm();
-        await fetchOccurrences();
-      }
-    } catch (error) {
-      console.error('Add person error:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar a pessoa');
-    }
+  const handlePersonAdded = async (updated: Occurrence) => {
+    setSelectedOccurrence(updated);
+    await fetchOccurrences();
   };
 
   // Compress image using ImageManipulator and convert to smaller base64
@@ -265,35 +146,6 @@ export default function OcorrenciasScreen() {
       }
     } catch (error) {
       console.error('Add photo error:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar a foto');
-    } finally {
-      setIsUploadingPhoto(false);
-    }
-  };
-
-  const handleAddPersonPhoto = async () => {
-    try {
-      setIsUploadingPhoto(true);
-      
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-        aspect: [3, 4],
-      });
-
-      if (!result.canceled && result.assets[0].uri) {
-        // Compress the image
-        const compressedBase64 = await compressAndConvertToBase64(result.assets[0].uri);
-        
-        if (compressedBase64) {
-          setPersonPhotos(prev => [...prev, compressedBase64]);
-        } else {
-          Alert.alert('Erro', 'Não foi possível processar a imagem');
-        }
-      }
-    } catch (error) {
-      console.error('Add person photo error:', error);
       Alert.alert('Erro', 'Não foi possível adicionar a foto');
     } finally {
       setIsUploadingPhoto(false);
@@ -533,9 +385,6 @@ export default function OcorrenciasScreen() {
     return persons;
   };
 
-  const docTypes: DocumentType[] = ['cartao_cidadao', 'passaporte', 'titulo_residencia', 'carta_conducao'];
-  const roles: PersonRole[] = ['suspeito', 'testemunha', 'lesado'];
-
   return (
     <SafeAreaView style={styles.container}>
       <HeaderWithBack title="Ocorrências" />
@@ -543,10 +392,7 @@ export default function OcorrenciasScreen() {
         <Text style={styles.headerTitle}>Ocorrências</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
+          onPress={() => setShowCreateModal(true)}
         >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
@@ -601,78 +447,12 @@ export default function OcorrenciasScreen() {
         )}
       </ScrollView>
 
-      {/* Create Modal */}
-      <Modal visible={showCreateModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nova Ocorrência</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Data *</Text>
-              <TextInput
-                style={styles.input}
-                value={formDate}
-                onChangeText={setFormDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#6B7280"
-              />
-              <Text style={styles.inputLabel}>Hora</Text>
-              <TextInput
-                style={styles.input}
-                value={formTime}
-                onChangeText={setFormTime}
-                placeholder="HH:MM"
-                placeholderTextColor="#6B7280"
-              />
-              <Text style={styles.inputLabel}>Local *</Text>
-              <TextInput
-                style={styles.input}
-                value={formLocation}
-                onChangeText={setFormLocation}
-                placeholder="Endereço ou descrição do local"
-                placeholderTextColor="#6B7280"
-              />
-              <Text style={styles.inputLabel}>Tipificação *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.classificationGrid}>
-                  {OCCURRENCE_CLASSIFICATIONS.map((c) => (
-                    <TouchableOpacity
-                      key={c}
-                      style={[
-                        styles.classificationBtn,
-                        formClassification === c && styles.classificationBtnActive,
-                      ]}
-                      onPress={() => setFormClassification(c)}
-                    >
-                      <Text style={[
-                        styles.classificationBtnText,
-                        formClassification === c && styles.classificationBtnTextActive,
-                      ]}>{c}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-              <Text style={styles.inputLabel}>Descrição *</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formDescription}
-                onChangeText={setFormDescription}
-                placeholder="Descreva a ocorrência..."
-                placeholderTextColor="#6B7280"
-                multiline
-                numberOfLines={4}
-              />
-            </ScrollView>
-            <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-              <Text style={styles.submitBtnText}>Criar Ocorrência</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <CreateOccurrenceModal
+        visible={showCreateModal}
+        apiUrl={API_URL}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={handleOccurrenceCreated}
+      />
 
       {/* Detail Modal */}
       <Modal visible={showDetailModal} animationType="slide">
@@ -804,10 +584,7 @@ export default function OcorrenciasScreen() {
                   <Text style={styles.detailSectionTitle}>Pessoas Envolvidas</Text>
                   <TouchableOpacity
                     style={styles.addSmallBtn}
-                    onPress={() => {
-                      resetPersonForm();
-                      setShowPersonModal(true);
-                    }}
+                    onPress={() => setShowPersonModal(true)}
                   >
                     <Ionicons name="person-add" size={18} color="#FFFFFF" />
                     <Text style={styles.addSmallBtnText}>Adicionar</Text>
@@ -853,172 +630,13 @@ export default function OcorrenciasScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Add Person Modal */}
-      <Modal visible={showPersonModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Adicionar Pessoa</Text>
-              <TouchableOpacity onPress={() => setShowPersonModal(false)}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Tipo *</Text>
-              <View style={styles.roleButtons}>
-                {roles.map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[
-                      styles.roleBtn,
-                      personRole === r && styles.roleBtnActive,
-                    ]}
-                    onPress={() => setPersonRole(r)}
-                  >
-                    <Text style={[
-                      styles.roleBtnText,
-                      personRole === r && styles.roleBtnTextActive,
-                    ]}>{PERSON_ROLE_LABELS[r]}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.inputLabel}>Nome Completo *</Text>
-              <TextInput
-                style={styles.input}
-                value={personName}
-                onChangeText={setPersonName}
-                placeholder="Nome completo"
-                placeholderTextColor="#6B7280"
-              />
-
-              <Text style={styles.inputLabel}>Documento de Identificação</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.docTypeButtons}>
-                  {docTypes.map((d) => (
-                    <TouchableOpacity
-                      key={d}
-                      style={[
-                        styles.docTypeBtn,
-                        personDocType === d && styles.docTypeBtnActive,
-                      ]}
-                      onPress={() => setPersonDocType(d)}
-                    >
-                      <Text style={[
-                        styles.docTypeBtnText,
-                        personDocType === d && styles.docTypeBtnTextActive,
-                      ]}>{DOCUMENT_TYPE_LABELS[d]}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-
-              <Text style={styles.inputLabel}>Nº Documento</Text>
-              <TextInput
-                style={styles.input}
-                value={personDocNumber}
-                onChangeText={setPersonDocNumber}
-                placeholder="Número do documento"
-                placeholderTextColor="#6B7280"
-              />
-
-              <View style={styles.rowInputs}>
-                <View style={styles.halfInput}>
-                  <Text style={styles.inputLabel}>Data Emissão</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={personDocIssue}
-                    onChangeText={setPersonDocIssue}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#6B7280"
-                  />
-                </View>
-                <View style={styles.halfInput}>
-                  <Text style={styles.inputLabel}>Data Validade</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={personDocExpiry}
-                    onChangeText={setPersonDocExpiry}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#6B7280"
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.inputLabel}>NIF</Text>
-              <TextInput
-                style={styles.input}
-                value={personNIF}
-                onChangeText={setPersonNIF}
-                placeholder="Número de Identificação Fiscal"
-                placeholderTextColor="#6B7280"
-                keyboardType="numeric"
-              />
-
-              <Text style={styles.inputLabel}>Morada</Text>
-              <TextInput
-                style={styles.input}
-                value={personAddress}
-                onChangeText={setPersonAddress}
-                placeholder="Endereço completo"
-                placeholderTextColor="#6B7280"
-              />
-
-              <Text style={styles.inputLabel}>Telemóvel</Text>
-              <TextInput
-                style={styles.input}
-                value={personPhone}
-                onChangeText={setPersonPhone}
-                placeholder="Contacto telefónico"
-                placeholderTextColor="#6B7280"
-                keyboardType="phone-pad"
-              />
-
-              <Text style={styles.inputLabel}>E-mail</Text>
-              <TextInput
-                style={styles.input}
-                value={personEmail}
-                onChangeText={setPersonEmail}
-                placeholder="Endereço de e-mail"
-                placeholderTextColor="#6B7280"
-                keyboardType="email-address"
-              />
-
-              <Text style={styles.inputLabel}>Notas</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={personNotes}
-                onChangeText={setPersonNotes}
-                placeholder="Observações adicionais"
-                placeholderTextColor="#6B7280"
-                multiline
-              />
-
-              {/* Person Photos */}
-              <View style={styles.personPhotoSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.inputLabel}>Fotos de Identificação</Text>
-                  <TouchableOpacity style={styles.addPhotoBtn} onPress={handleAddPersonPhoto}>
-                    <Ionicons name="camera" size={16} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-                {personPhotos.length > 0 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.photosRow}>
-                      {personPhotos.map((photo, i) => (
-                        <Image key={i} source={{ uri: photo }} style={styles.smallPhotoThumb} />
-                      ))}
-                    </View>
-                  </ScrollView>
-                )}
-              </View>
-            </ScrollView>
-            <TouchableOpacity style={styles.submitBtn} onPress={handleAddPerson}>
-              <Text style={styles.submitBtnText}>Adicionar Pessoa</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <PersonFormModal
+        visible={showPersonModal}
+        occurrenceId={selectedOccurrence?.id ?? ''}
+        apiUrl={API_URL}
+        onClose={() => setShowPersonModal(false)}
+        onPersonAdded={handlePersonAdded}
+      />
     </SafeAreaView>
   );
 }
@@ -1144,101 +762,6 @@ const styles = StyleSheet.create({
   occStatText: {
     fontSize: 12,
     color: '#475569',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#0B1120',
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.15)',
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F1F5F9',
-  },
-  modalBody: {
-    padding: 20,
-    maxHeight: 400,
-  },
-  inputLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#475569',
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: 'rgba(5, 8, 22, 0.6)',
-    borderRadius: 12,
-    padding: 14,
-    color: '#F1F5F9',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  classificationGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  classificationBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  classificationBtnActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: 'transparent',
-  },
-  classificationBtnText: {
-    fontSize: 13,
-    color: '#94A3B8',
-  },
-  classificationBtnTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  submitBtn: {
-    backgroundColor: '#3B82F6',
-    margin: 20,
-    padding: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   detailContainer: {
     flex: 1,
@@ -1383,11 +906,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 10,
   },
-  smallPhotoThumb: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-  },
   personCard: {
     backgroundColor: 'rgba(5, 8, 22, 0.5)',
     borderRadius: 12,
@@ -1426,72 +944,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#475569',
     marginTop: 2,
-  },
-  roleButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  roleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-  },
-  roleBtnActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: 'transparent',
-  },
-  roleBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  roleBtnTextActive: {
-    color: '#FFFFFF',
-  },
-  docTypeButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  docTypeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  docTypeBtnActive: {
-    backgroundColor: '#8B5CF6',
-    borderColor: 'transparent',
-  },
-  docTypeBtnText: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
-  docTypeBtnTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  rowInputs: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  personPhotoSection: {
-    marginTop: 16,
-  },
-  addPhotoBtn: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    padding: 8,
-    borderRadius: 8,
   },
 });

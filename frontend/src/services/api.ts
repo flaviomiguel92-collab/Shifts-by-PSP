@@ -1,5 +1,6 @@
 import { storage } from '../utils/storage';
-import { ShiftTypeConfig } from '../types';
+import { ShiftTypeConfig, Shift, Gratification } from '../types';
+import { Occurrence } from '../types/occurrence';
 
 const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 const API_BASE_URL = API_ROOT + '/api';
@@ -30,7 +31,7 @@ const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> 
   return response;
 };
 
-export const createOccurrence = async (data: any) => {
+export const createOccurrence = async (data: Partial<Occurrence>): Promise<Occurrence> => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -63,7 +64,7 @@ export const getOccurrences = async (status?: string, classification?: string) =
   return response.json();
 };
 
-export const updateOccurrence = async (id: string, data: any) => {
+export const updateOccurrence = async (id: string, data: Partial<Occurrence>): Promise<Occurrence> => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -103,7 +104,7 @@ export const getShifts = async (month?: string) => {
   return response.json();
 };
 
-export const createShift = async (data: any) => {
+export const createShift = async (data: Omit<Shift, 'id' | 'user_id' | 'created_at'>): Promise<Shift> => {
   const response = await apiFetch(`${API_BASE_URL}/shifts`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -116,7 +117,7 @@ export const createShift = async (data: any) => {
   return response.json();
 };
 
-export const updateShift = async (id: string, data: any) => {
+export const updateShift = async (id: string, data: Partial<Shift>): Promise<Shift> => {
   const response = await apiFetch(`${API_BASE_URL}/shifts/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -196,7 +197,7 @@ export const getGratifications = async (month?: string, year?: string) => {
   return response.json();
 };
 
-export const createGratification = async (data: any) => {
+export const createGratification = async (data: Omit<Gratification, 'id' | 'user_id' | 'created_at'>): Promise<Gratification> => {
   const response = await apiFetch(`${API_BASE_URL}/gratifications`, {
     method: 'POST',
     body: JSON.stringify(data),
