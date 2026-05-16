@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 const TAB_CONFIG: Record<string, { icon: string; iconActive: string; label: string }> = {
   index:        { icon: 'calendar-outline',       iconActive: 'calendar',       label: 'Turnos' },
   gratificados: { icon: 'cash-outline',           iconActive: 'cash',           label: 'Gratificados' },
-  ocorrencias:  { icon: 'document-text-outline',  iconActive: 'document-text',  label: 'Ocorrências' },
+  ocorrencias:  { icon: 'shield-outline',         iconActive: 'shield',         label: 'Ocorrências' },
   stats:        { icon: 'stats-chart-outline',    iconActive: 'stats-chart',    label: 'Painel' },
   profile:      { icon: 'person-outline',         iconActive: 'person',         label: 'Perfil' },
 };

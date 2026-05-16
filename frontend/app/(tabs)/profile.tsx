@@ -1,27 +1,31 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   Alert, ScrollView, SafeAreaView, Platform, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { storage } from '../../src/utils/storage';
-import { exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV } from '../../src/utils/exportUtils';
+import {
+  exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV,
+  exportFullBackup, pickAndReadJsonWeb, BackupPayload,
+} from '../../src/utils/exportUtils';
 import { toast } from '../../src/utils/toast';
+import { getSessions, revokeSession, SessionInfo } from '../../src/services/api';
+import { usePreferencesStore, i18n } from '../../src/store/preferencesStore';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
 
 const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 const buildOccurrencesEndpoint = () => `${API_ROOT.replace(/\/$/, '')}/api/occurrences`;
 
-function Section({ title, icon, children }: any) {
+function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={icon} size={15} color="#475569" />
+        <Ionicons name={icon as any} size={15} color="#475569" />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       {children}
@@ -29,27 +33,48 @@ function Section({ title, icon, children }: any) {
   );
 }
 
-function GlassCard({ children, style }: any) {
+function GlassCard({ children, style }: { children: React.ReactNode; style?: object }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return iso;
+  }
+}
+
 export default function ProfileScreen() {
-  const router = useRouter();
-  const store = useDataStore() as any;
-  const user = useAuthStore((s: any) => s.user);
-  const logout = useAuthStore((s: any) => s.logout);
+  const store = useDataStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const language = usePreferencesStore((s) => s.language);
+  const setLanguage = usePreferencesStore((s) => s.setLanguage);
+  const loadPreferences = usePreferencesStore((s) => s.loadPreferences);
+  const t = i18n[language];
+
   const {
-    shifts, shiftTypes, gratifiedEntries, currentMonth,
+    shifts, shiftTypes, gratifiedEntries, gratifications, cycles,
+    gratifiedConfig, gratifiedTemplates, currentMonth,
     deleteShiftType, resetData, resetCalendarData,
     resetGratifiedData, resetOccurrencesData,
-    gratifiedConfig, setGratifiedConfig, gratifiedTemplates, deleteGratifiedTemplate,
-  } = store;
+    setGratifiedConfig, deleteGratifiedTemplate,
+    restoreFromBackup,
+  } = store as any;
 
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isResetExpanded, setIsResetExpanded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [activeReset, setActiveReset] = useState<ResetScope | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsError, setSessionsError] = useState(false);
+  const [isSessionsExpanded, setIsSessionsExpanded] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const [cfg, setCfg] = useState({
     baseSmall4h: String(gratifiedConfig?.baseSmall4h ?? ''),
     baseLarge4h: String(gratifiedConfig?.baseLarge4h ?? ''),
@@ -61,6 +86,27 @@ export default function ProfileScreen() {
     largeStart: String(gratifiedConfig?.largeStart ?? ''),
     largeEnd: String(gratifiedConfig?.largeEnd ?? ''),
   });
+
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
+
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    setSessionsError(false);
+    try {
+      const list = await getSessions();
+      setSessions(list);
+    } catch {
+      setSessionsError(true);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isSessionsExpanded) loadSessions();
+  }, [isSessionsExpanded, loadSessions]);
 
   const resetOptions = useMemo(() => [
     { key: 'calendar' as ResetScope, title: 'Calendário', desc: 'Apaga turnos, tipos de turno, gratificações e ciclos.', icon: 'calendar-outline' },
@@ -74,7 +120,6 @@ export default function ProfileScreen() {
     setIsLoggingOut(true);
     try {
       await logout();
-      // Navigation handled by _layout.tsx watching isAuthenticated
     } catch (err) {
       console.error('[logout]', err);
       if (Platform.OS === 'web') {
@@ -162,6 +207,74 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const payload: BackupPayload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        shiftTypes: shiftTypes || [],
+        cycles: cycles || [],
+        gratifiedConfig: gratifiedConfig || {},
+        gratifiedTemplates: gratifiedTemplates || [],
+        gratifiedEntries: gratifiedEntries || [],
+        shifts: shifts || [],
+        gratifications: gratifications || [],
+      };
+      await exportFullBackup(payload);
+      toast.success('Backup exportado');
+    } catch (err) {
+      console.error('Backup error:', err);
+      toast.error('Erro ao exportar backup');
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Importação', 'A importação de JSON está disponível apenas na versão web.');
+      return;
+    }
+    const confirm = typeof window !== 'undefined' && window.confirm(
+      'Importar backup? Os dados locais actuais (tipos de turno, ciclos, config, templates) serão substituídos.'
+    );
+    if (!confirm) return;
+    setIsRestoring(true);
+    try {
+      const payload = await pickAndReadJsonWeb();
+      await restoreFromBackup(payload);
+      toast.success('Backup restaurado com sucesso');
+    } catch (err: any) {
+      console.error('Restore error:', err);
+      toast.error(err?.message || 'Erro ao restaurar backup');
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(t['sessions_revoke_confirm'])
+      : await new Promise<boolean>((res) =>
+          Alert.alert(t['sessions_revoke'], t['sessions_revoke_confirm'], [
+            { text: 'Cancelar', style: 'cancel', onPress: () => res(false) },
+            { text: t['sessions_revoke'], style: 'destructive', onPress: () => res(true) },
+          ])
+        );
+    if (!confirmed) return;
+    setRevokingId(sessionId);
+    try {
+      await revokeSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+      toast.success('Sessão revogada');
+    } catch {
+      toast.error('Erro ao revogar sessão');
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
   const confirmReset = (scope: ResetScope) => {
     const labels: Record<ResetScope, string> = { calendar: 'Calendário', gratified: 'Gratificados', occurrences: 'Ocorrências', all: 'Tudo' };
     if (Platform.OS === 'web') {
@@ -210,6 +323,69 @@ export default function ProfileScreen() {
             <Text style={styles.userEmail}>{user?.email || ''}</Text>
           </View>
         </LinearGradient>
+
+        {/* Language toggle */}
+        <Section title={t['language']} icon="globe-outline">
+          <GlassCard>
+            <View style={styles.langRow}>
+              {(['pt', 'en'] as const).map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[styles.langBtn, language === lang && styles.langBtnActive]}
+                  onPress={() => setLanguage(lang)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.langBtnText, language === lang && styles.langBtnTextActive]}>
+                    {t[`language_${lang}` as 'language_pt' | 'language_en']}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </GlassCard>
+        </Section>
+
+        {/* Backup & restore */}
+        <Section title={t['backup']} icon="cloud-download-outline">
+          <GlassCard>
+            {[
+              {
+                action: handleBackup,
+                loading: isBackingUp,
+                icon: 'archive-outline' as const,
+                label: t['backup_export'],
+                desc: t['backup_export_desc'],
+                color: '#3B82F6',
+              },
+              {
+                action: handleRestore,
+                loading: isRestoring,
+                icon: 'refresh-outline' as const,
+                label: t['backup_import'],
+                desc: t['backup_import_desc'],
+                color: '#8B5CF6',
+              },
+            ].map((item, i, arr) => (
+              <TouchableOpacity
+                key={item.label}
+                style={[styles.exportBtn, i < arr.length - 1 && styles.exportBtnBorder]}
+                onPress={item.action}
+                disabled={item.loading}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.exportIcon, { backgroundColor: `${item.color}18` }]}>
+                  {item.loading
+                    ? <ActivityIndicator size="small" color={item.color} />
+                    : <Ionicons name={item.icon} size={16} color={item.color} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.exportLabel}>{item.label}</Text>
+                  <Text style={styles.exportDesc}>{item.desc}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color="#334155" />
+              </TouchableOpacity>
+            ))}
+          </GlassCard>
+        </Section>
 
         {/* Shift types */}
         <Section title="Tipos de turno" icon="color-palette-outline">
@@ -283,6 +459,70 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             ))}
           </GlassCard>
+        </Section>
+
+        {/* Active sessions */}
+        <Section title={t['sessions']} icon="phone-portrait-outline">
+          <TouchableOpacity
+            style={styles.collapseBtn}
+            onPress={() => setIsSessionsExpanded(!isSessionsExpanded)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.collapseBtnText}>
+              {isSessionsExpanded ? 'Ocultar sessões' : 'Ver sessões ativas'}
+            </Text>
+            <Ionicons name={isSessionsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#475569" />
+          </TouchableOpacity>
+
+          {isSessionsExpanded && (
+            <GlassCard style={{ marginTop: 8 }}>
+              {sessionsLoading ? (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="small" color="#3B82F6" />
+                </View>
+              ) : sessionsError ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>{t['sessions_error']}</Text>
+                  <TouchableOpacity onPress={loadSessions} style={{ marginTop: 8 }}>
+                    <Text style={{ color: '#3B82F6', fontSize: 13 }}>Tentar novamente</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : sessions.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>{t['sessions_empty']}</Text>
+                </View>
+              ) : (
+                sessions.map((s, i) => (
+                  <View key={s.session_id} style={[styles.sessionRow, i === sessions.length - 1 && { borderBottomWidth: 0 }]}>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.sessionBadgeRow}>
+                        <Ionicons name="phone-portrait-outline" size={13} color={s.is_current ? '#3B82F6' : '#475569'} />
+                        {s.is_current && (
+                          <View style={styles.currentBadge}>
+                            <Text style={styles.currentBadgeText}>{t['sessions_current']}</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.sessionMeta}>{t['sessions_created']}: {formatDate(s.created_at)}</Text>
+                      <Text style={styles.sessionMeta}>{t['sessions_expires']}: {formatDate(s.expires_at)}</Text>
+                    </View>
+                    {!s.is_current && (
+                      <TouchableOpacity
+                        style={[styles.revokeBtn, revokingId === s.session_id && { opacity: 0.5 }]}
+                        onPress={() => handleRevokeSession(s.session_id)}
+                        disabled={revokingId === s.session_id}
+                        activeOpacity={0.75}
+                      >
+                        {revokingId === s.session_id
+                          ? <ActivityIndicator size="small" color="#EF4444" />
+                          : <Text style={styles.revokeBtnText}>{t['sessions_revoke']}</Text>}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))
+              )}
+            </GlassCard>
+          )}
         </Section>
 
         {/* Config */}
@@ -583,4 +823,57 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  langRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 10,
+  },
+  langBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  langBtnActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+  },
+  langBtnText: { color: '#475569', fontWeight: '600', fontSize: 13 },
+  langBtnTextActive: { color: '#60A5FA' },
+  sessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+    gap: 10,
+  },
+  sessionBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  currentBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  currentBadgeText: { color: '#60A5FA', fontSize: 10, fontWeight: '700' },
+  sessionMeta: { color: '#475569', fontSize: 11, marginTop: 1 },
+  revokeBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 64,
+    alignItems: 'center',
+  },
+  revokeBtnText: { color: '#FCA5A5', fontSize: 12, fontWeight: '700' },
 });

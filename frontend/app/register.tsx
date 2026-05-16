@@ -38,7 +38,7 @@ export default function RegisterScreen() {
     setError('');
     try {
       await register(name, email, password);
-      router.replace('/(tabs)');
+      // Navigation handled by _layout.tsx watching isAuthenticated
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao registar');
     } finally {

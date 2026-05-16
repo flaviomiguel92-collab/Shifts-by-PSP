@@ -35,7 +35,7 @@ export default function LoginScreen() {
     setError('');
     try {
       await login(email, password);
-      router.replace('/(tabs)');
+      // Navigation handled by _layout.tsx watching isAuthenticated
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {

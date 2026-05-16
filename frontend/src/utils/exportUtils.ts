@@ -135,6 +135,68 @@ export async function exportGratifiedToXLSX(entries: GratifiedEntry[], year: str
   }
 }
 
+// ─── Full JSON Backup ────────────────────────────────────────────────────────
+
+export interface BackupPayload {
+  version: 1;
+  exportedAt: string;
+  shiftTypes: unknown[];
+  cycles: unknown[];
+  gratifiedConfig: unknown;
+  gratifiedTemplates: unknown[];
+  gratifiedEntries: unknown[];
+  shifts: unknown[];
+  gratifications: unknown[];
+}
+
+export async function exportFullBackup(payload: BackupPayload): Promise<void> {
+  const json = JSON.stringify(payload, null, 2);
+  const filename = `turnos-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+  if (Platform.OS === 'web') {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const FileSystem = await import('expo-file-system/legacy');
+  const path = `${FileSystem.documentDirectory}${filename}`;
+  await FileSystem.writeAsStringAsync(path, json, { encoding: 'utf8' });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: filename });
+  }
+}
+
+export function pickAndReadJsonWeb(): Promise<BackupPayload> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) { reject(new Error('No file selected')); return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target?.result as string) as BackupPayload;
+          if (parsed.version !== 1) throw new Error('Formato de backup inválido');
+          resolve(parsed);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler ficheiro'));
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+}
+
 // ─── PDF Export ─────────────────────────────────────────────────────────────
 
 function buildCalendarHTML(shifts: Shift[], month: string, shiftTypes: ShiftType[], year: string): string {

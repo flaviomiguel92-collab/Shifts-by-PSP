@@ -90,6 +90,7 @@ interface DataStore {
   resetCalendarData: () => Promise<void>;
   resetGratifiedData: () => Promise<void>;
   resetOccurrencesData: () => Promise<void>;
+  restoreFromBackup: (payload: Partial<DataStore>) => Promise<void>;
 
   fetchShiftTypes: () => Promise<ShiftTypeConfig[]>;
   createShiftType: (shiftType: Partial<ShiftTypeConfig>) => Promise<void>;
@@ -314,6 +315,19 @@ export const useDataStore = create<DataStore>((set, get) => ({
 
   resetOccurrencesData: async () => {
     set({ occurrences: [] });
+    await get().saveData();
+  },
+
+  restoreFromBackup: async (payload) => {
+    set({
+      shiftTypes: Array.isArray(payload.shiftTypes) ? payload.shiftTypes as ShiftTypeConfig[] : get().shiftTypes,
+      cycles: Array.isArray(payload.cycles) ? payload.cycles as Cycle[] : get().cycles,
+      gratifiedConfig: payload.gratifiedConfig ? { ...get().gratifiedConfig, ...(payload.gratifiedConfig as GratifiedConfig) } : get().gratifiedConfig,
+      gratifiedTemplates: Array.isArray(payload.gratifiedTemplates) ? payload.gratifiedTemplates as GratifiedTemplate[] : get().gratifiedTemplates,
+      gratifiedEntries: Array.isArray(payload.gratifiedEntries) ? payload.gratifiedEntries as GratifiedEntry[] : get().gratifiedEntries,
+      shifts: Array.isArray(payload.shifts) ? payload.shifts as Shift[] : get().shifts,
+      gratifications: Array.isArray(payload.gratifications) ? payload.gratifications as Gratification[] : get().gratifications,
+    });
     await get().saveData();
   },
 
