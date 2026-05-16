@@ -75,22 +75,69 @@
 - [x] Duplicate shift: copies selected shift to next day (with update if exists)
 - [x] Copy week: copies current week's shifts to the following week via bulkUpsertShifts
 
+### Phase 7 — PWA Polish
+- [x] `src/components/ui/OfflineBanner.tsx` — web-only banner on `navigator offline` event
+- [x] `src/components/ui/InstallPrompt.tsx` — captures `beforeinstallprompt`, shows install CTA (dismissible), hides if already in standalone mode
+- [x] `app/_layout.tsx` — animated splash screen (spring fade + scale + pulse glow on "S" logo), replaces bare ActivityIndicator; OfflineBanner + InstallPrompt mounted globally
+
+### Phase 8 — Quick Actions FAB
+- [x] `index.tsx` (calendar): FAB with 2 actions — Novo Turno (opens ShiftModal for today) + Novo Gratificado (opens GratifiedModal for today)
+- [x] `gratificados.tsx`: FAB + GratifiedModal wired directly — Novo Gratificado for today's date
+
+---
+
+## COMPLETED (Session 4 — Technical Audit)
+
+### Security & Backend
+- [x] `/api/reports/generate` requires Bearer auth
+- [x] Shift routes reordered: fixed paths before `{id}` (prevents `/bulk` and `/reset` conflicts)
+- [x] OAuth sessions standardised to 30 days
+- [x] `DemoAuthRequest` unused class removed
+- [x] `requirements.txt`: removed boto3, jq, docxtpl, docx2pdf, pandas, numpy
+
+### Frontend Quality
+- [x] `sharp` removed from devDependencies; `package-lock.json` regenerated
+- [x] `tsconfig.json`: removed `noImplicitAny: false` workaround — `strict: true` now passes clean
+- [x] `src/store/dataStore.ts`: migrated from `create<any>` to fully typed `create<DataStore>`
+- [x] `src/services/api.ts`: all functions typed (Occurrence, Shift, Gratification)
+- [x] `app/(tabs)/ocorrencias.tsx`: reduced ~1500 → ~650 lines
+  - `PersonFormModal` extracted → `src/components/occurrence/PersonFormModal.tsx`
+  - `CreateOccurrenceModal` extracted → `src/components/occurrence/CreateOccurrenceModal.tsx`
+
+### CI/CD
+- [x] GitHub Actions: `npm ci`, lint, `npx tsc --noEmit`, web build as blocking checks
+- [x] Vercel deploy via `npx vercel@latest` from repo root
+- [x] Secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` configured
+
 ---
 
 ## PENDING
 
-### Phase 7 — PWA Polish
-- [ ] Offline banner indicator
-- [ ] App install prompt (web)
-- [ ] Splash screen animation
+### Phase 9 — Dashboard Charts
+- [ ] Donut chart for shift type distribution
+- [ ] Area/line chart for monthly evolution
+- [ ] Yearly comparison chart (this year vs last year)
+- [ ] Overtime hours calculation and display
 
-### Phase 8 — Quick Actions FAB
-- [ ] Floating Action Button (FAB) for new shift / new gratificado
+### Phase 10 — Gratificados Improvements
+- [ ] Search / filter entries by name or date range
+- [ ] Recurring entries (auto-repeat)
+- [ ] Income simulation (project future earnings)
+- [ ] Excel (.xlsx) export
 
-### Phase 7 — PWA Polish
-- [ ] Offline banner indicator
-- [ ] App install prompt (web)
-- [ ] Splash screen animation
+### Phase 11 — Global Search
+- [ ] Search across shifts, gratificados, and occurrences
+- [ ] Keyboard shortcut on web (Cmd+K / Ctrl+K)
+
+### Phase 12 — Profile / Settings
+- [ ] Active sessions list with revoke
+- [ ] Data backup (export full JSON) + restore
+- [ ] Theme / language preferences
+
+### Backend
+- [ ] MongoDB indexes: `user_id`, `date`, `email`, `session_token`
+- [ ] Migrate `cycles` and `gratifiedEntries` from localStorage to MongoDB
+- [ ] Unify auth cookies (currently inconsistent `secure`/`samesite` flags)
 
 ---
 
@@ -103,21 +150,26 @@
 | frontend/app/(tabs)/_layout.tsx | Session 2 | Inter font, custom tab bar |
 | frontend/app/login.tsx | Session 2 | Full redesign |
 | frontend/app/register.tsx | Session 2 | Full redesign |
-| frontend/app/(tabs)/index.tsx | Session 2 | Style updates |
-| frontend/app/(tabs)/gratificados.tsx | Session 2 | Full redesign |
-| frontend/app/(tabs)/stats.tsx | Session 2 | Full redesign |
-| frontend/app/(tabs)/profile.tsx | Session 2 | Full redesign |
-| frontend/app/(tabs)/ocorrencias.tsx | Session 2 | Style updates |
+| frontend/app/(tabs)/index.tsx | Session 2+3+4 | Redesign, multi-select, duplicate, copy week, toasts, skeletons, FAB |
+| frontend/app/(tabs)/gratificados.tsx | Session 2+4 | Full redesign, FAB + GratifiedModal |
+| frontend/app/(tabs)/stats.tsx | Session 2+3 | Full redesign, KPI cards, shift breakdown, yearly heatmap |
+| frontend/app/(tabs)/profile.tsx | Session 2+3 | Full redesign, export section (PDF + CSV) |
+| frontend/app/(tabs)/ocorrencias.tsx | Session 2+4 | Style updates, extracted PersonFormModal + CreateOccurrenceModal |
 | frontend/src/components/ShiftModal.tsx | Session 2 | Full redesign |
 | frontend/src/store/authStore.ts | Session 1 | Auth fixes |
-| frontend/src/store/dataStore.ts | Session 1 | Data loss fix |
+| frontend/src/store/dataStore.ts | Session 1+4 | Data loss fix, full TypeScript typing |
+| frontend/src/services/api.ts | Session 4 | Full TypeScript typing |
 | frontend/src/components/ui/Toast.tsx | Session 3 | Created: animated toast notification |
 | frontend/src/utils/toast.ts | Session 3 | Created: Zustand toast store + imperative API |
 | frontend/src/utils/exportUtils.ts | Session 3 | Created: PDF/CSV export utilities |
-| frontend/app/_layout.tsx | Session 3 | Added ToastContainer globally |
-| frontend/app/(tabs)/index.tsx | Session 3 | Multi-select, duplicate, copy week, toasts, skeletons |
-| frontend/app/(tabs)/stats.tsx | Session 3 | KPI cards, shift breakdown, yearly heatmap |
-| frontend/app/(tabs)/profile.tsx | Session 3 | Export section (PDF + CSV) |
+| frontend/app/_layout.tsx | Session 3+4 | ToastContainer, animated splash, OfflineBanner, InstallPrompt |
+| frontend/src/components/ui/OfflineBanner.tsx | Session 4 | Created: web offline indicator |
+| frontend/src/components/ui/InstallPrompt.tsx | Session 4 | Created: PWA install CTA |
+| frontend/src/components/occurrence/PersonFormModal.tsx | Session 4 | Created: extracted from ocorrencias.tsx |
+| frontend/src/components/occurrence/CreateOccurrenceModal.tsx | Session 4 | Created: extracted from ocorrencias.tsx |
+| frontend/tsconfig.json | Session 4 | Removed noImplicitAny:false — strict:true clean |
+| backend/server.py | Session 4 | Auth fixes, route ordering, session duration |
+| backend/requirements.txt | Session 4 | Removed 6 unused heavy dependencies |
 
 ---
 
@@ -128,3 +180,5 @@
 - **Design tokens** centralized in `colors.ts` (COLORS, SHADOWS, SHIFT_TYPE_COLORS)
 - **Font strategy**: Inter injected via Google Fonts CSS on web; system font fallback on native
 - **Reusable components** live in `frontend/src/components/ui/`
+- **TypeScript strict mode** enforced — `create<DataStore>` in Zustand, all API functions typed
+- **Component extraction**: large screens split into self-contained modal components under `src/components/`
