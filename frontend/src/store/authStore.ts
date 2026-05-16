@@ -34,18 +34,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Get stored session token
       const storedToken = await storage.getItem('session_token');
-      console.log('[checkAuth] Stored token:', storedToken ? 'EXISTS' : 'NONE');
 
       if (!storedToken) {
-        console.log('[checkAuth] No token found, not authenticated');
         useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, isLoading: false });
         return false;
       }
 
-      console.log('[checkAuth] Validating token with backend...');
       const response = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
         headers: {
@@ -55,28 +51,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         credentials: 'include',
       });
 
-      console.log('[checkAuth] Backend response:', response.status);
-
-      if (!response.ok) {
-        console.log('[checkAuth] Token invalid, removing');
+      if (response.status === 401) {
+        // Token genuinely invalid — clear it
         await storage.removeItem('session_token');
         useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
         return false;
       }
 
+      if (!response.ok) {
+        // Server error (503, 502, etc.) — backend cold start or temporary outage.
+        // Keep the token and treat as authenticated so the user isn't logged out.
+        console.warn(`[checkAuth] Server error ${response.status} — keeping session`);
+        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
+        return true;
+      }
+
       const userData = await response.json();
-      console.log('[checkAuth] Token valid, user:', userData?.email || userData?.user_id);
       set({
         user: userData,
         isAuthenticated: true,
         isLoading: false,
-        sessionToken: storedToken
+        sessionToken: storedToken,
       });
       return true;
     } catch (error) {
-      console.error('[checkAuth] Error:', error);
-      useDataStore.getState().clearSyncedCollections();
+      // Network error (offline, timeout) — keep the token, don't log out.
+      console.warn('[checkAuth] Network error — keeping session:', error);
+      const storedToken = await storage.getItem('session_token');
+      if (storedToken) {
+        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
+        return true;
+      }
       set({ user: null, isAuthenticated: false, isLoading: false });
       return false;
     }
