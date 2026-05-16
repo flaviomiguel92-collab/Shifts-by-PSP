@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as api from '../services/api';
 import { storage } from '../utils/storage';
+import { ShiftTypeConfig } from '../types';
 
 const STORAGE_KEY = 'app_data';
 
@@ -291,22 +292,56 @@ export const useDataStore = create((set, get) => ({
 
   // ==================== SHIFT TYPES ====================
 
-  createShiftType: async (shiftType) => {
-    const newShiftType = {
-      ...shiftType,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    };
-    set((state) => ({
-      shiftTypes: [...state.shiftTypes, newShiftType],
-    }));
-    get().saveData();
+  fetchShiftTypes: async () => {
+    try {
+      const result: ShiftTypeConfig[] = await api.getShiftTypes();
+      set({ shiftTypes: result });
+      get().saveData();
+      return result;
+    } catch (error) {
+      console.warn('[dataStore] fetchShiftTypes failed (keeping local cache):', error);
+      return get().shiftTypes;
+    }
   },
 
-  deleteShiftType: async (id) => {
+  createShiftType: async (shiftType) => {
+    try {
+      const created: ShiftTypeConfig = await api.createShiftTypeApi({
+        name: shiftType.name,
+        color: shiftType.color,
+        start_time: shiftType.start_time || shiftType.startTime,
+        end_time: shiftType.end_time || shiftType.endTime,
+        is_working: shiftType.is_working,
+        order: shiftType.order,
+      });
+      set((state) => ({
+        shiftTypes: [...state.shiftTypes, created],
+      }));
+      get().saveData();
+    } catch (error) {
+      // Fallback: keep local if API fails
+      console.warn('[dataStore] createShiftType API failed, using local fallback:', error);
+      const localFallback: ShiftTypeConfig = {
+        ...shiftType,
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      set((state) => ({
+        shiftTypes: [...state.shiftTypes, localFallback],
+      }));
+      get().saveData();
+    }
+  },
+
+  deleteShiftType: async (id: string) => {
     set((state) => ({
       shiftTypes: state.shiftTypes.filter((s) => s.id !== id),
     }));
     get().saveData();
+    try {
+      await api.deleteShiftTypeApi(id);
+    } catch (error) {
+      console.warn('[dataStore] deleteShiftType API failed (local already updated):', error);
+    }
   },
 
   // ==================== CYCLES ====================

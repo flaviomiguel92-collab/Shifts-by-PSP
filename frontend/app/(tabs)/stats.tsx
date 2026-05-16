@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
 
   scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 150 },
+  scrollContent: { padding: 16, paddingBottom: 150, maxWidth: 800, width: '100%', alignSelf: 'center' },
 
   totalCard: {
     backgroundColor: '#10B981',

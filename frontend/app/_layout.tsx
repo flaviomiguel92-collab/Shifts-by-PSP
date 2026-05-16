@@ -25,6 +25,11 @@ export default function RootLayout() {
           } catch (err) {
             console.warn('[init] Data load error:', err);
           }
+          try {
+            await useDataStore.getState().fetchShiftTypes();
+          } catch (err) {
+            console.warn('[init] fetchShiftTypes error:', err);
+          }
         }
       } catch (err) {
         console.error('[init] Init error:', err);

@@ -31,6 +31,7 @@ import {
   getPrevMonth,
   formatDate,
   fallbackColorForShiftTypeName,
+  resolveShiftColor,
 } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
 import { ShiftModal } from '../../src/components/ShiftModal';
@@ -91,7 +92,7 @@ export default function CalendarScreen() {
       map.set(n, {
         id: `fallback-${n}`,
         name: n,
-        color: fallbackColorForShiftTypeName(n),
+        color: resolveShiftColor(n),
       });
     });
     return map;
@@ -358,7 +359,7 @@ export default function CalendarScreen() {
 
   const getShiftDisplayColor = (shiftType: string) => {
     const configuredShift = shiftTypesMap.get(shiftType);
-    return configuredShift?.color || '#6B7280';
+    return resolveShiftColor(shiftType, configuredShift?.color);
   };
 
   if (isApplyingCycle) {
@@ -498,6 +499,11 @@ export default function CalendarScreen() {
                       <Text style={styles.shiftNameText} numberOfLines={1}>
                         {getShiftDisplayName(shift.shift_type)}
                       </Text>
+                      {shift.start_time ? (
+                        <Text style={styles.shiftTimeText} numberOfLines={1}>
+                          {shift.start_time}
+                        </Text>
+                      ) : null}
                     </View>
                   ) : holiday ? (
                     <View style={styles.holidayBadge}>
@@ -663,90 +669,143 @@ export default function CalendarScreen() {
       <Modal visible={showDayDetailModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.dayDetailModal}>
+            {/* Drag handle */}
+            <View style={styles.modalDragHandle} />
+
+            {/* Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedDate ? formatDate(selectedDate, 'EEEE, d MMMM yyyy') : ''}
-              </Text>
-              <TouchableOpacity onPress={() => setShowDayDetailModal(false)}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalDateWeekday}>
+                  {selectedDate ? formatDate(selectedDate, 'EEEE') : ''}
+                </Text>
+                <Text style={styles.modalTitle}>
+                  {selectedDate ? formatDate(selectedDate, 'd MMMM yyyy') : ''}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowDayDetailModal(false)}>
+                <Ionicons name="close" size={20} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               {/* Shift Section */}
               <View style={styles.detailSection}>
-                <Text style={styles.detailSectionTitle}>Turno</Text>
+                <View style={styles.detailSectionHeader}>
+                  <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+                  <Text style={styles.detailSectionTitle}>Turno</Text>
+                </View>
                 {selectedShift ? (
-                  <View style={styles.shiftDetailCard}>
-                    <View style={[
-                      styles.shiftDetailBadge, 
-                      { backgroundColor: getShiftDisplayColor(selectedShift.shift_type) }
-                    ]}>
-                      <Text style={styles.shiftDetailBadgeText}>
-                        {getShiftDisplayName(selectedShift.shift_type)}
-                      </Text>
+                  <View style={[
+                    styles.shiftDetailCard,
+                    { borderLeftColor: getShiftDisplayColor(selectedShift.shift_type) }
+                  ]}>
+                    <View style={styles.shiftDetailCardTop}>
+                      <View style={[
+                        styles.shiftDetailBadge,
+                        { backgroundColor: getShiftDisplayColor(selectedShift.shift_type) + '22' }
+                      ]}>
+                        <Text style={[
+                          styles.shiftDetailBadgeText,
+                          { color: getShiftDisplayColor(selectedShift.shift_type) }
+                        ]}>
+                          {getShiftDisplayName(selectedShift.shift_type)}
+                        </Text>
+                      </View>
                     </View>
-                    {selectedShift.start_time && selectedShift.end_time && (
-                      <Text style={styles.shiftTime}>
-                        {selectedShift.start_time} - {selectedShift.end_time}
-                      </Text>
-                    )}
-                    {selectedShift.note && (
-                      <Text style={styles.noteText}>Nota: {selectedShift.note}</Text>
-                    )}
+                    {selectedShift.start_time && selectedShift.end_time ? (
+                      <View style={styles.shiftTimeRow}>
+                        <Ionicons name="time-outline" size={14} color="#6B7280" />
+                        <Text style={styles.shiftTime}>
+                          {selectedShift.start_time} – {selectedShift.end_time}
+                        </Text>
+                      </View>
+                    ) : selectedShift.start_time ? (
+                      <View style={styles.shiftTimeRow}>
+                        <Ionicons name="time-outline" size={14} color="#6B7280" />
+                        <Text style={styles.shiftTime}>{selectedShift.start_time}</Text>
+                      </View>
+                    ) : null}
+                    {selectedShift.note ? (
+                      <View style={styles.shiftNoteRow}>
+                        <Ionicons name="document-text-outline" size={14} color="#6B7280" />
+                        <Text style={styles.noteText}>{selectedShift.note}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 ) : (
-                  <Text style={styles.noDataText}>Sem turno registado</Text>
+                  <View style={styles.emptyStateRow}>
+                    <Ionicons name="calendar-outline" size={16} color="#4B5563" />
+                    <Text style={styles.noDataText}>Sem turno registado</Text>
+                  </View>
                 )}
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => {
-                    setShowDayDetailModal(false);
-                    setShowShiftModal(true);
-                  }}
-                >
-                  <Ionicons name="pencil" size={18} color="#FFFFFF" />
-                  <Text style={styles.editButtonText}>
-                    {selectedShift ? 'Editar Turno' : 'Adicionar Turno'}
-                  </Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.editButton, { backgroundColor: '#10B981', marginTop: 10 }]}
-                  onPress={() => {
-                    setShowDayDetailModal(false);
-                    setShowGratifiedModal(true);
-                  }}
-                >
-                  <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
-                  <Text style={styles.editButtonText}>Adicionar Gratificado</Text>
-                </TouchableOpacity>
+                {/* Action buttons */}
+                <View style={styles.actionButtonRow}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.actionBtnPrimary]}
+                    onPress={() => {
+                      setShowDayDetailModal(false);
+                      setShowShiftModal(true);
+                    }}
+                  >
+                    <Ionicons name={selectedShift ? 'pencil' : 'add'} size={16} color="#FFFFFF" />
+                    <Text style={styles.actionBtnText}>
+                      {selectedShift ? 'Editar' : 'Adicionar'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.actionBtnGreen]}
+                    onPress={() => {
+                      setShowDayDetailModal(false);
+                      setShowGratifiedModal(true);
+                    }}
+                  >
+                    <Ionicons name="cash-outline" size={16} color="#FFFFFF" />
+                    <Text style={styles.actionBtnText}>Gratificado</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+
+              {/* Divider */}
+              <View style={styles.sectionDivider} />
 
               {/* Gratified Section */}
               <View style={styles.detailSection}>
-                <Text style={styles.detailSectionTitle}>Gratificados</Text>
+                <View style={styles.detailSectionHeader}>
+                  <Ionicons name="star-outline" size={14} color="#6B7280" />
+                  <Text style={styles.detailSectionTitle}>
+                    Gratificados
+                    {gratifiedForSelectedDate.length > 0 && (
+                      <Text style={styles.sectionCount}> ({gratifiedForSelectedDate.length})</Text>
+                    )}
+                  </Text>
+                </View>
                 {gratifiedForSelectedDate.length === 0 ? (
-                  <Text style={styles.noDataText}>Sem gratificados registados</Text>
+                  <View style={styles.emptyStateRow}>
+                    <Ionicons name="star-outline" size={16} color="#4B5563" />
+                    <Text style={styles.noDataText}>Sem gratificados registados</Text>
+                  </View>
                 ) : (
-                  <View style={{ gap: 10 }}>
+                  <View style={{ gap: 8 }}>
                     {gratifiedForSelectedDate.map((g: any) => (
                       <View key={g.id} style={styles.gratDetailCard}>
                         <View style={styles.gratHeader}>
-                          <View style={[styles.gratBadge, { backgroundColor: '#10B981' }]}>
-                            <Text style={styles.gratBadgeText}>{g.name}</Text>
-                          </View>
+                          <Text style={styles.gratName}>{g.name}</Text>
                           <Text style={styles.gratValue}>{Number(g.value || 0).toFixed(2)}€</Text>
                         </View>
-                        <Text style={styles.hintText}>
-                          {g.start_time} - {g.end_time} (já com desconto)
-                        </Text>
+                        {g.start_time && g.end_time ? (
+                          <View style={styles.shiftTimeRow}>
+                            <Ionicons name="time-outline" size={13} color="#6B7280" />
+                            <Text style={styles.hintText}>{g.start_time} – {g.end_time} · já com desconto</Text>
+                          </View>
+                        ) : null}
                         <TouchableOpacity
                           style={styles.removeGratifiedBtn}
                           onPress={() => handleDeleteGratifiedEntry(g.id)}
                         >
-                          <Ionicons name="trash-outline" size={14} color="#FCA5A5" />
-                          <Text style={styles.removeGratifiedBtnText}>Remover gratificado</Text>
+                          <Ionicons name="trash-outline" size={13} color="#FCA5A5" />
+                          <Text style={styles.removeGratifiedBtnText}>Remover</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -757,7 +816,7 @@ export default function CalendarScreen() {
 
             {selectedShift && (
               <TouchableOpacity style={styles.deleteBtn} onPress={handleShiftDelete}>
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                <Ionicons name="trash-outline" size={16} color="#EF4444" />
                 <Text style={styles.deleteBtnText}>Eliminar Turno</Text>
               </TouchableOpacity>
             )}
@@ -924,6 +983,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 14,
     paddingBottom: 110,
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
   },
   summaryContainer: {
     marginHorizontal: 12,
@@ -1189,6 +1251,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
+  shiftTimeText: {
+    fontSize: 6,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    marginTop: 1,
+  },
   shiftBadgeText: {
     fontSize: 8,
     fontWeight: '700',
@@ -1219,58 +1288,125 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F2937',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '80%',
+    maxHeight: '85%',
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+  },
+  modalDragHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: '#4B5563',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 4,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
   },
+  modalDateWeekday: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+    textTransform: 'capitalize',
+    marginBottom: 2,
+  },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     textTransform: 'capitalize',
-    flex: 1,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#374151',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+    marginTop: 2,
   },
   modalContent: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   detailSection: {
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  detailSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
   },
   detailSectionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#4B5563',
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#374151',
+    marginBottom: 16,
+  },
+  emptyStateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
     marginBottom: 12,
   },
   shiftDetailCard: {
     backgroundColor: '#111827',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3B82F6',
+  },
+  shiftDetailCardTop: {
+    marginBottom: 8,
   },
   shiftDetailBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   shiftDetailBadgeText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
+  },
+  shiftTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  shiftNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 8,
   },
   shiftTime: {
-    fontSize: 14,
-    color: '#D1D5DB',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#9CA3AF',
   },
   excessHoursText: {
     fontSize: 14,
@@ -1281,13 +1417,36 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 13,
     color: '#9CA3AF',
-    marginTop: 8,
+    flex: 1,
     fontStyle: 'italic',
   },
   noDataText: {
     fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 12,
+    color: '#4B5563',
+  },
+  actionButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: 10,
+    gap: 6,
+  },
+  actionBtnPrimary: {
+    backgroundColor: '#3B82F6',
+  },
+  actionBtnGreen: {
+    backgroundColor: '#059669',
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   editButton: {
     flexDirection: 'row',
@@ -1306,13 +1465,20 @@ const styles = StyleSheet.create({
   gratDetailCard: {
     backgroundColor: '#111827',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
   },
   gratHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 4,
+  },
+  gratName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D1D5DB',
+    flex: 1,
+    marginRight: 8,
   },
   gratBadge: {
     paddingHorizontal: 12,
@@ -1325,7 +1491,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   gratValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#10B981',
   },
@@ -1338,18 +1504,18 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(239,68,68,0.12)',
+    gap: 5,
+    backgroundColor: 'rgba(239,68,68,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.35)',
+    borderColor: 'rgba(239,68,68,0.25)',
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 6,
   },
   removeGratifiedBtnText: {
     color: '#FCA5A5',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   deleteBtn: {
     flexDirection: 'row',

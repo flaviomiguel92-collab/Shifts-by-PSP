@@ -171,6 +171,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 120,
     gap: 10,
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
   },
   card: {
     backgroundColor: '#1F2937',

@@ -215,7 +215,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
       <HeaderWithBack title="Perfil" />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 120, maxWidth: 800, width: '100%', alignSelf: 'center' }}>
 
       <Text style={{ color: 'white', fontSize: 20, marginBottom: 10, marginTop: 10 }}>
         Limpar Dados / Reset

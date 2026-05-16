@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { Shift, Gratification, GratificationType, GRATIFICATION_COLORS } from '../types';
-import { getCalendarDays, formatMonth, dateToString, WEEKDAYS, getNextMonth, getPrevMonth } from '../utils/helpers';
+import { getCalendarDays, formatMonth, dateToString, WEEKDAYS, getNextMonth, getPrevMonth, resolveShiftColor } from '../utils/helpers';
 import { getHolidaysMap } from '../utils/holidays';
 import { useDataStore } from '../store/dataStore';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '../theme/colors';
@@ -30,7 +30,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const getShiftColor = (shiftTypeName: string) => {
     const shiftType = shiftTypes.find((st: any) => st.name === shiftTypeName);
-    return shiftType?.color || '#6B7280';
+    return resolveShiftColor(shiftTypeName, shiftType?.color);
   };
 
   const getShiftLabel = (shiftTypeName: string) => {

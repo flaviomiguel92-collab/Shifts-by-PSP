@@ -11,16 +11,6 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from passlib.context import CryptContext
-from reporting import (
-    ReportGenerateRequest,
-    ReportGenerateResponse,
-    ServicoRemuneradoData,
-    build_servico_remunerado_file_name,
-    build_servico_remunerado_context,
-    build_template_registry,
-    resolve_existing_template_path,
-    generate_pdf_base64,
-)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -57,7 +47,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-report_templates_registry = build_template_registry(build_servico_remunerado_context)
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -165,7 +154,7 @@ class CustomShiftType(BaseModel):
 
 class CustomShiftTypeCreate(BaseModel):
     name: str
-    short_name: str
+    short_name: Optional[str] = None  # defaults to first 3 chars of name
     color: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
@@ -1089,51 +1078,71 @@ async def add_photo_to_occurrence(
 
     return {"message": "Photo added successfully"}
 
+# ==================== SHIFT TYPES ====================
+
+@api_router.get("/shift-types", response_model=List[dict])
+async def get_shift_types(current_user: User = Depends(get_current_user)):
+    cursor = db.shift_types.find({"user_id": current_user.user_id}, {"_id": 0})
+    result = await cursor.to_list(length=500)
+    for doc in result:
+        if "created_at" in doc and hasattr(doc["created_at"], "isoformat"):
+            doc["created_at"] = doc["created_at"].isoformat()
+    return result
+
+
+@api_router.post("/shift-types", response_model=dict)
+async def create_shift_type(data: CustomShiftTypeCreate, current_user: User = Depends(get_current_user)):
+    short_name = data.short_name or data.name[:3].upper()
+    shift_type = CustomShiftType(
+        user_id=current_user.user_id,
+        name=data.name,
+        short_name=short_name,
+        color=data.color,
+        start_time=data.start_time,
+        end_time=data.end_time,
+        is_working=data.is_working,
+        order=data.order,
+    )
+    doc = shift_type.dict()
+    await db.shift_types.insert_one(doc)
+    doc.pop("_id", None)
+    doc["created_at"] = doc["created_at"].isoformat()
+    return doc
+
+
+@api_router.put("/shift-types/{shift_type_id}", response_model=dict)
+async def update_shift_type(
+    shift_type_id: str,
+    data: CustomShiftTypeUpdate,
+    current_user: User = Depends(get_current_user),
+):
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar.")
+    result = await db.shift_types.find_one_and_update(
+        {"id": shift_type_id, "user_id": current_user.user_id},
+        {"$set": update_data},
+        return_document=True,
+        projection={"_id": 0},
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Tipo de turno não encontrado.")
+    if "created_at" in result and hasattr(result["created_at"], "isoformat"):
+        result["created_at"] = result["created_at"].isoformat()
+    return result
+
+
+@api_router.delete("/shift-types/{shift_type_id}")
+async def delete_shift_type(shift_type_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.shift_types.delete_one(
+        {"id": shift_type_id, "user_id": current_user.user_id}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tipo de turno não encontrado.")
+    return {"message": "Tipo de turno eliminado."}
+
+
 # ==================== ROOT ENDPOINT ====================
-
-@api_router.get("/reports/templates")
-async def get_report_templates():
-    return [
-        {
-            "id": definition.template_id,
-            "title": definition.title,
-        }
-        for definition in report_templates_registry.values()
-    ]
-
-
-@api_router.post("/reports/generate", response_model=ReportGenerateResponse)
-async def generate_report(request_data: ReportGenerateRequest):
-    template = report_templates_registry.get(request_data.template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template de relatório não encontrado.")
-
-    if request_data.template_id != "servico_remunerado":
-        raise HTTPException(status_code=400, detail="Template ainda não suportado.")
-
-    try:
-        parsed_data = ServicoRemuneradoData(**request_data.data)
-        # Use desired_file_name if provided, otherwise generate a default name
-        if parsed_data.desired_file_name:
-            output_name = parsed_data.desired_file_name
-        else:
-            # Default to date_hour.pdf if no name provided
-            date_str = (parsed_data.reportDate or "").replace("-", "")
-            hour_str = (parsed_data.reportHour or "").replace(":", "")
-            output_name = f"{date_str}_{hour_str}.pdf" if date_str and hour_str else "relatorio.pdf"
-
-        template_path = resolve_existing_template_path(template.template_docx_path_candidates)
-        context = template.context_builder(parsed_data)
-        pdf_base64 = generate_pdf_base64(template_path, context, output_name)
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=500, detail=str(error))
-    except RuntimeError as error:
-        raise HTTPException(status_code=503, detail=str(error))
-    except Exception as error:
-        logger.error(f"Erro ao gerar relatório: {error}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Erro ao gerar relatório: {error}")
-
-    return ReportGenerateResponse(file_name=output_name, pdf_base64=pdf_base64)
 
 @api_router.post("/cleanup/all-data")
 async def cleanup_all_data():

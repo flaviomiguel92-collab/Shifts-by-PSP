@@ -8,6 +8,20 @@ export interface User {
 
 export type ShiftType = string;
 
+export interface ShiftTypeConfig {
+  id: string;
+  name: string;
+  shortLabel?: string;
+  short_name?: string;
+  color: string;
+  start_time?: string;
+  end_time?: string;
+  /** @deprecated use start_time */ startTime?: string;
+  /** @deprecated use end_time */ endTime?: string;
+  is_working?: boolean;
+  order?: number;
+}
+
 export interface Shift {
   id: string;
   user_id: string;

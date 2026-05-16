@@ -30,14 +30,6 @@ export default function HomeScreen() {
       href: '/(tabs)/ocorrencias',
     },
     {
-      id: 'relatorios',
-      title: 'Relatórios',
-      description: 'Gerar relatórios PDF',
-      icon: 'document',
-      color: '#EF4444',
-      href: '/(tabs)/relatorios',
-    },
-    {
       id: 'painel',
       title: 'Painel',
       description: 'Estatísticas',

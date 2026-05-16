@@ -1,5 +1,6 @@
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { SHIFT_TYPE_COLORS } from '../theme/colors';
 
 export const formatDate = (date: string | Date, formatStr: string = 'dd/MM/yyyy'): string => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
@@ -96,4 +97,18 @@ export function fallbackColorForShiftTypeName(name: string): string {
   if (!key) return '#6B7280';
   const idx = hashStringToUint(key) % FALLBACK_SHIFT_PALETTE.length;
   return FALLBACK_SHIFT_PALETTE[idx];
+}
+
+/**
+ * Resolve a cor definitiva para um tipo de turno.
+ * Prioridade: cor guardada → mapa de nomes conhecidos → hash deterministico.
+ * Nunca devolve cinzento (#6B7280) a não ser que o nome seja vazio.
+ */
+export function resolveShiftColor(name: string, storedColor?: string | null): string {
+  if (storedColor && storedColor.trim()) return storedColor.trim();
+  const key = String(name || '').trim();
+  if (!key) return '#6B7280';
+  const known = (SHIFT_TYPE_COLORS as Record<string, string | undefined>)[key];
+  if (known) return known;
+  return fallbackColorForShiftTypeName(key);
 }

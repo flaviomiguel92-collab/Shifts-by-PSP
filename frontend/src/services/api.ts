@@ -1,4 +1,5 @@
 import { storage } from '../utils/storage';
+import { ShiftTypeConfig } from '../types';
 
 const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
 const API_BASE_URL = API_ROOT + '/api';
@@ -266,4 +267,35 @@ export const getComparisonStats = async () => {
   }
 
   return response.json();
+};
+
+// ==================== SHIFT TYPES ====================
+
+export const getShiftTypes = async (): Promise<ShiftTypeConfig[]> => {
+  const response = await apiFetch(`${API_BASE_URL}/shift-types`, { method: 'GET' });
+  if (!response.ok) throw new Error(`Failed to fetch shift types: ${response.statusText}`);
+  return response.json();
+};
+
+export const createShiftTypeApi = async (data: {
+  name: string;
+  color: string;
+  start_time?: string;
+  end_time?: string;
+  is_working?: boolean;
+  order?: number;
+}): Promise<ShiftTypeConfig> => {
+  const response = await apiFetch(`${API_BASE_URL}/shift-types`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error(`Failed to create shift type: ${response.statusText}`);
+  return response.json();
+};
+
+export const deleteShiftTypeApi = async (id: string): Promise<void> => {
+  const response = await apiFetch(`${API_BASE_URL}/shift-types/${id}`, { method: 'DELETE' });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Failed to delete shift type: ${response.statusText}`);
+  }
 };

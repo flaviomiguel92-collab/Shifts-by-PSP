@@ -110,6 +110,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (e) {
         console.warn('[auth] loadData after login:', e);
       }
+      try {
+        await useDataStore.getState().fetchShiftTypes();
+      } catch (e) {
+        console.warn('[auth] fetchShiftTypes after login:', e);
+      }
 
       set({
         user: data.user,
@@ -153,6 +158,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await useDataStore.getState().loadData();
       } catch (e) {
         console.warn('[auth] loadData after register:', e);
+      }
+      try {
+        await useDataStore.getState().fetchShiftTypes();
+      } catch (e) {
+        console.warn('[auth] fetchShiftTypes after register:', e);
       }
 
       set({
@@ -198,12 +208,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (e) {
         console.warn('[auth] loadData after session exchange:', e);
       }
-      
-      set({ 
-        user: data.user, 
-        isAuthenticated: true, 
+      try {
+        await useDataStore.getState().fetchShiftTypes();
+      } catch (e) {
+        console.warn('[auth] fetchShiftTypes after session exchange:', e);
+      }
+
+      set({
+        user: data.user,
+        isAuthenticated: true,
         isLoading: false,
-        sessionToken: data.session_token 
+        sessionToken: data.session_token
       });
       
       return true;

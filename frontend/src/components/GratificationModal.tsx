@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -54,6 +55,7 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
   const handleSave = () => {
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) {
+      Alert.alert('Valor inválido', 'Introduz um valor numérico maior que zero.');
       return;
     }
     onSave({
@@ -149,10 +151,10 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
                 <Text style={styles.deleteText}>Eliminar</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity 
-              style={[styles.saveBtn, (!value || parseFloat(value) <= 0) && styles.saveBtnDisabled]} 
+            <TouchableOpacity
+              style={[styles.saveBtn, (!value || isNaN(parseFloat(value)) || parseFloat(value) <= 0) && styles.saveBtnDisabled]}
               onPress={handleSave}
-              disabled={!value || parseFloat(value) <= 0}
+              disabled={!value || isNaN(parseFloat(value)) || parseFloat(value) <= 0}
             >
               <Text style={styles.saveText}>Guardar</Text>
             </TouchableOpacity>
