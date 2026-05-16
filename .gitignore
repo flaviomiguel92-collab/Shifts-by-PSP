@@ -137,3 +137,6 @@ dist
 
 # Emergent build artifacts
 .emergent/
+
+# Expo / Metro cache
+frontend/.metro-cache/
