@@ -26,9 +26,6 @@ const TYPE_CONFIG: Record<ResultType, { icon: string; color: string; label: stri
   ocorrencia:  { icon: 'document-text-outline', color: '#F59E0B', label: 'Ocorrência' },
 };
 
-function highlight(text: string, query: string): string {
-  return text;
-}
 
 export function SearchModal() {
   const router = useRouter();
@@ -170,7 +167,7 @@ export function SearchModal() {
           {query.length >= 2 && results.length === 0 && (
             <View style={styles.empty}>
               <Ionicons name="search-outline" size={32} color="#1E293B" />
-              <Text style={styles.emptyText}>Sem resultados para "{query}"</Text>
+              <Text style={styles.emptyText}>Sem resultados para &quot;{query}&quot;</Text>
             </View>
           )}
 
