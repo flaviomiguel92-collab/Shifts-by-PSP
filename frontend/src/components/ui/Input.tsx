@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.textPrimary,
     fontSize: 14,
+    backgroundColor: 'transparent',
   },
   hint: {
     fontSize: 11,

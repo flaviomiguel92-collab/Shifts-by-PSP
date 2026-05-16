@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#111827',
+    backgroundColor: 'transparent',
     color: 'white',
     padding: 12,
     borderRadius: 10,

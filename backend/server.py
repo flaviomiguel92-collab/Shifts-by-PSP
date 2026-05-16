@@ -531,7 +531,7 @@ async def create_or_update_shifts_bulk(
                 update_fields["start_time"] = shift_item.start_time
             if shift_item.end_time is not None:
                 update_fields["end_time"] = shift_item.end_time
-            await db.shifts.update_one({"id": existing["id"]}, {"$set": update_fields})
+            await db.shifts.update_one({"id": existing["id"], "user_id": user.user_id}, {"$set": update_fields})
             updated_count += 1
         else:
             shift = Shift(
@@ -575,7 +575,7 @@ async def update_shift(
     update_data = {k: v for k, v in shift_data.dict().items() if v is not None}
 
     if update_data:
-        await db.shifts.update_one({"id": shift_id}, {"$set": update_data})
+        await db.shifts.update_one({"id": shift_id, "user_id": user.user_id}, {"$set": update_data})
 
     updated = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
     return updated
@@ -646,7 +646,7 @@ async def update_gratification(
 
     if update_data:
         await db.gratifications.update_one(
-            {"id": grat_id},
+            {"id": grat_id, "user_id": user.user_id},
             {"$set": update_data}
         )
 

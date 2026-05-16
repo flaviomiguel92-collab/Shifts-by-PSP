@@ -353,6 +353,7 @@ const styles = StyleSheet.create({
     color: '#F1F5F9',
     fontSize: 13,
     padding: 0,
+    backgroundColor: 'transparent',
   },
   monthNav: {
     flexDirection: 'row',

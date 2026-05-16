@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   inputIcon: { marginRight: 10 },
-  input: { color: '#F1F5F9', fontSize: 15 },
+  input: { color: '#F1F5F9', fontSize: 15, backgroundColor: 'transparent' },
   eyeBtn: { padding: 4, marginLeft: 6 },
   errorBox: {
     flexDirection: 'row',

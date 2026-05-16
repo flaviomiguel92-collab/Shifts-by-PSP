@@ -310,8 +310,17 @@ export default function StatsScreen() {
                 innerRadius={44}
                 centerLabelComponent={() => (
                   <View style={styles.donutCenter}>
-                    <Text style={styles.donutCenterValue}>{monthShifts.length}</Text>
-                    <Text style={styles.donutCenterLabel}>turnos</Text>
+                    <View style={{
+                      backgroundColor: 'rgba(5, 8, 22, 0.85)',
+                      borderRadius: 30,
+                      width: 60,
+                      height: 60,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                      <Text style={[styles.donutCenterValue, { color: '#FFFFFF', lineHeight: 22 }]}>{monthShifts.length}</Text>
+                      <Text style={[styles.donutCenterLabel, { color: '#94A3B8' }]}>turnos</Text>
+                    </View>
                   </View>
                 )}
               />

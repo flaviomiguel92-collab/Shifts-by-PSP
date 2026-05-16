@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   input: {
-    backgroundColor: 'rgba(5,8,22,0.6)',
+    backgroundColor: 'transparent',
     borderRadius: 12,
     padding: 14,
     color: '#F1F5F9',

@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#F1F5F9',
     fontSize: 15,
+    backgroundColor: 'transparent',
   },
   eyeBtn: { padding: 4, marginLeft: 6 },
   errorBox: {
