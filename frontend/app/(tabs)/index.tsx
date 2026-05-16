@@ -38,8 +38,9 @@ import { ShiftModal } from '../../src/components/ShiftModal';
 import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
+import { SkeletonCalendarRow, Skeleton } from '../../src/components/ui/Skeleton';
 
-type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end';
+type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
 export default function CalendarScreen() {
   const store = useDataStore() as any;
@@ -59,6 +60,7 @@ export default function CalendarScreen() {
   } = store;
 
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoadingShifts, setIsLoadingShifts] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [selectedShiftType, setSelectedShiftType] = useState<string | null>(null);
   const [selectedCycle, setSelectedCycle] = useState<{ id: string; name: string; pattern: string[] } | null>(null);
@@ -75,6 +77,8 @@ export default function CalendarScreen() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteGratifiedId, setDeleteGratifiedId] = useState<string | null>(null);
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  const [multiSelectShiftPicker, setMultiSelectShiftPicker] = useState(false);
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
   const shiftTypesMap = useMemo(() => {
@@ -129,7 +133,8 @@ export default function CalendarScreen() {
   }, [shifts]);
 
   useEffect(() => {
-    fetchShifts(currentMonth);
+    setIsLoadingShifts(true);
+    fetchShifts(currentMonth).finally(() => setIsLoadingShifts(false));
   }, [currentMonth]);
 
   useEffect(() => {
@@ -154,9 +159,43 @@ export default function CalendarScreen() {
     return shiftsMap.get(dateStr);
   }, [shiftsMap]);
 
+  // Start multi-select mode on long press
+  const handleDayLongPress = (dateStr: string) => {
+    if (editMode === 'none') {
+      setEditMode('multi_select');
+      setSelectedDates(new Set([dateStr]));
+      setSelectedShiftType(null);
+      setSelectedCycle(null);
+    }
+  };
+
+  // Apply a shift type to all selected dates
+  const handleApplyToSelected = async (shiftType: string) => {
+    if (selectedDates.size === 0) return;
+    const bulkItems = Array.from(selectedDates).map((date) => ({ date, shift_type: shiftType }));
+    await bulkUpsertShifts(bulkItems);
+    await fetchShifts(currentMonth);
+    setSelectedDates(new Set());
+    setEditMode('none');
+    setMultiSelectShiftPicker(false);
+  };
+
   // Handle day press based on current mode
   const handleDayPress = async (dateStr: string) => {
     console.log('Day pressed:', dateStr, 'Mode:', editMode);
+
+    if (editMode === 'multi_select') {
+      setSelectedDates((prev) => {
+        const next = new Set(prev);
+        if (next.has(dateStr)) {
+          next.delete(dateStr);
+        } else {
+          next.add(dateStr);
+        }
+        return next;
+      });
+      return;
+    }
 
     if (editMode === 'quick' && selectedShiftType) {
       // Quick mode: assign selected shift type
@@ -344,6 +383,8 @@ export default function CalendarScreen() {
     setSelectedShiftType(null);
     setSelectedCycle(null);
     setCycleStartDate(null);
+    setSelectedDates(new Set());
+    setMultiSelectShiftPicker(false);
   };
 
   // Check if date is in cycle range
@@ -403,11 +444,19 @@ export default function CalendarScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" />
         }
       >
-        {editMode !== 'none' && (
+        {editMode !== 'none' && editMode !== 'multi_select' && (
           <View style={styles.topActionsRow}>
             <TouchableOpacity style={styles.cancelBtn} onPress={cancelEditMode}>
               <Text style={styles.cancelBtnText}>Cancelar modo de edição</Text>
             </TouchableOpacity>
+          </View>
+        )}
+        {editMode === 'multi_select' && (
+          <View style={styles.topActionsRow}>
+            <View style={styles.multiSelectHint}>
+              <Ionicons name="hand-left-outline" size={12} color="#60A5FA" />
+              <Text style={styles.multiSelectHintText}>Toca nos dias para selecionar · Segura para sair</Text>
+            </View>
           </View>
         )}
 
@@ -443,7 +492,14 @@ export default function CalendarScreen() {
             ))}
           </View>
 
-          <View style={styles.daysGrid}>
+          {isLoadingShifts && !refreshing ? (
+            <View style={styles.skeletonGrid}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonCalendarRow key={i} />
+              ))}
+            </View>
+          ) : null}
+          <View style={[styles.daysGrid, isLoadingShifts && !refreshing && { opacity: 0 }]}>
             {days.map((day, index) => {
               if (!day) {
                 return <View key={`empty-${index}`} style={styles.dayCell} />;
@@ -458,6 +514,7 @@ export default function CalendarScreen() {
               const gratifiedCount = dayGratifiedEntries.length;
               const isCycleStart = cycleStartDate === dateStr;
               const inCycleRange = isInCycleRange(dateStr);
+              const isMultiSelected = editMode === 'multi_select' && selectedDates.has(dateStr);
 
               return (
                 <TouchableOpacity
@@ -465,7 +522,8 @@ export default function CalendarScreen() {
                   style={[
                     styles.dayCell,
                     isToday && styles.todayCell,
-                    shift && {
+                    isMultiSelected && styles.multiSelectedCell,
+                    shift && !isMultiSelected && {
                       backgroundColor: getShiftDisplayColor(shift.shift_type),
                       opacity: 0.8,
                     },
@@ -474,18 +532,27 @@ export default function CalendarScreen() {
                     editMode !== 'none' && styles.selectableCell,
                   ]}
                   onPress={() => handleDayPress(dateStr)}
+                  onLongPress={() => handleDayLongPress(dateStr)}
+                  delayLongPress={350}
                 >
                   <Text style={[
                     styles.dayText,
                     isToday && styles.todayText,
                     holiday && styles.holidayText,
                     isCycleStart && styles.cycleStartText,
-                    shift && styles.shiftDayText,
+                    shift && !isMultiSelected && styles.shiftDayText,
+                    isMultiSelected && styles.multiSelectedDayText,
                   ]}>
                     {format(day, 'd')}
                   </Text>
 
-                  {hasGratification && (
+                  {isMultiSelected && (
+                    <View style={styles.multiCheckWrap}>
+                      <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
+                    </View>
+                  )}
+
+                  {hasGratification && !isMultiSelected && (
                     <View style={styles.gratifiedDotWrap}>
                       <Ionicons name="star-sharp" size={12} color="#F59E0B" />
                       {gratifiedCount > 1 && (
@@ -494,7 +561,7 @@ export default function CalendarScreen() {
                     </View>
                   )}
 
-                  {shift ? (
+                  {!isMultiSelected && (shift ? (
                     <View style={styles.shiftNameBadge}>
                       <Text style={styles.shiftNameText} numberOfLines={1}>
                         {getShiftDisplayName(shift.shift_type)}
@@ -511,7 +578,7 @@ export default function CalendarScreen() {
                     </View>
                   ) : (
                     <View style={styles.emptyBadge} />
-                  )}
+                  ))}
                 </TouchableOpacity>
               );
             })}
@@ -663,6 +730,71 @@ export default function CalendarScreen() {
             </Pressable>
           </Animated.View>
         </Pressable>
+      </Modal>
+
+      {/* Multi-select action bar */}
+      {editMode === 'multi_select' && (
+        <View style={styles.multiSelectBar}>
+          <View style={styles.multiSelectInfo}>
+            <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
+            <Text style={styles.multiSelectCount}>
+              {selectedDates.size} {selectedDates.size === 1 ? 'dia' : 'dias'} selecionado{selectedDates.size !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <View style={styles.multiSelectActions}>
+            <TouchableOpacity style={styles.multiSelectClearBtn} onPress={cancelEditMode}>
+              <Text style={styles.multiSelectClearText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.multiSelectApplyBtn, selectedDates.size === 0 && { opacity: 0.4 }]}
+              onPress={() => selectedDates.size > 0 && setMultiSelectShiftPicker(true)}
+            >
+              <Ionicons name="color-wand-outline" size={14} color="#fff" />
+              <Text style={styles.multiSelectApplyText}>Aplicar Turno</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Multi-select shift picker */}
+      <Modal visible={multiSelectShiftPicker} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.dayDetailModal}>
+            <View style={styles.modalDragHandle} />
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Aplicar a {selectedDates.size} dias</Text>
+                <Text style={styles.modalDateWeekday}>Escolhe o tipo de turno</Text>
+              </View>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setMultiSelectShiftPicker(false)}>
+                <Ionicons name="close" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              <View style={{ gap: 8, paddingBottom: 20 }}>
+                {(shiftTypes as any[]).map((shift: any) => (
+                  <TouchableOpacity
+                    key={shift.name}
+                    style={[styles.multiPickerChip, { borderColor: shift.color || '#3B82F6' }]}
+                    onPress={() => handleApplyToSelected(shift.name)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.multiPickerDot, { backgroundColor: shift.color || '#3B82F6' }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.multiPickerName}>{shift.name}</Text>
+                      {(shift.start_time || shift.startTime) && (
+                        <Text style={styles.multiPickerTime}>
+                          {shift.start_time || shift.startTime} – {shift.end_time || shift.endTime}
+                        </Text>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#475569" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       {/* Day Detail Modal */}
@@ -1538,5 +1670,133 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#EF4444',
+  },
+
+  skeletonGrid: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    top: 56,
+    gap: 4,
+  },
+
+  // Multi-select styles
+  multiSelectedCell: {
+    backgroundColor: 'rgba(59, 130, 246, 0.22)',
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+  },
+  multiSelectedDayText: {
+    color: '#93C5FD',
+    fontWeight: '700',
+  },
+  multiCheckWrap: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+  },
+  multiSelectBar: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 94 : 82,
+    left: 12,
+    right: 12,
+    backgroundColor: '#0B1120',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.35)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 12,
+    zIndex: 50,
+  },
+  multiSelectInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  multiSelectCount: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F1F5F9',
+  },
+  multiSelectActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  multiSelectClearBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  multiSelectClearText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  multiSelectApplyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#3B82F6',
+  },
+  multiSelectApplyText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  multiSelectHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  multiSelectHintText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#60A5FA',
+  },
+  multiPickerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  multiPickerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  multiPickerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F1F5F9',
+  },
+  multiPickerTime: {
+    fontSize: 11,
+    color: '#475569',
+    marginTop: 2,
   },
 });

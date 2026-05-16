@@ -7,14 +7,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { BarChart } from 'react-native-gifted-charts';
 import { useDataStore } from '../../src/store/dataStore';
-import { formatCurrency, formatMonth } from '../../src/utils/helpers';
+import { formatCurrency, formatMonth, resolveShiftColor } from '../../src/utils/helpers';
+import { StatCard, StatCardRow } from '../../src/components/ui/StatCard';
+import { SectionHeader } from '../../src/components/ui/SectionHeader';
+import { COLORS } from '../../src/theme/colors';
 
 function GlassCard({ children, style }: any) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
 export default function StatsScreen() {
-  const { gratifiedEntries, currentYear, currentMonth, setCurrentMonth } = useDataStore() as any;
+  const { gratifiedEntries, shifts, shiftTypes, currentYear, currentMonth, setCurrentMonth } = useDataStore() as any;
 
   const yearGrats = useMemo(() =>
     (gratifiedEntries || []).filter((g: any) => String(g.date || '').startsWith(currentYear)),
@@ -55,6 +58,84 @@ export default function StatsScreen() {
     ? yearlyTotal / Math.max(Object.keys(monthlyMap).length, 1)
     : 0;
 
+  // ── New KPI metrics ──────────────────────────────────────────
+  const yearShifts = useMemo(() =>
+    (shifts || []).filter((s: any) => String(s.date || '').startsWith(currentYear)),
+    [shifts, currentYear]);
+
+  const monthShifts = useMemo(() =>
+    (shifts || []).filter((s: any) => String(s.date || '').startsWith(currentMonth)),
+    [shifts, currentMonth]);
+
+  // Night shifts: shift types where start_time >= 18:00 OR in a type named with noite/night heuristic
+  const nightShiftNames = useMemo(() => {
+    const names = new Set<string>();
+    (shiftTypes || []).forEach((st: any) => {
+      const name = String(st.name || '').toLowerCase();
+      const start = String(st.start_time || st.startTime || '');
+      if (name.includes('noit') || name.includes('night') || name.includes('24h')) {
+        names.add(st.name);
+      } else if (start >= '18:00' || start < '06:00') {
+        if (start) names.add(st.name);
+      }
+    });
+    return names;
+  }, [shiftTypes]);
+
+  const nightShiftsMonth = useMemo(() =>
+    monthShifts.filter((s: any) => nightShiftNames.has(s.shift_type)).length,
+    [monthShifts, nightShiftNames]);
+
+  // Days off: any shift type with name containing folga/off/descanso or is_working === false
+  const offNames = useMemo(() => {
+    const names = new Set<string>();
+    (shiftTypes || []).forEach((st: any) => {
+      const name = String(st.name || '').toLowerCase();
+      if (name.includes('folga') || name.includes('off') || name.includes('descanso') || st.is_working === false) {
+        names.add(st.name);
+      }
+    });
+    return names;
+  }, [shiftTypes]);
+
+  const daysOffMonth = useMemo(() =>
+    monthShifts.filter((s: any) => offNames.has(s.shift_type)).length,
+    [monthShifts, offNames]);
+
+  // Shift type distribution for current month
+  const shiftTypeBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    monthShifts.forEach((s: any) => {
+      const name = String(s.shift_type || '');
+      map.set(name, (map.get(name) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([name, count]) => {
+        const st = (shiftTypes || []).find((t: any) => t.name === name);
+        return { name, count, color: resolveShiftColor(name, st?.color) };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [monthShifts, shiftTypes]);
+
+  // Consecutive working days up to today in the current month
+  const consecutiveWorkingDays = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const sortedShifts = monthShifts
+      .filter((s: any) => !offNames.has(s.shift_type) && s.date <= today)
+      .map((s: any) => s.date)
+      .sort()
+      .reverse();
+    let count = 0;
+    let prev: Date | null = null;
+    for (const dateStr of sortedShifts) {
+      const d = new Date(dateStr + 'T12:00:00');
+      if (!prev) { count = 1; prev = d; continue; }
+      const diff = (prev.getTime() - d.getTime()) / 86400000;
+      if (diff === 1) { count++; prev = d; } else break;
+    }
+    return count;
+  }, [monthShifts, offNames]);
+
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.pageHeader}>
@@ -88,6 +169,64 @@ export default function StatsScreen() {
             </View>
           </View>
         </LinearGradient>
+
+        {/* Monthly KPI cards */}
+        <SectionHeader
+          title={`Resumo de ${formatMonth(currentMonth)}`}
+          style={{ paddingHorizontal: 4 }}
+        />
+        <StatCardRow>
+          <StatCard
+            label="Turnos este mês"
+            value={monthShifts.length}
+            icon="calendar-outline"
+            color={COLORS.primary}
+            size="sm"
+          />
+          <StatCard
+            label="Noites"
+            value={nightShiftsMonth}
+            icon="moon-outline"
+            color={COLORS.secondary}
+            size="sm"
+          />
+        </StatCardRow>
+        <StatCardRow style={{ marginTop: 10 }}>
+          <StatCard
+            label="Folgas"
+            value={daysOffMonth}
+            icon="bed-outline"
+            color={COLORS.textTertiary}
+            size="sm"
+          />
+          <StatCard
+            label="Dias consecutivos"
+            value={consecutiveWorkingDays}
+            icon="flame-outline"
+            color={COLORS.warning}
+            size="sm"
+          />
+        </StatCardRow>
+
+        {/* Shift type breakdown */}
+        {shiftTypeBreakdown.length > 0 && (
+          <GlassCard>
+            <SectionHeader title="Turnos do mês por tipo" />
+            {shiftTypeBreakdown.map((item, i) => {
+              const pct = monthShifts.length > 0 ? (item.count / monthShifts.length) * 100 : 0;
+              return (
+                <View key={item.name} style={[styles.tableRow, i === shiftTypeBreakdown.length - 1 && { borderBottomWidth: 0 }]}>
+                  <View style={[styles.typeDot, { backgroundColor: item.color }]} />
+                  <Text style={styles.tableMonth}>{item.name}</Text>
+                  <View style={styles.tableBarWrap}>
+                    <View style={[styles.tableBar, { width: `${Math.max(pct, 2)}%` as any, backgroundColor: item.color }]} />
+                  </View>
+                  <Text style={styles.tableValue}>{item.count}×</Text>
+                </View>
+              );
+            })}
+          </GlassCard>
+        )}
 
         {/* Bar chart */}
         {chartData.length > 0 && (
@@ -330,4 +469,5 @@ const styles = StyleSheet.create({
   entryName: { color: '#E2E8F0', fontWeight: '600', fontSize: 14 },
   entryMeta: { color: '#475569', fontSize: 11, marginTop: 2 },
   entryValue: { color: '#10B981', fontWeight: '800', fontSize: 14 },
+  typeDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
 });
