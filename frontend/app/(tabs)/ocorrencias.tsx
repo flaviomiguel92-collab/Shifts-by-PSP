@@ -34,7 +34,9 @@ import {
   PersonRole,
 } from '../../src/types/occurrence';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL
+  || process.env.EXPO_PUBLIC_API_URL
+  || 'https://shift-olama-backend.onrender.com';
 const MAX_IMAGE_WIDTH = 800;  // Max width for compressed images
 const IMAGE_QUALITY = 0.6;    // Compression quality (0-1)
 

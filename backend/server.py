@@ -61,6 +61,13 @@ class User(BaseModel):
     password_hash: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class UserPublic(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class UserSession(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
@@ -422,15 +429,20 @@ async def create_session(session_request: SessionRequest, response: Response):
 
     return {"user": user_doc, "session_token": session_token}
 
-@api_router.get("/auth/me")
+@api_router.get("/auth/me", response_model=UserPublic)
 async def get_me(user: User = Depends(get_current_user)):
     """Get current authenticated user"""
-    return user.dict()
+    return UserPublic(**user.dict())
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
     """Logout user by deleting session"""
     session_token = request.cookies.get("session_token")
+
+    if not session_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header[7:]
 
     if session_token:
         await db.user_sessions.delete_many({"session_token": session_token})
@@ -978,11 +990,12 @@ async def delete_occurrence(occurrence_id: str, user: User = Depends(get_current
 @api_router.post("/occurrences/{occurrence_id}/persons", response_model=dict)
 async def add_person_to_occurrence(
     occurrence_id: str,
-    person_data: PersonCreate
+    person_data: PersonCreate,
+    user: User = Depends(get_current_user)
 ):
     """Add a person (suspect, witness, or victim) to an occurrence"""
     existing = await db.occurrences.find_one(
-        {"id": occurrence_id}
+        {"id": occurrence_id, "user_id": user.user_id}
     )
 
     if not existing:
@@ -1013,24 +1026,28 @@ async def add_person_to_occurrence(
     array_name = role_map.get(person_data.role, "suspects")
 
     await db.occurrences.update_one(
-        {"id": occurrence_id},
+        {"id": occurrence_id, "user_id": user.user_id},
         {
             "$push": {array_name: person.dict()},
             "$set": {"updated_at": datetime.now(timezone.utc)}
         }
     )
 
-    updated = await db.occurrences.find_one({"id": occurrence_id}, {"_id": 0})
+    updated = await db.occurrences.find_one(
+        {"id": occurrence_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
     return updated
 
 @api_router.delete("/occurrences/{occurrence_id}/persons/{person_id}")
 async def remove_person_from_occurrence(
     occurrence_id: str,
-    person_id: str
+    person_id: str,
+    user: User = Depends(get_current_user)
 ):
     """Remove a person from an occurrence"""
     existing = await db.occurrences.find_one(
-        {"id": occurrence_id}
+        {"id": occurrence_id, "user_id": user.user_id}
     )
 
     if not existing:
@@ -1038,7 +1055,7 @@ async def remove_person_from_occurrence(
 
     # Remove from all arrays
     await db.occurrences.update_one(
-        {"id": occurrence_id},
+        {"id": occurrence_id, "user_id": user.user_id},
         {
             "$pull": {
                 "suspects": {"id": person_id},
@@ -1054,11 +1071,12 @@ async def remove_person_from_occurrence(
 @api_router.post("/occurrences/{occurrence_id}/photos")
 async def add_photo_to_occurrence(
     occurrence_id: str,
-    photo_data: dict
+    photo_data: dict,
+    user: User = Depends(get_current_user)
 ):
     """Add a photo to an occurrence"""
     existing = await db.occurrences.find_one(
-        {"id": occurrence_id}
+        {"id": occurrence_id, "user_id": user.user_id}
     )
 
     if not existing:
@@ -1069,7 +1087,7 @@ async def add_photo_to_occurrence(
         raise HTTPException(status_code=400, detail="Photo data required")
 
     await db.occurrences.update_one(
-        {"id": occurrence_id},
+        {"id": occurrence_id, "user_id": user.user_id},
         {
             "$push": {"photos": photo_base64},
             "$set": {"updated_at": datetime.now(timezone.utc)}
@@ -1145,16 +1163,17 @@ async def delete_shift_type(shift_type_id: str, current_user: User = Depends(get
 # ==================== ROOT ENDPOINT ====================
 
 @api_router.post("/cleanup/all-data")
-async def cleanup_all_data():
-    """DANGER: Delete all shifts and cycles for all users. Use with caution!"""
+async def cleanup_all_data(user: User = Depends(get_current_user)):
+    """Delete all app data for the current authenticated user."""
     try:
-        shifts_deleted = await db.shifts.delete_many({})
-        cycles_deleted = await db.cycles.delete_many({})
-        occurrences_deleted = await db.occurrences.delete_many({})
-        gratifications_deleted = await db.gratifications.delete_many({})
+        user_filter = {"user_id": user.user_id}
+        shifts_deleted = await db.shifts.delete_many(user_filter)
+        cycles_deleted = await db.cycles.delete_many(user_filter)
+        occurrences_deleted = await db.occurrences.delete_many(user_filter)
+        gratifications_deleted = await db.gratifications.delete_many(user_filter)
 
         return {
-            "message": "All data cleaned successfully",
+            "message": "User data cleaned successfully",
             "shifts_deleted": shifts_deleted.deleted_count,
             "cycles_deleted": cycles_deleted.deleted_count,
             "occurrences_deleted": occurrences_deleted.deleted_count,

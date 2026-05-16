@@ -48,6 +48,11 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+# Python cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
 # Optional npm cache directory
 .npm
 
@@ -140,3 +145,6 @@ dist
 
 # Expo / Metro cache
 frontend/.metro-cache/
+
+# Local mock backend state
+backend/mock_data.json
