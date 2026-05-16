@@ -239,32 +239,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const storedToken = await storage.getItem('session_token');
 
-      // Try to logout on backend
+      // Fire backend logout without awaiting — don't block on cold start / slow network.
       if (storedToken) {
-        try {
-          await fetch(`${API_URL}/api/auth/logout`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${storedToken}`,
-            },
-            credentials: 'include',
-          });
-        } catch (fetchError) {
-          console.warn('[auth] Backend logout failed (continuing anyway):', fetchError);
-        }
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 5000);
+        fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${storedToken}` },
+          credentials: 'include',
+          signal: controller.signal,
+        })
+          .catch(() => {})
+          .finally(() => clearTimeout(t));
       }
 
-      // Always clear all local state regardless of backend response
+      // Clear local state immediately — never wait for the server.
       await storage.removeItem('session_token');
       await storage.removeItem('device_id');
       useDataStore.getState().clearSyncedCollections();
       set({ user: null, isAuthenticated: false, sessionToken: null });
-
-      console.log('[auth] Local logout complete');
-      return true;
     } catch (error) {
       console.error('[auth] Logout error:', error);
-      // Still clear local state even on error
       try {
         await storage.removeItem('session_token');
         await storage.removeItem('device_id');
