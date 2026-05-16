@@ -294,10 +294,39 @@ export const useDataStore = create((set, get) => ({
 
   fetchShiftTypes: async () => {
     try {
-      const result: ShiftTypeConfig[] = await api.getShiftTypes();
-      set({ shiftTypes: result });
+      const serverResult: ShiftTypeConfig[] = await api.getShiftTypes();
+      const local: ShiftTypeConfig[] = get().shiftTypes;
+
+      if (serverResult.length === 0 && local.length > 0) {
+        // Server has nothing but we have local data — push local entries to server.
+        // This covers: shift types created while backend was in cold start (local-... IDs)
+        // and the first login after migrating from a local-only version.
+        const synced: ShiftTypeConfig[] = [];
+        for (const st of local) {
+          try {
+            const created = await api.createShiftTypeApi({
+              name: st.name,
+              color: st.color,
+              start_time: st.start_time || st.startTime,
+              end_time: st.end_time || st.endTime,
+              is_working: st.is_working,
+              order: st.order,
+            });
+            synced.push(created);
+          } catch {
+            synced.push(st); // keep local entry if push fails
+          }
+        }
+        const finalList = synced.length > 0 ? synced : local;
+        set({ shiftTypes: finalList });
+        get().saveData();
+        return finalList;
+      }
+
+      // Server has data (or both are empty) — server is authoritative.
+      set({ shiftTypes: serverResult });
       get().saveData();
-      return result;
+      return serverResult;
     } catch (error) {
       console.warn('[dataStore] fetchShiftTypes failed (keeping local cache):', error);
       return get().shiftTypes;

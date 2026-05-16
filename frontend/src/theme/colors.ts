@@ -58,6 +58,9 @@ export const SHIFT_TYPE_COLORS = {
   'Administrative': COLORS.shiftAdmin,
   'Tarde': COLORS.shiftEvening,
   'Evening': COLORS.shiftEvening,
+  'Folga': '#64748B',
+  'Day Off': '#64748B',
+  'Descanso': '#64748B',
 };
 
 export const TYPOGRAPHY = {
