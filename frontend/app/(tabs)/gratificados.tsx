@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TouchableOpacity, Platform,
@@ -6,6 +6,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../../src/store/dataStore';
 import { formatCurrency, formatMonth } from '../../src/utils/helpers';
+import { getHolidaysMap } from '../../src/utils/holidays';
+import { GratifiedModal } from '../../src/components/GratifiedModal';
+import { FAB } from '../../src/components/ui/FAB';
 
 function GlassCard({ children, style }: any) {
   return <View style={[cardStyle.card, style]}>{children}</View>;
@@ -29,6 +32,15 @@ const cardStyle = StyleSheet.create({
 export default function GratificadosScreen() {
   const store = useDataStore() as any;
   const { gratifiedEntries, currentMonth, setCurrentMonth, currentYear } = store;
+
+  const [showModal, setShowModal] = useState(false);
+  const today = new Date().toISOString().slice(0, 10);
+  const year = parseInt(today.slice(0, 4));
+  const holidaysMap = useMemo(() => getHolidaysMap(year), [year]);
+  const todayIsHolidayOrWeekend = useMemo(() => {
+    const d = new Date(today + 'T12:00:00');
+    return d.getDay() === 0 || d.getDay() === 6 || holidaysMap.has(today);
+  }, [today, holidaysMap]);
 
   const monthEntries = useMemo(() =>
     (gratifiedEntries || [])
@@ -189,6 +201,24 @@ export default function GratificadosScreen() {
         </GlassCard>
 
       </ScrollView>
+
+      <GratifiedModal
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        date={today}
+        isHolidayOrWeekend={todayIsHolidayOrWeekend}
+      />
+
+      <FAB
+        actions={[
+          {
+            icon: 'cash-outline',
+            label: 'Novo Gratificado',
+            color: '#10B981',
+            onPress: () => setShowModal(true),
+          },
+        ]}
+      />
     </SafeAreaView>
   );
 }

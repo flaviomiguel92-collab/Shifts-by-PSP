@@ -35,6 +35,7 @@ import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
 import { SkeletonCalendarRow } from '../../src/components/ui/Skeleton';
+import { FAB } from '../../src/components/ui/FAB';
 import { toast } from '../../src/utils/toast';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
@@ -1135,6 +1136,30 @@ export default function CalendarScreen() {
           </View>
         </View>
       </Modal>
+
+      <FAB
+        actions={[
+          {
+            icon: 'cash-outline',
+            label: 'Novo Gratificado',
+            color: '#10B981',
+            onPress: () => {
+              setSelectedDate(today);
+              setShowGratifiedModal(true);
+            },
+          },
+          {
+            icon: 'calendar-outline',
+            label: 'Novo Turno',
+            color: '#3B82F6',
+            onPress: () => {
+              setSelectedDate(today);
+              setSelectedShift(null);
+              setShowShiftModal(true);
+            },
+          },
+        ]}
+      />
     </SafeAreaView>
   );
 }
