@@ -91,6 +91,24 @@ export const resetShifts = async () => {
   return response.json();
 };
 
+export const resetCycles = async () => {
+  const response = await apiFetch(`${API_BASE_URL}/cycles/reset`, { method: 'POST' });
+  if (!response.ok) throw new Error(`Failed to reset cycles: ${response.statusText}`);
+  return response.json();
+};
+
+export const resetGratifiedEntries = async () => {
+  const response = await apiFetch(`${API_BASE_URL}/gratified-entries/reset`, { method: 'POST' });
+  if (!response.ok) throw new Error(`Failed to reset gratified entries: ${response.statusText}`);
+  return response.json();
+};
+
+export const resetOccurrences = async () => {
+  const response = await apiFetch(`${API_BASE_URL}/occurrences/reset`, { method: 'POST' });
+  if (!response.ok) throw new Error(`Failed to reset occurrences: ${response.statusText}`);
+  return response.json();
+};
+
 export type BulkShiftItem = { date: string; shift_type: string; start_time?: string | null; end_time?: string | null };
 
 export const bulkUpsertShifts = async (shifts: BulkShiftItem[]): Promise<{ created?: number; updated?: number; total?: number; message?: string }> => {

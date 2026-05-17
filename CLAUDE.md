@@ -33,6 +33,7 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 - Cookies auth unificados: `_cookie_flags()` deteta `ENVIRONMENT=production` → `secure=True, samesite=none`; dev → `secure=False, samesite=lax`
 - **Testes automatizados** (17/17 passam): `backend/tests/test_auth.py` (11 testes) + `backend/tests/test_user_isolation.py` (6 testes); MongoDB real via `pytest.ini asyncio_mode=auto`
 - **Índices MongoDB** corrigidos no startup: `users.email` (unique), `user_sessions.session_token` (unique), `shifts(user_id+date)`, `occurrences.user_id`, `gratifications(user_id+date)`, etc. (anteriores apontavam para coleção errada `db.sessions`)
+- **Persistência de `cycles` e `gratifiedEntries`**: `fetchCycles`/`fetchGratifiedEntries` agora chamados após login/register/session exchange em `authStore.ts`; `clearSyncedCollections` limpa também `cycles` e `gratifiedEntries`; novos endpoints `POST /cycles/reset`, `POST /gratified-entries/reset`, `POST /occurrences/reset` para apagar dados do utilizador; reset actions em `dataStore.ts` agora chamam a API em vez de só limpar localmente
 
 ### Frontend
 - `sharp` removido de `package.json`; `package-lock.json` regenerado e sincronizado
@@ -55,9 +56,6 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 - Secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` configurados no GitHub
 
 ## Pendentes / próximos passos recomendados
-
-### Alta prioridade
-- **Persistência de `cycles` e `gratifiedEntries`**: atualmente vivem só no localStorage do frontend. Considerar mover para MongoDB tal como shifts/gratifications.
 
 ### Baixa prioridade
 - **PDF melhorado**: endpoint atual gera PDF mínimo em memória. Se precisar de layout oficial, criar `backend/reporting/` com `docxtpl` + LibreOffice.

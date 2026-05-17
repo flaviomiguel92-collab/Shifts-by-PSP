@@ -146,7 +146,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   setCurrentYear: (year) => set({ currentYear: year }),
 
   clearSyncedCollections: () =>
-    set({ shifts: [], gratifications: [], occurrences: [] }),
+    set({ shifts: [], gratifications: [], occurrences: [], cycles: [], gratifiedEntries: [] }),
 
   // ==================== OCCURRENCES ====================
 
@@ -297,12 +297,13 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   resetCalendarData: async () => {
-    await api.resetShifts();
+    await Promise.allSettled([api.resetShifts(), api.resetCycles()]);
     set({ shifts: [], shiftTypes: [], cycles: [] });
     await get().saveData();
   },
 
   resetGratifiedData: async () => {
+    await api.resetGratifiedEntries();
     set({
       gratifications: [],
       gratifiedTemplates: [],
@@ -313,6 +314,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   resetOccurrencesData: async () => {
+    await api.resetOccurrences();
     set({ occurrences: [] });
     await get().saveData();
   },

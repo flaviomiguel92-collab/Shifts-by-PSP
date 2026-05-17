@@ -462,6 +462,11 @@ async def create_cycle(cycle_data: CustomCycleCreate, user: User = Depends(get_c
     await db.cycles.insert_one(cycle.model_dump())
     return cycle.model_dump()
 
+@api_router.post("/cycles/reset")
+async def reset_all_cycles(user: User = Depends(get_current_user)):
+    result = await db.cycles.delete_many({"user_id": user.user_id})
+    return {"message": f"Reset: deleted {result.deleted_count} cycles"}
+
 @api_router.delete("/cycles/{cycle_id}")
 async def delete_cycle(cycle_id: str, user: User = Depends(get_current_user)):
     result = await db.cycles.delete_one({"id": cycle_id, "user_id": user.user_id})
@@ -531,6 +536,11 @@ async def delete_gratified_entry(entry_id: str, user: User = Depends(get_current
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"message": "Entry deleted"}
+
+@api_router.post("/gratified-entries/reset")
+async def reset_all_gratified_entries(user: User = Depends(get_current_user)):
+    result = await db.gratified_entries.delete_many({"user_id": user.user_id})
+    return {"message": f"Reset: deleted {result.deleted_count} gratified entries"}
 
 # ==================== STATISTICS ENDPOINTS ====================
 
@@ -666,6 +676,11 @@ class PersonCreate(BaseModel):
     notes: Optional[str] = None
 
 # ==================== OCCURRENCE ENDPOINTS ====================
+
+@api_router.post("/occurrences/reset")
+async def reset_all_occurrences(user: User = Depends(get_current_user)):
+    result = await db.occurrences.delete_many({"user_id": user.user_id})
+    return {"message": f"Reset: deleted {result.deleted_count} occurrences"}
 
 @api_router.get("/occurrences", response_model=List[dict])
 async def get_occurrences(status: Optional[str] = None, classification: Optional[str] = None, user: User = Depends(get_current_user)):

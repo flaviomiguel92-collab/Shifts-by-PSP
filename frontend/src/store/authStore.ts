@@ -143,6 +143,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (e) {
         console.warn('[auth] fetchShiftTypes after login:', e);
       }
+      try {
+        await useDataStore.getState().fetchCycles();
+      } catch (e) {
+        console.warn('[auth] fetchCycles after login:', e);
+      }
+      try {
+        await useDataStore.getState().fetchGratifiedEntries();
+      } catch (e) {
+        console.warn('[auth] fetchGratifiedEntries after login:', e);
+      }
 
       set({
         user: data.user,
@@ -193,6 +203,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await useDataStore.getState().fetchShiftTypes();
       } catch (e) {
         console.warn('[auth] fetchShiftTypes after register:', e);
+      }
+      try {
+        await useDataStore.getState().fetchCycles();
+      } catch (e) {
+        console.warn('[auth] fetchCycles after register:', e);
+      }
+      try {
+        await useDataStore.getState().fetchGratifiedEntries();
+      } catch (e) {
+        console.warn('[auth] fetchGratifiedEntries after register:', e);
       }
 
       set({
@@ -245,6 +265,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (e) {
         console.warn('[auth] fetchShiftTypes after session exchange:', e);
       }
+      try {
+        await useDataStore.getState().fetchCycles();
+      } catch (e) {
+        console.warn('[auth] fetchCycles after session exchange:', e);
+      }
+      try {
+        await useDataStore.getState().fetchGratifiedEntries();
+      } catch (e) {
+        console.warn('[auth] fetchGratifiedEntries after session exchange:', e);
+      }
 
       set({
         user: data.user,
@@ -252,7 +282,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         sessionToken: data.session_token
       });
-      
+
       return true;
     } catch (error) {
       console.error('Session exchange error:', error);
