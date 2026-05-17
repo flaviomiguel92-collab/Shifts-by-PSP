@@ -99,6 +99,7 @@ jobs:
           MONGO_URL: mongodb://localhost:27017
           DB_NAME: shiftextra_db
           CORS_ORIGINS: http://localhost:3000
+          TESTING: "true"
 
   deploy-frontend:
     name: Deploy Frontend to Vercel

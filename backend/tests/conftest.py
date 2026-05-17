@@ -8,6 +8,9 @@ never touch the production DB. Teardown uses synchronous PyMongo to avoid
 import os
 import uuid
 
+# Must be set before `import server` so rate-limit constants resolve to test values
+os.environ.setdefault('TESTING', 'true')
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport

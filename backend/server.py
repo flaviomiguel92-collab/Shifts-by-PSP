@@ -45,6 +45,10 @@ db = client[os.environ.get('DB_NAME', 'shiftextra_db')]
 
 app = FastAPI()
 
+_TESTING = os.environ.get('TESTING', '') == 'true'
+_AUTH_RATE = "9999/minute" if _TESTING else "5/minute"
+_REPORT_RATE = "9999/minute" if _TESTING else "3/minute"
+
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -320,7 +324,7 @@ async def require_header_auth(request: Request) -> User:
 # ==================== AUTH ENDPOINTS ====================
 
 @api_router.post("/auth/register")
-@limiter.limit("5/minute")
+@limiter.limit(_AUTH_RATE)
 async def register(data: RegisterRequest, request: Request, response: Response):
     existing_user = await db.users.find_one({"email": data.email})
     if existing_user:
@@ -338,7 +342,7 @@ async def register(data: RegisterRequest, request: Request, response: Response):
     return {"user": {"user_id": user_id, "email": user["email"], "name": user["name"], "picture": None, "created_at": user["created_at"].isoformat()}, "session_token": session_token}
 
 @api_router.post("/auth/login")
-@limiter.limit("5/minute")
+@limiter.limit(_AUTH_RATE)
 async def login(data: LoginRequest, request: Request, response: Response):
     user = await db.users.find_one({"email": data.email})
     if not user:
@@ -923,7 +927,7 @@ class ReportGenerateRequest(BaseModel):
     format: str = "docx"  # "docx" or "pdf"
 
 @api_router.post("/reports/generate")
-@limiter.limit("3/minute")
+@limiter.limit(_REPORT_RATE)
 async def generate_report(data: ReportGenerateRequest, request: Request, _user: User = Depends(get_current_user)):
     from reporting.generator import render_docx, convert_to_pdf
     context = {
