@@ -47,14 +47,14 @@ export function PaintModeBar({
     >
       <View style={styles.inner}>
         <View style={styles.topRow}>
-          <View style={styles.paintLabel}>
-            <Ionicons name="brush-outline" size={14} color="#60A5FA" />
-            <Text style={styles.paintLabelText}>Modo pintura</Text>
-          </View>
           <TouchableOpacity style={styles.exitBtn} onPress={onExit} activeOpacity={0.8}>
             <Ionicons name="close" size={14} color="#F1F5F9" />
             <Text style={styles.exitBtnText}>Sair</Text>
           </TouchableOpacity>
+          <View style={styles.paintLabel}>
+            <Ionicons name="brush-outline" size={14} color="#60A5FA" />
+            <Text style={styles.paintLabelText}>Modo pintura</Text>
+          </View>
         </View>
 
         <ScrollView

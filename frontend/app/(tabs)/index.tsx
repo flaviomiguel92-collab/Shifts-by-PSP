@@ -96,23 +96,26 @@ export default function CalendarScreen() {
   const storePaintShiftType = usePaintStore((s) => s.shiftType);
   const setStorePaintShiftType = usePaintStore((s) => s.setShiftType);
 
-  // Sync: when user picks a type in the PaintModeBar (rendered in _layout), update local selectedShiftType
+  // Sync paint mode activation/deactivation with local edit state.
+  // Runs on mount too — Zustand store persists across tab navigations but local state resets.
+  useEffect(() => {
+    if (paintMode) {
+      setEditMode('quick');
+      if (storePaintShiftType !== null) setSelectedShiftType(storePaintShiftType);
+    } else {
+      setEditMode('none');
+      setSelectedShiftType(null);
+      setStorePaintShiftType(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paintMode]);
+
+  // When user picks a shift type in the PaintModeBar (rendered in _layout), sync to local state
   useEffect(() => {
     if (paintMode && storePaintShiftType !== null) {
       setSelectedShiftType(storePaintShiftType);
     }
   }, [storePaintShiftType, paintMode]);
-
-  // Sync: when paint mode is deactivated from the bar's "Sair" button (in _layout), clean up edit state
-  useEffect(() => {
-    if (!paintMode && editMode === 'quick') {
-      setEditMode('none');
-      setSelectedShiftType(null);
-      setStorePaintShiftType(null);
-    }
-  // editMode intentionally read via ref-like pattern — only paintMode drives this
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paintMode]);
 
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -228,7 +231,7 @@ export default function CalendarScreen() {
     }
 
     // Paint mode: apply selected shift directly, no popup
-    if (paintMode && editMode === 'quick' && selectedShiftType) {
+    if (paintMode && selectedShiftType) {
       const existing = getShiftForDay(dateStr);
       if (existing) {
         if (existing.shift_type === selectedShiftType) {
