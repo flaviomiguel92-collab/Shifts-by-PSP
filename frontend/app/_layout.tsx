@@ -106,7 +106,7 @@ export default function RootLayout() {
     if (!isAuthenticated) {
       router.replace('/login');
     } else {
-      router.replace('/(tabs)');
+      router.replace('/');
     }
   }, [isAuthenticated, isInitialized, router]);
 
