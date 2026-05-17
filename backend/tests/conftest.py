@@ -17,6 +17,7 @@ from httpx import AsyncClient, ASGITransport
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
 
+import db as _db
 import server
 
 _TEST_DB = f"test_shifts_{uuid.uuid4().hex[:8]}"
@@ -42,12 +43,12 @@ async def mock_db():
     """
     motor_client = AsyncIOMotorClient(_MONGO_URL)
     test_db = motor_client[_TEST_DB]
-    _orig = server.db
-    server.db = test_db
+    _orig = _db.db
+    _db.db = test_db
 
     yield test_db
 
-    server.db = _orig
+    _db.db = _orig
     motor_client.close()
     # Synchronous wipe — no async operations in teardown
     sync = MongoClient(_MONGO_URL)
