@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,8 +19,10 @@ interface PaintModeBarProps {
   onExit: () => void;
 }
 
-const BAR_HEIGHT = 88;
 const BOTTOM = Platform.OS === 'ios' ? 100 : 86;
+// Distância de entrada: altura aproximada da barra + o offset `bottom`,
+// garantindo que o ponto de partida está totalmente fora do ecrã.
+const ENTER_OFFSET = 180;
 
 export function PaintModeBar({
   visible,
@@ -29,16 +31,32 @@ export function PaintModeBar({
   onSelectType,
   onExit,
 }: PaintModeBarProps) {
-  const slideAnim = useRef(new Animated.Value(BAR_HEIGHT)).current;
+  // Mantém o componente montado durante a animação de saída e desmonta-o
+  // por completo no fim — assim, quando inativo, não existe nada no ecrã
+  // que se possa sobrepor à tab bar nem interceptar toques.
+  const [mounted, setMounted] = useState(visible);
+  const slideAnim = useRef(new Animated.Value(ENTER_OFFSET)).current;
 
   useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: visible ? 0 : BAR_HEIGHT,
-      useNativeDriver: true,
-      tension: 200,
-      friction: 20,
-    }).start();
-  }, [visible, slideAnim]);
+    if (visible) {
+      setMounted(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    } else if (mounted) {
+      Animated.timing(slideAnim, {
+        toValue: ENTER_OFFSET,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setMounted(false);
+      });
+    }
+  }, [visible, mounted, slideAnim]);
+
+  if (!mounted) return null;
 
   return (
     <Animated.View
