@@ -8,45 +8,45 @@
 ## Fase 1 — Segurança Crítica
 
 ### 1A · Remover dados pessoais do histórico git
-- [ ] `git filter-repo` para apagar `221030ABR26 - Teste Local - 123456.pdf`
-- [ ] `git filter-repo` para apagar `backend/temp_docx_fix/`
-- [ ] Adicionar ao `.gitignore`: `*.pdf`, `temp_docx_fix/`, `*.docx` (exceto template)
-- [ ] Force push + invalidar caches do GitHub
+- [x] `git filter-repo` para apagar `221030ABR26 - Teste Local - 123456.pdf`
+- [x] `git filter-repo` para apagar `backend/temp_docx_fix/`
+- [x] Adicionar ao `.gitignore`: `*.pdf`, `temp_docx_fix/`, `*.docx` (exceto template)
+- [x] Force push + invalidar caches do GitHub
 
 ### 1B · Tokens de sessão seguros
-- [ ] Substituir `uuid.uuid4()` por `secrets.token_urlsafe(32)` na geração (`server.py:278`)
-- [ ] Guardar apenas `sha256(token)` na coleção `user_sessions`
-- [ ] Comparar por hash no `get_current_user` (`server.py:194`)
-- [ ] Reduzir validade de 30 → 7 dias
+- [x] Substituir `uuid.uuid4()` por `secrets.token_urlsafe(32)` na geração
+- [x] Guardar apenas `sha256(token)` na coleção `user_sessions`
+- [x] Comparar por hash no `get_current_user`
+- [x] Reduzir validade de 30 → 7 dias
 
 ### 1C · Desativar endpoint `/api/auth/session` Emergent
-- [ ] Confirmar que o frontend não usa o endpoint
-- [ ] Remover o endpoint de `server.py` (linhas 301–328)
+- [x] Confirmar que o frontend não usa o endpoint
+- [x] Remover o endpoint de `server.py`
 
 ### 1D · Timeout e sandbox no gerador de relatórios
-- [ ] Adicionar `timeout=30` ao `subprocess.run` do LibreOffice (`generator.py:80`)
-- [ ] Tratar `subprocess.TimeoutExpired` com HTTP 504
-- [ ] Verificar se `docxtpl` usa Jinja2 sandbox; ativar se não usar
+- [x] Adicionar `timeout=30` ao `subprocess.run` do LibreOffice (`generator.py`)
+- [x] Tratar `subprocess.TimeoutExpired` com RuntimeError → HTTP 503
+- [x] Verificar se `docxtpl` usa Jinja2 sandbox; ativar se não usar
 
 ---
 
 ## Fase 2 — Segurança Alta
 
 ### 2A · Rate limiting
-- [ ] Instalar `slowapi` e adicionar ao `requirements.txt`
-- [ ] 5 req/min em `/api/auth/login` e `/api/auth/register` por IP
-- [ ] 3 req/min em `/api/reports/generate` por utilizador
-- [ ] 30 req/min global por IP nos restantes endpoints
+- [x] Instalar `slowapi` e adicionar ao `requirements.txt`
+- [x] 5 req/min em `/api/auth/login` e `/api/auth/register` por IP
+- [x] 3 req/min em `/api/reports/generate` por utilizador
+- [ ] 30 req/min global por IP nos restantes endpoints (baixa prioridade)
 
 ### 2B · Proteção CSRF nos endpoints destrutivos
-- [ ] Endpoints de reset/cleanup: rejeitar autenticação por cookie, exigir header `Authorization`
-- [ ] Validar header `Origin` nos POSTs mutáveis
+- [x] Endpoints de reset/cleanup: rejeitar autenticação por cookie, exigir header `Authorization` (`require_header_auth` dependency)
+- [ ] Validar header `Origin` nos POSTs mutáveis (baixa prioridade — coberto pelo CORS)
 
 ### 2C · Validação de input consistente
-- [ ] `email: str` → `email: EmailStr` em `RegisterRequest` e `LoginRequest`
-- [ ] `Field(ge=0, le=100)` em `value` e `discount_percent`
-- [ ] Aplicar `validate_date_format` em todos os modelos com campos `date`
-- [ ] Limitar `photos: List[str]` a máximo 5 itens, cada um com máximo 2 MB
+- [x] `email: str` → `email: EmailStr` em `RegisterRequest` e `LoginRequest`
+- [x] `Field(ge=0, le=100)` em `value` e `discount_percent`
+- [x] Aplicar `validate_date_format` em todos os modelos com campos `date`
+- [x] Limitar `photos: List[str]` a máximo 5 itens, cada um com máximo 2 MB
 
 ---
 
@@ -130,9 +130,9 @@
 
 | Fase | Total | Feito | % |
 |------|-------|-------|---|
-| Fase 1 — Crítica | 12 | 0 | 0% |
-| Fase 2 — Alta | 10 | 0 | 0% |
+| Fase 1 — Crítica | 12 | 12 | 100% |
+| Fase 2 — Alta | 10 | 8 | 80% |
 | Fase 3 — Bugs | 6 | 0 | 0% |
 | Fase 4 — Qualidade | 13 | 0 | 0% |
 | Fase 5 — Arquitetura | 12 | 0 | 0% |
-| **Total** | **53** | **0** | **0%** |
+| **Total** | **53** | **20** | **38%** |

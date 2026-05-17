@@ -7,7 +7,10 @@ import logging
 import secrets
 import hashlib
 from pathlib import Path
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, EmailStr
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -41,6 +44,10 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'shiftextra_db')]
 
 app = FastAPI()
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 CORS_ORIGINS = os.environ.get(
     'CORS_ORIGINS',
@@ -100,7 +107,7 @@ class UserSession(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class RegisterRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     name: str
 
@@ -115,7 +122,7 @@ class RegisterRequest(BaseModel):
         return v
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class Shift(BaseModel):
@@ -134,6 +141,12 @@ class ShiftCreate(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     note: Optional[str] = None
+
+    @validator('date')
+    def validate_date(cls, v):
+        if not DATE_RE.match(v):
+            raise ValueError(f"Formato de data inválido: {v}. Use YYYY-MM-DD")
+        return v
 
 class ShiftUpdate(BaseModel):
     shift_type: Optional[str] = None
@@ -154,9 +167,15 @@ class Gratification(BaseModel):
 class GratificationCreate(BaseModel):
     date: str
     gratification_type: str
-    value: float
+    value: float = Field(ge=0)
     note: Optional[str] = None
     shift_id: Optional[str] = None
+
+    @validator('date')
+    def validate_date(cls, v):
+        if not DATE_RE.match(v):
+            raise ValueError(f"Formato de data inválido: {v}. Use YYYY-MM-DD")
+        return v
 
 class GratificationUpdate(BaseModel):
     date: Optional[str] = None
@@ -231,11 +250,17 @@ class GratifiedCalendarEntryCreate(BaseModel):
     name: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    value: Optional[float] = None
-    subtotal: Optional[float] = None
-    discount_percent: Optional[float] = None
+    value: Optional[float] = Field(default=None, ge=0)
+    subtotal: Optional[float] = Field(default=None, ge=0)
+    discount_percent: Optional[float] = Field(default=None, ge=0, le=100)
     is_holiday_or_weekend: Optional[bool] = None
     note: Optional[str] = None
+
+    @validator('date')
+    def validate_date(cls, v):
+        if not DATE_RE.match(v):
+            raise ValueError(f"Formato de data inválido: {v}. Use YYYY-MM-DD")
+        return v
 
 # ==================== AUTH HELPERS ====================
 
@@ -263,10 +288,40 @@ async def get_current_user(request: Request) -> User:
         raise HTTPException(status_code=401, detail="User not found")
     return User(**user_doc)
 
+async def require_header_auth(request: Request) -> User:
+    """Like get_current_user but only accepts Authorization header — rejects cookie-only auth.
+
+    Applied to destructive/reset endpoints to prevent CSRF: a cross-origin form POST
+    can send cookies automatically, but cannot set a custom Authorization header.
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=403,
+            detail="Este endpoint requer o header Authorization: Bearer <token>",
+        )
+    session_token = auth_header[7:]
+    token_hash = hashlib.sha256(session_token.encode()).hexdigest()
+    session_doc = await db.user_sessions.find_one({"session_token": token_hash}, {"_id": 0})
+    if not session_doc:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    expires_at = session_doc["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Session expired")
+    user_doc = await db.users.find_one({"user_id": session_doc["user_id"]}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="User not found")
+    return User(**user_doc)
+
 # ==================== AUTH ENDPOINTS ====================
 
 @api_router.post("/auth/register")
-async def register(data: RegisterRequest, response: Response):
+@limiter.limit("5/minute")
+async def register(data: RegisterRequest, request: Request, response: Response):
     existing_user = await db.users.find_one({"email": data.email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email já registado")
@@ -283,7 +338,8 @@ async def register(data: RegisterRequest, response: Response):
     return {"user": {"user_id": user_id, "email": user["email"], "name": user["name"], "picture": None, "created_at": user["created_at"].isoformat()}, "session_token": session_token}
 
 @api_router.post("/auth/login")
-async def login(data: LoginRequest, response: Response):
+@limiter.limit("5/minute")
+async def login(data: LoginRequest, request: Request, response: Response):
     user = await db.users.find_one({"email": data.email})
     if not user:
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
@@ -376,7 +432,7 @@ async def create_shift(shift_data: ShiftCreate, user: User = Depends(get_current
     return shift.model_dump()
 
 @api_router.post("/shifts/reset")
-async def reset_all_shifts(user: User = Depends(get_current_user)):
+async def reset_all_shifts(user: User = Depends(require_header_auth)):
     result = await db.shifts.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} shifts"}
 
@@ -437,7 +493,7 @@ async def create_cycle(cycle_data: CustomCycleCreate, user: User = Depends(get_c
     return cycle.model_dump()
 
 @api_router.post("/cycles/reset")
-async def reset_all_cycles(user: User = Depends(get_current_user)):
+async def reset_all_cycles(user: User = Depends(require_header_auth)):
     result = await db.cycles.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} cycles"}
 
@@ -523,7 +579,7 @@ async def delete_gratified_entry(entry_id: str, user: User = Depends(get_current
     return {"message": "Entry deleted"}
 
 @api_router.post("/gratified-entries/reset")
-async def reset_all_gratified_entries(user: User = Depends(get_current_user)):
+async def reset_all_gratified_entries(user: User = Depends(require_header_auth)):
     result = await db.gratified_entries.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} gratified entries"}
 
@@ -628,6 +684,9 @@ class Occurrence(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+_MAX_PHOTOS = 5
+_MAX_PHOTO_CHARS = 3_000_000  # ~2 MB raw before base64 encoding
+
 class OccurrenceCreate(BaseModel):
     date: str
     time: Optional[str] = None
@@ -636,6 +695,16 @@ class OccurrenceCreate(BaseModel):
     classification: str
     status: Optional[str] = "rascunho"
     photos: Optional[List[str]] = []
+
+    @validator('photos')
+    def validate_photos(cls, v):
+        if v and len(v) > _MAX_PHOTOS:
+            raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
+        if v:
+            for photo in v:
+                if len(photo) > _MAX_PHOTO_CHARS:
+                    raise ValueError("Cada foto não pode exceder 2 MB")
+        return v
 
 class OccurrenceUpdate(BaseModel):
     date: Optional[str] = None
@@ -660,10 +729,20 @@ class PersonCreate(BaseModel):
     photos: Optional[List[str]] = []
     notes: Optional[str] = None
 
+    @validator('photos')
+    def validate_photos(cls, v):
+        if v and len(v) > _MAX_PHOTOS:
+            raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
+        if v:
+            for photo in v:
+                if len(photo) > _MAX_PHOTO_CHARS:
+                    raise ValueError("Cada foto não pode exceder 2 MB")
+        return v
+
 # ==================== OCCURRENCE ENDPOINTS ====================
 
 @api_router.post("/occurrences/reset")
-async def reset_all_occurrences(user: User = Depends(get_current_user)):
+async def reset_all_occurrences(user: User = Depends(require_header_auth)):
     result = await db.occurrences.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} occurrences"}
 
@@ -792,7 +871,7 @@ async def health_check():
     return {"status": "ok", "db": db_status, "timestamp": datetime.now(timezone.utc).isoformat()}
 
 @api_router.post("/cleanup/all-data")
-async def cleanup_all_data(user: User = Depends(get_current_user)):
+async def cleanup_all_data(user: User = Depends(require_header_auth)):
     try:
         user_filter = {"user_id": user.user_id}
         shifts_deleted = await db.shifts.delete_many(user_filter)
@@ -844,7 +923,8 @@ class ReportGenerateRequest(BaseModel):
     format: str = "docx"  # "docx" or "pdf"
 
 @api_router.post("/reports/generate")
-async def generate_report(data: ReportGenerateRequest, _user: User = Depends(get_current_user)):
+@limiter.limit("3/minute")
+async def generate_report(data: ReportGenerateRequest, request: Request, _user: User = Depends(get_current_user)):
     from reporting.generator import render_docx, convert_to_pdf
     context = {
         "report_date": data.report_date,
