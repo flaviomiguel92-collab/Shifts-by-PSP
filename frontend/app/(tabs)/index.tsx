@@ -889,28 +889,30 @@ export default function CalendarScreen() {
       </Modal>
 
       {/* Multi-select action bar */}
-      {editMode === 'multi_select' && (
-        <View style={styles.multiSelectBar}>
-          <View style={styles.multiSelectInfo}>
-            <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
-            <Text style={styles.multiSelectCount}>
-              {selectedDates.size} {selectedDates.size === 1 ? 'dia' : 'dias'} selecionado{selectedDates.size !== 1 ? 's' : ''}
-            </Text>
-          </View>
-          <View style={styles.multiSelectActions}>
-            <TouchableOpacity style={styles.multiSelectClearBtn} onPress={cancelEditMode}>
-              <Text style={styles.multiSelectClearText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.multiSelectApplyBtn, selectedDates.size === 0 && { opacity: 0.4 }]}
-              onPress={() => selectedDates.size > 0 && setMultiSelectShiftPicker(true)}
-            >
-              <Ionicons name="color-wand-outline" size={14} color="#fff" />
-              <Text style={styles.multiSelectApplyText}>Aplicar Turno</Text>
-            </TouchableOpacity>
+      <Modal visible={editMode === 'multi_select'} transparent animationType="none" onRequestClose={cancelEditMode}>
+        <View style={{ flex: 1 }} pointerEvents="box-none">
+          <View style={styles.multiSelectBar} pointerEvents="auto">
+            <View style={styles.multiSelectInfo}>
+              <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
+              <Text style={styles.multiSelectCount}>
+                {selectedDates.size} {selectedDates.size === 1 ? 'dia' : 'dias'} selecionado{selectedDates.size !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            <View style={styles.multiSelectActions}>
+              <TouchableOpacity style={styles.multiSelectClearBtn} onPress={cancelEditMode}>
+                <Text style={styles.multiSelectClearText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.multiSelectApplyBtn, selectedDates.size === 0 && { opacity: 0.4 }]}
+                onPress={() => selectedDates.size > 0 && setMultiSelectShiftPicker(true)}
+              >
+                <Ionicons name="color-wand-outline" size={14} color="#fff" />
+                <Text style={styles.multiSelectApplyText}>Aplicar Turno</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      )}
+      </Modal>
 
       {/* Multi-select shift picker */}
       <Modal visible={multiSelectShiftPicker} animationType="slide" transparent>
@@ -1543,7 +1545,7 @@ const styles = StyleSheet.create({
   },
   multiSelectBar: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 94 : 82,
+    bottom: Platform.OS === 'ios' ? 100 : 86,
     left: 12,
     right: 12,
     backgroundColor: '#0B1120',
