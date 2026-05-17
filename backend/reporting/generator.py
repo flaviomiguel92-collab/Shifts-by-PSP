@@ -11,7 +11,7 @@ from typing import Any
 
 from docxtpl import DocxTemplate
 
-TEMPLATE_PATH = Path(__file__).parent.parent / "templates" / "relatorio_servico_remunerado.docx"
+TEMPLATE_PATH = Path(__file__).parent / "templates" / "relatorio_servico_remunerado.docx"
 
 
 def _fix_template_xml(raw_bytes: bytes) -> bytes:

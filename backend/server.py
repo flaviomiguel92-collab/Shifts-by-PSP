@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, HTTPException, Response, Request, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -43,7 +44,22 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'shiftextra_db')]
 
-app = FastAPI()
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    await db.users.create_index("email", unique=True)
+    await db.user_sessions.create_index("session_token", unique=True)
+    await db.shifts.create_index([("user_id", 1), ("date", 1)])
+    await db.occurrences.create_index("user_id")
+    await db.gratifications.create_index([("user_id", 1), ("date", 1)])
+    await db.shift_types.create_index("user_id")
+    await db.cycles.create_index("user_id")
+    await db.gratified_entries.create_index([("user_id", 1), ("date", 1)])
+    yield
+    client.close()
+
+
+app = FastAPI(lifespan=_lifespan)
 
 _TESTING = os.environ.get('TESTING', '') == 'true'
 _AUTH_RATE = "9999/minute" if _TESTING else "5/minute"
@@ -350,7 +366,6 @@ async def login(data: LoginRequest, request: Request, response: Response):
     if not user.get("password_hash") or not pwd_context.verify(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
     user_id = user["user_id"]
-    await db.user_sessions.delete_many({"user_id": user_id})
     session_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(session_token.encode()).hexdigest()
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
@@ -975,17 +990,3 @@ async def root():
 
 app.include_router(api_router)
 
-@app.on_event("startup")
-async def create_indexes():
-    await db.users.create_index("email", unique=True)
-    await db.user_sessions.create_index("session_token", unique=True)
-    await db.shifts.create_index([("user_id", 1), ("date", 1)])
-    await db.occurrences.create_index("user_id")
-    await db.gratifications.create_index([("user_id", 1), ("date", 1)])
-    await db.shift_types.create_index("user_id")
-    await db.cycles.create_index("user_id")
-    await db.gratified_entries.create_index([("user_id", 1), ("date", 1)])
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()

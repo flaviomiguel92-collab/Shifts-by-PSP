@@ -48,7 +48,6 @@ type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const store = useDataStore() as any;
   const {
     shifts,
     shiftTypes,
@@ -64,7 +63,7 @@ export default function CalendarScreen() {
     updateShiftType,
     currentMonth,
     setCurrentMonth,
-  } = store;
+  } = useDataStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingShifts, setIsLoadingShifts] = useState(false);
@@ -444,7 +443,11 @@ export default function CalendarScreen() {
     data: { name: string; color: string; start_time?: string | null; end_time?: string | null; is_working: boolean }
   ) => {
     try {
-      await updateShiftType(id, data);
+      await updateShiftType(id, {
+        ...data,
+        start_time: data.start_time ?? undefined,
+        end_time: data.end_time ?? undefined,
+      });
       toast.success('Tipo de turno atualizado');
     } catch {
       toast.error('Não foi possível atualizar o tipo de turno');
@@ -953,7 +956,7 @@ export default function CalendarScreen() {
             </View>
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               <View style={{ gap: 8, paddingBottom: 20 }}>
-                {(shiftTypes as any[]).map((shift: any) => (
+                {shiftTypes.map((shift) => (
                   <TouchableOpacity
                     key={shift.name}
                     style={[styles.multiPickerChip, { borderColor: shift.color || '#3B82F6' }]}

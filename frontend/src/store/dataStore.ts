@@ -90,7 +90,7 @@ interface DataStore {
   resetCalendarData: () => Promise<void>;
   resetGratifiedData: () => Promise<void>;
   resetOccurrencesData: () => Promise<void>;
-  restoreFromBackup: (payload: Partial<DataStore>) => Promise<void>;
+  restoreFromBackup: (payload: Record<string, unknown>) => Promise<void>;
 
   fetchShiftTypes: () => Promise<ShiftTypeConfig[]>;
   createShiftType: (shiftType: Partial<ShiftTypeConfig>) => Promise<void>;
@@ -113,8 +113,6 @@ interface DataStore {
 /** Keys persisted locally only (server-backed entities are excluded to avoid ghost rows). */
 const persistLocalSlice = (state: DataStore) => ({
   shiftTypes: state.shiftTypes,
-  shifts: state.shifts,
-  gratifications: state.gratifications,
   gratifiedConfig: state.gratifiedConfig,
   gratifiedTemplates: state.gratifiedTemplates,
 });

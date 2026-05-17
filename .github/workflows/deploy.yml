@@ -91,7 +91,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Compile backend modules
-        run: python -m py_compile server.py server_mock.py cleanup_db.py
+        run: python -m py_compile server.py cleanup_db.py
 
       - name: Run tests
         run: pytest

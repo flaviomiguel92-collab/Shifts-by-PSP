@@ -58,7 +58,7 @@ export default function ProfileScreen() {
     resetGratifiedData, resetOccurrencesData,
     setGratifiedConfig, deleteGratifiedTemplate,
     restoreFromBackup,
-  } = store as any;
+  } = store;
 
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isResetExpanded, setIsResetExpanded] = useState(false);
@@ -558,7 +558,7 @@ export default function ProfileScreen() {
                   <Text style={styles.cfgLabel}>{f.label}</Text>
                   <TextInput
                     placeholderTextColor="#334155"
-                    value={(cfg as any)[f.key]}
+                    value={cfg[f.key as keyof typeof cfg]}
                     onChangeText={(v) => setCfg((prev) => ({ ...prev, [f.key]: v }))}
                     style={styles.cfgInput}
                     keyboardType={f.key.includes('Start') || f.key.includes('End') ? 'default' : 'numeric'}

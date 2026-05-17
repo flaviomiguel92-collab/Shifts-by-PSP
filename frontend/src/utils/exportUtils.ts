@@ -18,12 +18,13 @@ interface ShiftType {
 }
 
 interface GratifiedEntry {
-  date: string;
-  name: string;
-  value: number;
+  date?: string;
+  name?: string;
+  value?: number;
   start_time?: string;
   end_time?: string;
   note?: string;
+  [key: string]: unknown;
 }
 
 // ─── CSV Export ─────────────────────────────────────────────────────────────
@@ -49,11 +50,11 @@ export function exportGratifiedToCSV(entries: GratifiedEntry[], month: string): 
   const rows = [
     ['Data', 'Nome', 'Início', 'Fim', 'Valor (€)'],
     ...entries
-      .filter((e) => e.date.startsWith(month))
-      .sort((a, b) => a.date.localeCompare(b.date))
+      .filter((e) => e.date?.startsWith(month))
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
       .map((e) => [
-        e.date,
-        e.name,
+        e.date ?? '',
+        e.name ?? '',
         e.start_time || '',
         e.end_time || '',
         Number(e.value || 0).toFixed(2),
@@ -89,13 +90,13 @@ export async function shareCSV(csv: string, filename: string) {
 
 export async function exportGratifiedToXLSX(entries: GratifiedEntry[], year: string): Promise<void> {
   const filtered = [...entries]
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 
   const rows: (string | number)[][] = [
     ['Data', 'Nome', 'Início', 'Fim', 'Valor (€)', 'Nota'],
     ...filtered.map((e) => [
-      e.date,
-      e.name,
+      e.date ?? '',
+      e.name ?? '',
       e.start_time || '',
       e.end_time || '',
       Number(e.value || 0),
@@ -147,6 +148,7 @@ export interface BackupPayload {
   gratifiedEntries: unknown[];
   shifts: unknown[];
   gratifications: unknown[];
+  [key: string]: unknown;
 }
 
 export async function exportFullBackup(payload: BackupPayload): Promise<void> {
