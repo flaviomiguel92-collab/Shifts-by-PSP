@@ -4,7 +4,7 @@ services:
     runtime: docker
     rootDir: backend
     plan: free
-    autoDeploy: true
+    autoDeploy: false
     envVars:
       - key: PORT
         value: 8000
