@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView,
+  View, Text, TextInput, TouchableOpacity,
   Alert, ScrollView, SafeAreaView, Platform, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,10 +9,11 @@ import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
 import {
   exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV,
-  exportFullBackup, pickAndReadJsonWeb, BackupPayload, downloadDocx,
+  exportFullBackup, pickAndReadJsonWeb, BackupPayload,
 } from '../../src/utils/exportUtils';
 import { toast } from '../../src/utils/toast';
-import { getSessions, revokeSession, getOccurrences, deleteOccurrence, SessionInfo, generateReport } from '../../src/services/api';
+import { getSessions, revokeSession, getOccurrences, deleteOccurrence, SessionInfo } from '../../src/services/api';
+import { ReportModal } from '../../src/components/ReportModal';
 import { usePreferencesStore, i18n } from '../../src/store/preferencesStore';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
@@ -72,21 +73,6 @@ export default function ProfileScreen() {
   const [isSessionsExpanded, setIsSessionsExpanded] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const today = new Date();
-  const [reportForm, setReportForm] = useState({
-    report_date: today.toLocaleDateString('pt-PT').split('/').reverse().join('-'),
-    report_hour: today.toTimeString().slice(0, 5),
-    graduado_nome: '',
-    graduado_matricula: '',
-    graduado_radio: '',
-    efetivo_oficiais: '0',
-    efetivo_chefes: '0',
-    efetivo_agentes: '0',
-    servico_remunerado: 'Não',
-    justificacao: '',
-    observacao: '',
-  });
   const [cfg, setCfg] = useState({
     baseSmall4h: String(gratifiedConfig?.baseSmall4h ?? ''),
     baseLarge4h: String(gratifiedConfig?.baseLarge4h ?? ''),
@@ -211,37 +197,6 @@ export default function ProfileScreen() {
       toast.error('Erro ao exportar');
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    if (!reportForm.graduado_nome.trim() || !reportForm.graduado_matricula.trim()) {
-      toast.error('Preenche o nome e matrícula do graduado');
-      return;
-    }
-    setIsGeneratingReport(true);
-    try {
-      const blob = await generateReport({
-        report_date: reportForm.report_date,
-        report_hour: reportForm.report_hour,
-        graduado_nome: reportForm.graduado_nome,
-        graduado_matricula: reportForm.graduado_matricula,
-        graduado_radio: reportForm.graduado_radio,
-        efetivo_oficiais: parseInt(reportForm.efetivo_oficiais) || 0,
-        efetivo_chefes: parseInt(reportForm.efetivo_chefes) || 0,
-        efetivo_agentes: parseInt(reportForm.efetivo_agentes) || 0,
-        servico_remunerado: reportForm.servico_remunerado,
-        justificacao: reportForm.justificacao,
-        observacao: reportForm.observacao,
-        format: 'docx',
-      });
-      await downloadDocx(blob, `relatorio_${reportForm.report_date}.docx`);
-      setShowReportModal(false);
-      toast.success('Relatório gerado');
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao gerar relatório');
-    } finally {
-      setIsGeneratingReport(false);
     }
   };
 
@@ -690,58 +645,7 @@ export default function ProfileScreen() {
 
       </ScrollView>
 
-      {/* Report generation modal */}
-      <Modal visible={showReportModal} animationType="slide" transparent onRequestClose={() => setShowReportModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={styles.reportOverlay}>
-            <View style={styles.reportSheet}>
-              <View style={styles.reportHeader}>
-                <Text style={styles.reportTitle}>Relatório de Serviço</Text>
-                <TouchableOpacity onPress={() => setShowReportModal(false)}>
-                  <Ionicons name="close" size={22} color="#475569" />
-                </TouchableOpacity>
-              </View>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {([
-                  ['Data (AAAA-MM-DD)', 'report_date'],
-                  ['Hora', 'report_hour'],
-                  ['Nome do graduado', 'graduado_nome'],
-                  ['Matrícula', 'graduado_matricula'],
-                  ['Indicativo rádio', 'graduado_radio'],
-                  ['Nº oficiais', 'efetivo_oficiais'],
-                  ['Nº chefes', 'efetivo_chefes'],
-                  ['Nº agentes', 'efetivo_agentes'],
-                  ['Serviço remunerado (Sim/Não)', 'servico_remunerado'],
-                  ['Justificação', 'justificacao'],
-                  ['Observações', 'observacao'],
-                ] as [string, keyof typeof reportForm][]).map(([label, key]) => (
-                  <View key={key} style={styles.reportField}>
-                    <Text style={styles.reportFieldLabel}>{label}</Text>
-                    <TextInput
-                      style={styles.reportFieldInput}
-                      value={reportForm[key]}
-                      onChangeText={(v) => setReportForm((f) => ({ ...f, [key]: v }))}
-                      placeholderTextColor="#94a3b8"
-                      multiline={key === 'justificacao' || key === 'observacao'}
-                      numberOfLines={key === 'justificacao' || key === 'observacao' ? 3 : 1}
-                      keyboardType={['efetivo_oficiais', 'efetivo_chefes', 'efetivo_agentes'].includes(key) ? 'numeric' : 'default'}
-                    />
-                  </View>
-                ))}
-              </ScrollView>
-              <TouchableOpacity
-                style={[styles.reportSubmit, isGeneratingReport && { opacity: 0.6 }]}
-                onPress={handleGenerateReport}
-                disabled={isGeneratingReport}
-              >
-                {isGeneratingReport
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.reportSubmitText}>Gerar e descarregar</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <ReportModal visible={showReportModal} onClose={() => setShowReportModal(false)} />
     </SafeAreaView>
   );
 }
@@ -987,22 +891,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   revokeBtnText: { color: '#FCA5A5', fontSize: 12, fontWeight: '700' },
-  reportOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  reportSheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, maxHeight: '90%',
-  },
-  reportHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  reportTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
-  reportField: { marginBottom: 12 },
-  reportFieldLabel: { fontSize: 12, color: '#64748b', marginBottom: 4, fontWeight: '600' },
-  reportFieldInput: {
-    borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: '#0f172a', backgroundColor: '#f8fafc',
-  },
-  reportSubmit: {
-    backgroundColor: '#6366F1', borderRadius: 10, paddingVertical: 14,
-    alignItems: 'center', marginTop: 8,
-  },
-  reportSubmitText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
