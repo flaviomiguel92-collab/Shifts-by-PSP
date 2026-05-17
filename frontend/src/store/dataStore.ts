@@ -6,6 +6,26 @@ import { Occurrence } from '../types/occurrence';
 
 const STORAGE_KEY = 'app_data';
 
+// ─── Local vs. server boundary ───────────────────────────────────────────────
+//
+// LOCAL-ONLY (persisted to AsyncStorage, no server counterpart):
+//   • gratifiedConfig   — user-defined calculation parameters
+//   • gratifiedTemplates — saved report header presets
+//
+// SERVER-BACKED (fetched fresh on login; never persisted locally):
+//   • shifts, gratifications, occurrences, cycles, gratifiedEntries
+//
+// BOTH (server-authoritative but also cached locally for offline bootstrap):
+//   • shiftTypes — migrated to server on first sync; local fallback allowed
+//
+// IDs starting with "local-" were created while the server was unreachable.
+// They are only valid for shiftTypes (which are persisted locally).  For all
+// other entities the local fallback is intentionally absent — a failed API
+// call surfaces immediately so the user is never shown phantom data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const isLocalId = (id: string) => id.startsWith('local-');
+
 export interface GratifiedConfig {
   baseSmall4h: number;
   baseLarge4h: number;
@@ -268,8 +288,6 @@ export const useDataStore = create<DataStore>((set, get) => ({
     const parsed = JSON.parse(data) as Partial<DataStore>;
     set({
       shiftTypes: parsed?.shiftTypes ?? [],
-      shifts: parsed?.shifts ?? [],
-      gratifications: parsed?.gratifications ?? [],
       gratifiedConfig: parsed?.gratifiedConfig ?? get().gratifiedConfig,
       gratifiedTemplates: parsed?.gratifiedTemplates ?? [],
     });
@@ -400,6 +418,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       shiftTypes: state.shiftTypes.filter((s) => s.id !== id),
     }));
     get().saveData();
+    if (isLocalId(id)) return;
     try {
       await api.deleteShiftTypeApi(id);
     } catch (error) {
@@ -412,6 +431,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       shiftTypes: state.shiftTypes.map((st) => (st.id === id ? { ...st, ...data } : st)),
     }));
     get().saveData();
+    if (isLocalId(id)) return;
     try {
       await api.updateShiftTypeApi(id, {
         name: data.name,
@@ -438,27 +458,18 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   createCycle: async (cycle) => {
-    try {
-      const created = await api.createCycleApi({
-        name: cycle.name || 'Ciclo',
-        pattern: Array.isArray(cycle.pattern) ? cycle.pattern : [],
-      });
-      set((state) => ({ cycles: [created as unknown as Cycle, ...state.cycles] }));
-    } catch (error) {
-      console.warn('[dataStore] createCycle API failed, using local fallback:', error);
-      const newCycle: Cycle = {
-        ...cycle,
-        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
-      };
-      set((state) => ({ cycles: [newCycle, ...state.cycles] }));
-    }
+    const created = await api.createCycleApi({
+      name: cycle.name || 'Ciclo',
+      pattern: Array.isArray(cycle.pattern) ? cycle.pattern : [],
+    });
+    set((state) => ({ cycles: [created as unknown as Cycle, ...state.cycles] }));
   },
 
   updateCycle: async (id, data) => {
     set((state) => ({
       cycles: state.cycles.map((c) => (c.id === id ? { ...c, ...data } : c)),
     }));
+    if (isLocalId(id)) return;
     try {
       await api.updateCycleApi(id, data);
     } catch (error) {
@@ -468,6 +479,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
 
   deleteCycle: async (id) => {
     set((state) => ({ cycles: state.cycles.filter((c) => c.id !== id) }));
+    if (isLocalId(id)) return;
     try {
       await api.deleteCycleApi(id);
     } catch (error) {
@@ -517,23 +529,15 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   createGratifiedEntry: async (entry) => {
-    try {
-      const created = await api.createGratifiedEntryApi(entry as Parameters<typeof api.createGratifiedEntryApi>[0]);
-      set((state) => ({ gratifiedEntries: [created as unknown as GratifiedEntry, ...state.gratifiedEntries] }));
-    } catch (error) {
-      console.warn('[dataStore] createGratifiedEntry API failed, using local fallback:', error);
-      const newItem: GratifiedEntry = {
-        ...entry,
-        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      };
-      set((state) => ({ gratifiedEntries: [newItem, ...state.gratifiedEntries] }));
-    }
+    const created = await api.createGratifiedEntryApi(entry as Parameters<typeof api.createGratifiedEntryApi>[0]);
+    set((state) => ({ gratifiedEntries: [created as unknown as GratifiedEntry, ...state.gratifiedEntries] }));
   },
 
   deleteGratifiedEntry: async (id) => {
     set((state) => ({
       gratifiedEntries: state.gratifiedEntries.filter((e) => e.id !== id),
     }));
+    if (isLocalId(id)) return;
     try {
       await api.deleteGratifiedEntryApi(id);
     } catch (error) {

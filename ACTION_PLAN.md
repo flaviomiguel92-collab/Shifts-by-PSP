@@ -95,8 +95,8 @@
 ## Fase 5 — Arquitetura a Longo Prazo
 
 ### 5A · Dividir `server.py` em módulos
-- [ ] Criar estrutura `backend/routers/`, `backend/models/`, `backend/auth/`, `backend/db.py`
-- [ ] Migrar endpoints por domínio (auth, shifts, cycles, occurrences, reports, stats)
+- [x] Criar estrutura `backend/routers/`, `backend/models/`, `backend/auth/`, `backend/db.py`
+- [x] Migrar endpoints por domínio (auth, shifts, cycles, occurrences, reports, stats)
 
 ### 5B · Reescrever autenticação com JWT + refresh token rotativo
 - [ ] JWT de curta duração (15 min) + refresh token (7 dias) com rotação
@@ -104,9 +104,11 @@
 - [ ] Garantir retrocompatibilidade durante migração
 
 ### 5C · Definir fronteira clara local vs. servidor no `dataStore`
-- [ ] Mapear o que é local-only vs. server-backed
-- [ ] Eliminar IDs temporários `local-${Date.now()}` que nunca sincronizam
-- [ ] Documentar a separação
+- [x] Mapear o que é local-only vs. server-backed
+- [x] Eliminar IDs temporários `local-${Date.now()}` que nunca sincronizam (cycles, gratifiedEntries)
+- [x] Documentar a separação (comentário de bloco no topo de dataStore.ts)
+- [x] Guardar API calls com IDs locais (shiftTypes: isLocalId guard)
+- [x] loadData limpo — removidos campos obsoletos (shifts, gratifications)
 
 ### 5D · Mover fotos para object storage
 - [ ] Avaliar Cloudflare R2 ou equivalente
@@ -134,5 +136,5 @@
 | Fase 2 — Alta | 10 | 8 | 80% |
 | Fase 3 — Bugs | 6 | 6 | 100% |
 | Fase 4 — Qualidade | 13 | 10 | 77% |
-| Fase 5 — Arquitetura | 12 | 3 | 25% |
-| **Total** | **53** | **39** | **74%** |
+| Fase 5 — Arquitetura | 12 | 8 | 67% |
+| **Total** | **53** | **44** | **83%** |

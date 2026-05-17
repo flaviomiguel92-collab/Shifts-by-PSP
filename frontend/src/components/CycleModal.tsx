@@ -48,12 +48,16 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editin
     if (!trimmed) { Alert.alert('Erro', 'Dá um nome ao ciclo.'); return; }
     if (!pattern.length) { Alert.alert('Erro', 'Adiciona pelo menos 1 turno ao padrão.'); return; }
 
-    if (isEditing && editingCycle) {
-      await updateCycle(editingCycle.id, { name: trimmed, pattern });
-    } else {
-      await createCycle({ name: trimmed, pattern });
+    try {
+      if (isEditing && editingCycle) {
+        await updateCycle(editingCycle.id, { name: trimmed, pattern });
+      } else {
+        await createCycle({ name: trimmed, pattern });
+      }
+      onClose();
+    } catch {
+      Alert.alert('Erro', 'Não foi possível guardar o ciclo. Verifica a ligação e tenta de novo.');
     }
-    onClose();
   };
 
   const handleDelete = () => {

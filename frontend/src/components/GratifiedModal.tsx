@@ -70,18 +70,23 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
       return;
     }
 
-    await createGratifiedEntry({
-      date,
-      name: trimmed,
-      start_time: startTime,
-      end_time: endTime,
-      value: calc.total,
-      subtotal: calc.subtotal,
-      discount_percent: calc.discountPercent,
-      is_holiday_or_weekend: isHolidayOrWeekend,
-      lines: calc.lines,
-      created_at: new Date().toISOString(),
-    });
+    try {
+      await createGratifiedEntry({
+        date,
+        name: trimmed,
+        start_time: startTime,
+        end_time: endTime,
+        value: calc.total,
+        subtotal: calc.subtotal,
+        discount_percent: calc.discountPercent,
+        is_holiday_or_weekend: isHolidayOrWeekend,
+        lines: calc.lines,
+        created_at: new Date().toISOString(),
+      });
+    } catch {
+      Alert.alert('Erro', 'Não foi possível guardar o registo. Verifica a ligação e tenta de novo.');
+      return;
+    }
 
     await upsertGratifiedTemplate({ name: trimmed });
     onClose();
