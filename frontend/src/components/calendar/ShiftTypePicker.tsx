@@ -25,27 +25,36 @@ const PRESET_COLORS = [
   '#64748B',
 ];
 
+type PickerView = 'list' | 'selected' | 'create' | 'edit';
+
+interface FormData {
+  name: string;
+  color: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  isWorking: boolean;
+}
+
+const DEFAULT_FORM: FormData = {
+  name: '',
+  color: PRESET_COLORS[0],
+  startTime: '',
+  endTime: '',
+  allDay: false,
+  isWorking: true,
+};
+
 interface ShiftTypePickerProps {
   visible: boolean;
   onClose: () => void;
   shiftTypes: ShiftTypeConfig[];
   hasExistingShift: boolean;
-  onSelectType: (name: string) => void;
+  onApply: (name: string) => void;
   onDeleteShift?: () => void;
-  onCreateType: (data: {
-    name: string;
-    color: string;
-    start_time?: string;
-    end_time?: string;
-    is_working: boolean;
-  }) => void;
-  onCreateAndApply: (data: {
-    name: string;
-    color: string;
-    start_time?: string;
-    end_time?: string;
-    is_working: boolean;
-  }) => void;
+  onCreateType: (data: { name: string; color: string; start_time?: string; end_time?: string; is_working: boolean }) => void;
+  onCreateAndApply: (data: { name: string; color: string; start_time?: string; end_time?: string; is_working: boolean }) => void;
+  onUpdateType: (id: string, data: { name: string; color: string; start_time?: string | null; end_time?: string | null; is_working: boolean }) => void;
 }
 
 export function ShiftTypePicker({
@@ -53,90 +62,129 @@ export function ShiftTypePicker({
   onClose,
   shiftTypes,
   hasExistingShift,
-  onSelectType,
+  onApply,
   onDeleteShift,
   onCreateType,
   onCreateAndApply,
+  onUpdateType,
 }: ShiftTypePickerProps) {
-  const [pickerView, setPickerView] = useState<'list' | 'create'>('list');
-  const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [isWorking, setIsWorking] = useState(true);
+  const [pickerView, setPickerView] = useState<PickerView>('list');
+  const [selectedType, setSelectedType] = useState<ShiftTypeConfig | null>(null);
+  const [form, setForm] = useState<FormData>({ ...DEFAULT_FORM });
 
-  const resetForm = () => {
-    setNewName('');
-    setNewColor(PRESET_COLORS[0]);
-    setStartTime('');
-    setEndTime('');
-    setIsWorking(true);
+  const resetAll = () => {
     setPickerView('list');
+    setSelectedType(null);
+    setForm({ ...DEFAULT_FORM });
   };
 
   const handleClose = () => {
-    resetForm();
+    resetAll();
     onClose();
   };
 
-  const buildFormData = () => ({
-    name: newName.trim(),
-    color: newColor,
-    start_time: startTime || undefined,
-    end_time: endTime || undefined,
-    is_working: isWorking,
+  const buildPayload = () => ({
+    name: form.name.trim(),
+    color: form.color,
+    start_time: form.allDay ? null : (form.startTime || undefined),
+    end_time: form.allDay ? null : (form.endTime || undefined),
+    is_working: form.isWorking,
   });
 
   const handleSaveOnly = () => {
-    if (!newName.trim()) return;
-    onCreateType(buildFormData());
-    resetForm();
+    if (!form.name.trim()) return;
+    onCreateType(buildPayload() as { name: string; color: string; start_time?: string; end_time?: string; is_working: boolean });
+    resetAll();
     onClose();
   };
 
   const handleSaveAndApply = () => {
-    if (!newName.trim()) return;
-    onCreateAndApply(buildFormData());
-    resetForm();
+    if (!form.name.trim()) return;
+    onCreateAndApply(buildPayload() as { name: string; color: string; start_time?: string; end_time?: string; is_working: boolean });
+    resetAll();
     onClose();
   };
 
-  const handleDeletePress = () => {
+  const handleSaveEdit = () => {
+    if (!selectedType || !form.name.trim()) return;
+    onUpdateType(selectedType.id, buildPayload());
+    resetAll();
+    onClose();
+  };
+
+  const openEdit = (st: ShiftTypeConfig) => {
+    setForm({
+      name: st.name,
+      color: st.color,
+      startTime: st.start_time || st.startTime || '',
+      endTime: st.end_time || st.endTime || '',
+      allDay: !st.start_time && !st.startTime,
+      isWorking: st.is_working !== false,
+    });
+    setSelectedType(st);
+    setPickerView('edit');
+  };
+
+  const handleDeleteFromDay = () => {
     Alert.alert('Remover turno', 'Remover o turno deste dia?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Remover', style: 'destructive', onPress: onDeleteShift },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => {
+          onDeleteShift?.();
+          resetAll();
+          onClose();
+        },
+      },
     ]);
   };
 
+  const getTitle = () => {
+    if (pickerView === 'create') return 'Novo tipo de turno';
+    if (pickerView === 'edit') return 'Editar tipo de turno';
+    if (pickerView === 'selected' && selectedType) return selectedType.name;
+    return 'Escolher turno';
+  };
+
+  const goBack = () => {
+    if (pickerView === 'edit') {
+      setPickerView('selected');
+      setForm({ ...DEFAULT_FORM });
+    } else if (pickerView === 'selected') {
+      setSelectedType(null);
+      setPickerView('list');
+    } else if (pickerView === 'create') {
+      setPickerView('list');
+      setForm({ ...DEFAULT_FORM });
+    }
+  };
+
+  const showBack = pickerView !== 'list';
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.dragHandle} />
 
           <View style={styles.sheetHeader}>
-            {pickerView === 'create' && (
-              <TouchableOpacity
-                onPress={() => setPickerView('list')}
-                style={styles.backBtn}
-              >
+            {showBack && (
+              <TouchableOpacity onPress={goBack} style={styles.backBtn}>
                 <Ionicons name="chevron-back" size={18} color="#60A5FA" />
               </TouchableOpacity>
             )}
-            <Text style={styles.sheetTitle}>
-              {pickerView === 'list' ? 'Escolher turno' : 'Novo tipo de turno'}
-            </Text>
+            {pickerView === 'selected' && selectedType && (
+              <View style={[styles.typeColorDot, { backgroundColor: selectedType.color }]} />
+            )}
+            <Text style={styles.sheetTitle}>{getTitle()}</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={20} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
 
-          {pickerView === 'list' ? (
+          {/* ──────────── LIST ──────────── */}
+          {pickerView === 'list' && (
             <ScrollView
               style={styles.scrollContent}
               showsVerticalScrollIndicator={false}
@@ -145,9 +193,7 @@ export function ShiftTypePicker({
               {shiftTypes.length === 0 && (
                 <View style={styles.emptyState}>
                   <Ionicons name="calendar-outline" size={32} color="#374151" />
-                  <Text style={styles.emptyStateText}>
-                    Sem tipos de turno configurados
-                  </Text>
+                  <Text style={styles.emptyStateText}>Sem tipos de turno configurados</Text>
                 </View>
               )}
 
@@ -156,21 +202,22 @@ export function ShiftTypePicker({
                   <TouchableOpacity
                     key={st.id}
                     style={styles.typeItem}
-                    onPress={() => onSelectType(st.name)}
+                    onPress={() => {
+                      setSelectedType(st);
+                      setPickerView('selected');
+                    }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[styles.typeDot, { backgroundColor: st.color }]}
-                    />
+                    <View style={[styles.typeDot, { backgroundColor: st.color }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.typeName}>{st.name}</Text>
-                      {(st.start_time || st.startTime) && (
+                      {(st.start_time || st.startTime) ? (
                         <Text style={styles.typeTime}>
                           {st.start_time || st.startTime}
-                          {(st.end_time || st.endTime)
-                            ? ` – ${st.end_time || st.endTime}`
-                            : ''}
+                          {(st.end_time || st.endTime) ? ` – ${st.end_time || st.endTime}` : ''}
                         </Text>
+                      ) : (
+                        <Text style={styles.typeTime}>Dia inteiro</Text>
                       )}
                     </View>
                     <Ionicons name="chevron-forward" size={15} color="#374151" />
@@ -178,27 +225,68 @@ export function ShiftTypePicker({
                 ))}
               </View>
 
-              {hasExistingShift && onDeleteShift && (
-                <TouchableOpacity
-                  style={styles.deleteShiftBtn}
-                  onPress={handleDeletePress}
-                >
-                  <Ionicons name="trash-outline" size={15} color="#EF4444" />
-                  <Text style={styles.deleteShiftText}>
-                    Remover turno deste dia
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity
-                style={styles.addTypeBtn}
-                onPress={() => setPickerView('create')}
-              >
+              <TouchableOpacity style={styles.addTypeBtn} onPress={() => setPickerView('create')}>
                 <Ionicons name="add-circle-outline" size={16} color="#60A5FA" />
                 <Text style={styles.addTypeBtnText}>Novo tipo de turno</Text>
               </TouchableOpacity>
             </ScrollView>
-          ) : (
+          )}
+
+          {/* ──────────── SELECTED ──────────── */}
+          {pickerView === 'selected' && selectedType && (
+            <View style={styles.actionGroup}>
+              {(selectedType.start_time || selectedType.startTime) && (
+                <Text style={styles.selectedTimeHint}>
+                  {selectedType.start_time || selectedType.startTime} – {selectedType.end_time || selectedType.endTime}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                style={styles.actionRow}
+                onPress={() => {
+                  onApply(selectedType.name);
+                  resetAll();
+                  onClose();
+                }}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#60A5FA" />
+                </View>
+                <Text style={styles.actionText}>Aplicar a este dia</Text>
+                <Ionicons name="chevron-forward" size={16} color="#374151" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionRow}
+                onPress={() => openEdit(selectedType)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
+                  <Ionicons name="pencil-outline" size={20} color="#A78BFA" />
+                </View>
+                <Text style={styles.actionText}>Editar tipo de turno</Text>
+                <Ionicons name="chevron-forward" size={16} color="#374151" />
+              </TouchableOpacity>
+
+              {hasExistingShift && onDeleteShift && (
+                <TouchableOpacity
+                  style={[styles.actionRow, styles.actionRowDanger]}
+                  onPress={handleDeleteFromDay}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.actionIcon, { backgroundColor: 'rgba(239,68,68,0.10)' }]}>
+                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  </View>
+                  <Text style={[styles.actionText, { color: '#EF4444' }]}>Remover turno deste dia</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#374151" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* ──────────── CREATE / EDIT FORM ──────────── */}
+          {(pickerView === 'create' || pickerView === 'edit') && (
             <ScrollView
               style={styles.scrollContent}
               showsVerticalScrollIndicator={false}
@@ -210,9 +298,9 @@ export function ShiftTypePicker({
                 style={styles.input}
                 placeholder="Ex: Manhã, Tarde, Folga..."
                 placeholderTextColor="#4B5563"
-                value={newName}
-                onChangeText={setNewName}
-                autoFocus
+                value={form.name}
+                onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
+                autoFocus={pickerView === 'create'}
               />
 
               <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Cor</Text>
@@ -220,73 +308,87 @@ export function ShiftTypePicker({
                 {PRESET_COLORS.map((c) => (
                   <TouchableOpacity
                     key={c}
-                    style={[
-                      styles.colorDot,
-                      { backgroundColor: c },
-                      newColor === c && styles.colorDotSelected,
-                    ]}
-                    onPress={() => setNewColor(c)}
+                    style={[styles.colorDot, { backgroundColor: c }, form.color === c && styles.colorDotSelected]}
+                    onPress={() => setForm((f) => ({ ...f, color: c }))}
                     activeOpacity={0.8}
                   />
                 ))}
               </View>
 
-              <View style={styles.timeRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Início</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="08:00"
-                    placeholderTextColor="#4B5563"
-                    value={startTime}
-                    onChangeText={setStartTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-                <View style={{ width: 10 }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Fim</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="16:00"
-                    placeholderTextColor="#4B5563"
-                    value={endTime}
-                    onChangeText={setEndTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-              </View>
-
               <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Conta como dia de trabalho</Text>
+                <Text style={styles.toggleLabel}>Dia inteiro (sem horário)</Text>
                 <Switch
-                  value={isWorking}
-                  onValueChange={setIsWorking}
+                  value={form.allDay}
+                  onValueChange={(v) => setForm((f) => ({ ...f, allDay: v }))}
                   trackColor={{ false: '#374151', true: '#3B82F6' }}
                   thumbColor="#fff"
                 />
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.savePrimaryBtn,
-                  !newName.trim() && { opacity: 0.45 },
-                ]}
-                onPress={handleSaveAndApply}
-                disabled={!newName.trim()}
-              >
-                <Text style={styles.savePrimaryText}>Guardar e aplicar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.saveSecondaryBtn,
-                  !newName.trim() && { opacity: 0.45 },
-                ]}
-                onPress={handleSaveOnly}
-                disabled={!newName.trim()}
-              >
-                <Text style={styles.saveSecondaryText}>Guardar apenas</Text>
-              </TouchableOpacity>
+              {!form.allDay && (
+                <View style={styles.timeRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Início</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="08:00"
+                      placeholderTextColor="#4B5563"
+                      value={form.startTime}
+                      onChangeText={(v) => setForm((f) => ({ ...f, startTime: v }))}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                  </View>
+                  <View style={{ width: 10 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Fim</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="16:00"
+                      placeholderTextColor="#4B5563"
+                      value={form.endTime}
+                      onChangeText={(v) => setForm((f) => ({ ...f, endTime: v }))}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Conta como dia de trabalho</Text>
+                <Switch
+                  value={form.isWorking}
+                  onValueChange={(v) => setForm((f) => ({ ...f, isWorking: v }))}
+                  trackColor={{ false: '#374151', true: '#3B82F6' }}
+                  thumbColor="#fff"
+                />
+              </View>
+
+              {pickerView === 'create' ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.savePrimaryBtn, !form.name.trim() && { opacity: 0.45 }]}
+                    onPress={handleSaveAndApply}
+                    disabled={!form.name.trim()}
+                  >
+                    <Text style={styles.savePrimaryText}>Guardar e aplicar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.saveSecondaryBtn, !form.name.trim() && { opacity: 0.45 }]}
+                    onPress={handleSaveOnly}
+                    disabled={!form.name.trim()}
+                  >
+                    <Text style={styles.saveSecondaryText}>Guardar apenas</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.savePrimaryBtn, !form.name.trim() && { opacity: 0.45 }]}
+                  onPress={handleSaveEdit}
+                  disabled={!form.name.trim()}
+                >
+                  <Text style={styles.savePrimaryText}>Guardar alterações</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           )}
         </View>
@@ -327,9 +429,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
+    gap: 6,
   },
   backBtn: {
-    marginRight: 6,
+    marginRight: 2,
+  },
+  typeColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flexShrink: 0,
   },
   sheetTitle: {
     flex: 1,
@@ -389,23 +498,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4B5563',
   },
-  deleteShiftBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 12,
-    backgroundColor: 'rgba(239,68,68,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.18)',
-    marginBottom: 10,
-  },
-  deleteShiftText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
   addTypeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -422,6 +514,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#60A5FA',
   },
+  // Selected state
+  actionGroup: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 24,
+    gap: 8,
+  },
+  selectedTimeHint: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  actionRowDanger: {
+    borderColor: 'rgba(239,68,68,0.18)',
+    backgroundColor: 'rgba(239,68,68,0.04)',
+  },
+  actionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  // Form
   fieldLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -462,14 +596,15 @@ const styles = StyleSheet.create({
   },
   timeRow: {
     flexDirection: 'row',
-    marginTop: 16,
+    marginTop: 4,
+    marginBottom: 4,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 18,
-    marginBottom: 24,
+    marginBottom: 8,
   },
   toggleLabel: {
     fontSize: 14,
@@ -483,6 +618,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    marginTop: 16,
     marginBottom: 10,
   },
   savePrimaryText: {

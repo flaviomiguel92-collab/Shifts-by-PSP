@@ -95,6 +95,7 @@ interface DataStore {
   fetchShiftTypes: () => Promise<ShiftTypeConfig[]>;
   createShiftType: (shiftType: Partial<ShiftTypeConfig>) => Promise<void>;
   deleteShiftType: (id: string) => Promise<void>;
+  updateShiftType: (id: string, data: Partial<ShiftTypeConfig>) => Promise<void>;
 
   fetchCycles: () => Promise<void>;
   createCycle: (cycle: Omit<Cycle, 'id'>) => Promise<void>;
@@ -402,6 +403,25 @@ export const useDataStore = create<DataStore>((set, get) => ({
       await api.deleteShiftTypeApi(id);
     } catch (error) {
       console.warn('[dataStore] deleteShiftType API failed (local already updated):', error);
+    }
+  },
+
+  updateShiftType: async (id, data) => {
+    set((state) => ({
+      shiftTypes: state.shiftTypes.map((st) => (st.id === id ? { ...st, ...data } : st)),
+    }));
+    get().saveData();
+    try {
+      await api.updateShiftTypeApi(id, {
+        name: data.name,
+        color: data.color,
+        start_time: data.start_time ?? data.startTime ?? null,
+        end_time: data.end_time ?? data.endTime ?? null,
+        is_working: data.is_working,
+        order: data.order,
+      });
+    } catch (error) {
+      console.warn('[dataStore] updateShiftType API failed (local already updated):', error);
     }
   },
 

@@ -58,6 +58,17 @@ jobs:
       run:
         working-directory: ./backend
 
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +92,13 @@ jobs:
 
       - name: Compile backend modules
         run: python -m py_compile server.py server_mock.py cleanup_db.py
+
+      - name: Run tests
+        run: pytest
+        env:
+          MONGO_URL: mongodb://localhost:27017
+          DB_NAME: shiftextra_db
+          CORS_ORIGINS: http://localhost:3000
 
   deploy-frontend:
     name: Deploy Frontend to Vercel

@@ -174,6 +174,18 @@ export const deleteShiftTypeApi = async (id: string): Promise<void> => {
   if (!response.ok && response.status !== 404) throw new Error(`Failed to delete shift type: ${response.statusText}`);
 };
 
+export const updateShiftTypeApi = async (
+  id: string,
+  data: { name?: string; color?: string; start_time?: string | null; end_time?: string | null; is_working?: boolean; order?: number }
+): Promise<ShiftTypeConfig> => {
+  const response = await apiFetch(`${API_BASE_URL}/shift-types/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error(`Failed to update shift type: ${response.statusText}`);
+  return response.json();
+};
+
 // ==================== AUTH SESSIONS ====================
 
 export interface SessionInfo {

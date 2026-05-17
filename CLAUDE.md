@@ -6,8 +6,8 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 
 - Branch local/remota: `master`
 - Repositório remoto: `origin` em `https://github.com/flaviomiguel92-collab/Shifts-by-PSP.git`
-- Working tree limpo após último push
-- Último commit: `4b625a7 refactor: audit fixes — security, typing, component extraction`
+- Working tree com alterações não commitadas (ver git status)
+- Último commit pushado: `4b625a7 refactor: audit fixes — security, typing, component extraction`
 
 ## Histórico de commits relevantes
 
@@ -22,7 +22,6 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 ## O que foi feito (completo)
 
 ### Backend
-- `/api/reports/generate` exige autenticação (Bearer token)
 - Rotas de shifts reordenadas: fixas antes de `{id}` (evita conflito com `/bulk`, `/reset`)
 - Sessões OAuth standardizadas para 30 dias
 - `DemoAuthRequest` removido (classe sem endpoint)
@@ -30,15 +29,25 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 - Sub-recursos de ocorrências (`persons`, `photos`) validam `user_id`
 - `/api/cleanup/all-data` apaga apenas dados do utilizador autenticado
 - `/api/auth/me` usa `UserPublic` (sem expor `password_hash`)
+- `get_current_user` e `logout`: Authorization header tem prioridade sobre cookie (fix de segurança — cookie do cliente partilhado não deve silenciar o token explícito)
+- Cookies auth unificados: `_cookie_flags()` deteta `ENVIRONMENT=production` → `secure=True, samesite=none`; dev → `secure=False, samesite=lax`
+- **Testes automatizados** (17/17 passam): `backend/tests/test_auth.py` (11 testes) + `backend/tests/test_user_isolation.py` (6 testes); MongoDB real via `pytest.ini asyncio_mode=auto`
+- **Índices MongoDB** corrigidos no startup: `users.email` (unique), `user_sessions.session_token` (unique), `shifts(user_id+date)`, `occurrences.user_id`, `gratifications(user_id+date)`, etc. (anteriores apontavam para coleção errada `db.sessions`)
 
 ### Frontend
 - `sharp` removido de `package.json`; `package-lock.json` regenerado e sincronizado
 - `frontend/tsconfig.json`: `strict: true` sem override `noImplicitAny: false` (foi workaround temporário; agora removido)
 - `frontend/src/store/dataStore.ts`: migrado de `create<any>` para `create<DataStore>` com interface totalmente tipada
-- `frontend/src/services/api.ts`: todas as funções tipadas (Occurrence, Shift, Gratification)
+- `frontend/src/services/api.ts`: todas as funções tipadas (Occurrence, Shift, Gratification); `updateShiftTypeApi` adicionado
 - `frontend/app/(tabs)/ocorrencias.tsx`: reduzido de ~1500 para ~650 linhas
   - `PersonFormModal` extraído para `frontend/src/components/occurrence/PersonFormModal.tsx`
   - `CreateOccurrenceModal` extraído para `frontend/src/components/occurrence/CreateOccurrenceModal.tsx`
+- **Calendário UX redesenhado** (`frontend/app/(tabs)/index.tsx`):
+  - `ShiftTypePicker`: máquina de estados `list → selected → edit/create` com edição inline de tipos
+  - `DayShiftEditor` (novo): bottom-sheet para editar turno num dia específico (tipo, hora, nota)
+  - `PaintModeBar` (novo): barra animada slide-up para pintar dias rapidamente
+  - Botão lápis no cabeçalho ativa modo paint; `updateShiftType` no store
+- `frontend/src/store/dataStore.ts`: `updateShiftType` adicionado com optimistic update + sync API
 
 ### CI/CD
 - Workflow `.github/workflows/deploy.yml` usa `npm ci`, lint, `npx tsc --noEmit`, build web como checks bloqueantes
@@ -48,23 +57,7 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 ## Pendentes / próximos passos recomendados
 
 ### Alta prioridade
-- **Índices MongoDB**: adicionar índices em `user_id`, `date`, `email`, `session_token` no `server.py`
-  ```python
-  await db.sessions.create_index("token", unique=True)
-  await db.shifts.create_index([("user_id", 1), ("date", 1)])
-  await db.occurrences.create_index("user_id")
-  ```
-
 - **Persistência de `cycles` e `gratifiedEntries`**: atualmente vivem só no localStorage do frontend. Considerar mover para MongoDB tal como shifts/gratifications.
-
-### Média prioridade
-- **Cookies auth inconsistentes**: login/register criam cookie sem `secure`/`samesite`; `/auth/session` usa `secure=True, samesite='none'`; o frontend usa Bearer token. Unificar para Bearer-only ou corrigir flags dos cookies.
-
-- **Testes automatizados** (nenhum existe atualmente):
-  - auth (register, login, logout, token expirado)
-  - cleanup por utilizador (não apagar dados de outros)
-  - isolamento de ocorrências por `user_id`
-  - `/api/reports/generate`
 
 ### Baixa prioridade
 - **PDF melhorado**: endpoint atual gera PDF mínimo em memória. Se precisar de layout oficial, criar `backend/reporting/` com `docxtpl` + LibreOffice.

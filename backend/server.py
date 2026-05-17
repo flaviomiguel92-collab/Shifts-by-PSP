@@ -61,6 +61,19 @@ logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+_IS_PRODUCTION = os.environ.get('ENVIRONMENT', '').lower() == 'production'
+
+def _cookie_flags() -> dict:
+    """Return cookie security flags appropriate for the current environment.
+
+    Production (cross-origin, HTTPS): secure=True, samesite=none required for cookies
+    to be sent in cross-origin fetch with credentials.
+    Development (localhost, HTTP): secure=False, samesite=lax to work without HTTPS.
+    """
+    if _IS_PRODUCTION:
+        return {"secure": True, "samesite": "none"}
+    return {"secure": False, "samesite": "lax"}
+
 # ==================== MODELS ====================
 
 class User(BaseModel):
@@ -229,11 +242,11 @@ class GratifiedCalendarEntryCreate(BaseModel):
 # ==================== AUTH HELPERS ====================
 
 async def get_current_user(request: Request) -> User:
-    session_token = request.cookies.get("session_token")
-    if not session_token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            session_token = auth_header[7:]
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        session_token = auth_header[7:]
+    else:
+        session_token = request.cookies.get("session_token")
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     session_doc = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
@@ -266,7 +279,7 @@ async def register(data: RegisterRequest, response: Response):
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     session = {"session_id": str(uuid.uuid4()), "user_id": user_id, "session_token": session_token, "expires_at": expires_at, "created_at": datetime.now(timezone.utc)}
     await db.user_sessions.insert_one(session)
-    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60)
+    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60, **_cookie_flags())
     return {"user": {"user_id": user_id, "email": user["email"], "name": user["name"], "picture": None, "created_at": user["created_at"].isoformat()}, "session_token": session_token}
 
 @api_router.post("/auth/login")
@@ -282,7 +295,7 @@ async def login(data: LoginRequest, response: Response):
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     session = {"session_id": str(uuid.uuid4()), "user_id": user_id, "session_token": session_token, "expires_at": expires_at, "created_at": datetime.now(timezone.utc)}
     await db.user_sessions.insert_one(session)
-    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60)
+    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60, **_cookie_flags())
     return {"user": {"user_id": user_id, "email": user["email"], "name": user["name"], "picture": user.get("picture"), "created_at": user["created_at"].isoformat()}, "session_token": session_token}
 
 @api_router.post("/auth/session")
@@ -310,7 +323,7 @@ async def create_session(session_request: SessionRequest, response: Response):
     session = UserSession(user_id=user_id, session_token=session_token, expires_at=expires_at)
     await db.user_sessions.delete_many({"user_id": user_id})
     await db.user_sessions.insert_one(session.model_dump())
-    response.set_cookie(key="session_token", value=session_token, httponly=True, secure=True, samesite="none", path="/", max_age=30 * 24 * 60 * 60)
+    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60, **_cookie_flags())
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return {"user": user_doc, "session_token": session_token}
 
@@ -320,14 +333,14 @@ async def get_me(user: User = Depends(get_current_user)):
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
-    session_token = request.cookies.get("session_token")
-    if not session_token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            session_token = auth_header[7:]
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        session_token = auth_header[7:]
+    else:
+        session_token = request.cookies.get("session_token")
     if session_token:
         await db.user_sessions.delete_many({"session_token": session_token})
-    response.delete_cookie(key="session_token", path="/", secure=True, samesite="none")
+    response.delete_cookie(key="session_token", path="/", **_cookie_flags())
     return {"message": "Logged out successfully"}
 
 @api_router.get("/auth/sessions")
@@ -806,7 +819,8 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 async def create_indexes():
-    await db.sessions.create_index("token", unique=True, sparse=True)
+    await db.users.create_index("email", unique=True)
+    await db.user_sessions.create_index("session_token", unique=True)
     await db.shifts.create_index([("user_id", 1), ("date", 1)])
     await db.occurrences.create_index("user_id")
     await db.gratifications.create_index([("user_id", 1), ("date", 1)])

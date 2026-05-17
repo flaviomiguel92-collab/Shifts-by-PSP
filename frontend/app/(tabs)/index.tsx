@@ -41,6 +41,8 @@ import { toast } from '../../src/utils/toast';
 import { search } from '../../src/utils/search';
 import { DayContextPopup } from '../../src/components/calendar/DayContextPopup';
 import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
+import { DayShiftEditor } from '../../src/components/calendar/DayShiftEditor';
+import { PaintModeBar } from '../../src/components/calendar/PaintModeBar';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
@@ -59,6 +61,7 @@ export default function CalendarScreen() {
     deleteShift,
     createShiftType,
     fetchShiftTypes,
+    updateShiftType,
     currentMonth,
     setCurrentMonth,
   } = store;
@@ -85,6 +88,10 @@ export default function CalendarScreen() {
   const [popupDay, setPopupDay] = useState<string | null>(null);
   const [popupAnchor, setPopupAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showShiftPicker, setShowShiftPicker] = useState(false);
+  const [showDayShiftEditor, setShowDayShiftEditor] = useState(false);
+
+  // Paint mode
+  const [paintMode, setPaintMode] = useState(false);
 
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -196,6 +203,22 @@ export default function CalendarScreen() {
         else next.add(dateStr);
         return next;
       });
+      return;
+    }
+
+    // Paint mode: apply selected shift directly, no popup
+    if (paintMode && editMode === 'quick' && selectedShiftType) {
+      const existing = getShiftForDay(dateStr);
+      if (existing) {
+        if (existing.shift_type === selectedShiftType) {
+          await deleteShift(existing.id);
+        } else {
+          await updateShift(existing.id, { shift_type: selectedShiftType });
+        }
+      } else {
+        await createShift({ date: dateStr, shift_type: selectedShiftType });
+      }
+      await fetchShifts(currentMonth);
       return;
     }
 
@@ -394,6 +417,50 @@ export default function CalendarScreen() {
     }
   };
 
+  const handleUpdateShiftType = async (
+    id: string,
+    data: { name: string; color: string; start_time?: string | null; end_time?: string | null; is_working: boolean }
+  ) => {
+    try {
+      await updateShiftType(id, data);
+      toast.success('Tipo de turno atualizado');
+    } catch {
+      toast.error('Não foi possível atualizar o tipo de turno');
+    }
+  };
+
+  const handleDayShiftSave = async (data: {
+    shift_type: string; start_time?: string; end_time?: string; note?: string;
+  }) => {
+    if (!selectedDate) return;
+    try {
+      const existing = shiftsMap.get(selectedDate);
+      if (existing) {
+        await updateShift(existing.id, data);
+      } else {
+        await createShift({ date: selectedDate, ...data });
+      }
+      await fetchShifts(currentMonth);
+      setShowDayShiftEditor(false);
+      toast.success('Turno guardado');
+    } catch {
+      toast.error('Não foi possível guardar o turno');
+    }
+  };
+
+  const handleDayShiftDelete = async () => {
+    const existing = selectedDate ? shiftsMap.get(selectedDate) : null;
+    if (!existing) return;
+    try {
+      await deleteShift(existing.id);
+      await fetchShifts(currentMonth);
+      setShowDayShiftEditor(false);
+      toast.success('Turno removido');
+    } catch {
+      toast.error('Não foi possível remover o turno');
+    }
+  };
+
   const handleQuickSelect = (type: string) => {
     if (editMode === 'quick' && selectedShiftType === type) {
       setSelectedShiftType(null);
@@ -414,6 +481,7 @@ export default function CalendarScreen() {
     setCycleStartDate(null);
     setSelectedDates(new Set());
     setMultiSelectShiftPicker(false);
+    setPaintMode(false);
   };
 
   const handleCopyWeek = async () => {
@@ -508,6 +576,22 @@ export default function CalendarScreen() {
             activeOpacity={0.85}
           >
             <Ionicons name="search-outline" size={20} color="#94A3B8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.searchBtn, paintMode && styles.paintBtnActive]}
+            onPress={() => {
+              if (paintMode) {
+                cancelEditMode();
+              } else {
+                setPaintMode(true);
+                setEditMode('quick');
+                setSelectedShiftType(shiftTypes[0]?.name || null);
+                setPopupDay(null);
+              }
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="brush-outline" size={20} color={paintMode ? '#3B82F6' : '#94A3B8'} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.toggleOptionsBtn}
@@ -717,50 +801,6 @@ export default function CalendarScreen() {
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.optionsPanelSection}>
-                <Text style={styles.optionsSectionTitle}>Seleção rápida de turnos</Text>
-                <Text style={styles.quickBarTitle}>Escolhe um turno e toca nos dias do calendário</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.quickButtons}>
-                    {shiftTypes.map((shift: any) => (
-                      <TouchableOpacity
-                        key={shift.name}
-                        activeOpacity={0.8}
-                        style={[
-                          styles.quickBtn,
-                          { borderColor: shift.color },
-                          editMode === 'quick' && selectedShiftType === shift.name && {
-                            backgroundColor: shift.color,
-                          },
-                        ]}
-                        onPress={() => handleQuickSelect(shift.name)}
-                      >
-                        <Text
-                          style={[
-                            styles.quickBtnText,
-                            {
-                              color:
-                                editMode === 'quick' && selectedShiftType === shift.name
-                                  ? '#FFF'
-                                  : shift.color,
-                            },
-                          ]}
-                        >
-                          {shift.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-                {editMode === 'quick' && selectedShiftType && (
-                  <Text style={styles.modeHint}>
-                    ✓ Toca nos dias para aplicar &quot;{getShiftDisplayName(selectedShiftType)}&quot;
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.optionsDivider} />
-
-              <View style={styles.optionsPanelSection}>
                 <Text style={styles.optionsSectionTitle}>Ações rápidas</Text>
                 <TouchableOpacity style={styles.copyWeekBtn} onPress={handleCopyWeek} activeOpacity={0.8}>
                   <View style={styles.copyWeekIcon}>
@@ -921,8 +961,9 @@ export default function CalendarScreen() {
           setShowShiftPicker(true);
         }}
         onEditShift={() => {
+          setSelectedShift(popupShift);
           setPopupDay(null);
-          setShowShiftModal(true);
+          setShowDayShiftEditor(true);
         }}
         onAddGratified={() => {
           setPopupDay(null);
@@ -940,13 +981,25 @@ export default function CalendarScreen() {
         onClose={() => setShowShiftPicker(false)}
         shiftTypes={shiftTypes}
         hasExistingShift={!!popupShift}
-        onSelectType={handleApplyShiftFromPicker}
+        onApply={handleApplyShiftFromPicker}
         onDeleteShift={popupShift ? handleDeleteShiftFromPicker : undefined}
         onCreateType={handleCreateShiftType}
         onCreateAndApply={handleCreateAndApplyShiftType}
+        onUpdateType={handleUpdateShiftType}
       />
 
-      {/* Shift edit modal */}
+      {/* Day shift editor (tap shift row in popup) */}
+      <DayShiftEditor
+        visible={showDayShiftEditor}
+        onClose={() => setShowDayShiftEditor(false)}
+        date={selectedDate}
+        shift={selectedShift}
+        shiftTypes={shiftTypes}
+        onSave={handleDayShiftSave}
+        onDelete={selectedShift ? handleDayShiftDelete : undefined}
+      />
+
+      {/* Shift edit modal (FAB + legacy) */}
       <ShiftModal
         visible={showShiftModal}
         onClose={() => setShowShiftModal(false)}
@@ -973,6 +1026,18 @@ export default function CalendarScreen() {
             return day === 0 || day === 6 || holidaysMap.has(selectedDate);
           })()
         }
+      />
+
+      {/* Paint mode bar */}
+      <PaintModeBar
+        visible={paintMode}
+        shiftTypes={shiftTypes}
+        selectedType={selectedShiftType}
+        onSelectType={(name) => {
+          setSelectedShiftType(name);
+          setEditMode('quick');
+        }}
+        onExit={cancelEditMode}
       />
 
       <FAB
@@ -1054,6 +1119,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59,130,246,0.12)',
     borderWidth: 1,
     borderColor: 'rgba(59,130,246,0.35)',
+  },
+  paintBtnActive: {
+    backgroundColor: 'rgba(59,130,246,0.18)',
+    borderColor: 'rgba(59,130,246,0.55)',
+    borderWidth: 1,
   },
   loadingContainer: {
     flex: 1,
