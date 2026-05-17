@@ -4,12 +4,13 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import secrets
+import hashlib
 from pathlib import Path
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-import httpx
 from passlib.context import CryptContext
 import re
 
@@ -97,9 +98,6 @@ class UserSession(BaseModel):
     session_token: str
     expires_at: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class SessionRequest(BaseModel):
-    session_id: str
 
 class RegisterRequest(BaseModel):
     email: str
@@ -249,7 +247,8 @@ async def get_current_user(request: Request) -> User:
         session_token = request.cookies.get("session_token")
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    session_doc = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+    token_hash = hashlib.sha256(session_token.encode()).hexdigest()
+    session_doc = await db.user_sessions.find_one({"session_token": token_hash}, {"_id": 0})
     if not session_doc:
         raise HTTPException(status_code=401, detail="Invalid session")
     expires_at = session_doc["expires_at"]
@@ -275,11 +274,12 @@ async def register(data: RegisterRequest, response: Response):
     user_id = str(uuid.uuid4())
     user = {"user_id": user_id, "email": data.email, "name": data.name, "password_hash": password_hash, "created_at": datetime.now(timezone.utc)}
     await db.users.insert_one(user)
-    session_token = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-    session = {"session_id": str(uuid.uuid4()), "user_id": user_id, "session_token": session_token, "expires_at": expires_at, "created_at": datetime.now(timezone.utc)}
+    session_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(session_token.encode()).hexdigest()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session = {"session_id": str(uuid.uuid4()), "user_id": user_id, "session_token": token_hash, "expires_at": expires_at, "created_at": datetime.now(timezone.utc)}
     await db.user_sessions.insert_one(session)
-    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60, **_cookie_flags())
+    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=7 * 24 * 60 * 60, **_cookie_flags())
     return {"user": {"user_id": user_id, "email": user["email"], "name": user["name"], "picture": None, "created_at": user["created_at"].isoformat()}, "session_token": session_token}
 
 @api_router.post("/auth/login")
@@ -291,41 +291,13 @@ async def login(data: LoginRequest, response: Response):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
     user_id = user["user_id"]
     await db.user_sessions.delete_many({"user_id": user_id})
-    session_token = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-    session = {"session_id": str(uuid.uuid4()), "user_id": user_id, "session_token": session_token, "expires_at": expires_at, "created_at": datetime.now(timezone.utc)}
+    session_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(session_token.encode()).hexdigest()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session = {"session_id": str(uuid.uuid4()), "user_id": user_id, "session_token": token_hash, "expires_at": expires_at, "created_at": datetime.now(timezone.utc)}
     await db.user_sessions.insert_one(session)
-    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60, **_cookie_flags())
+    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=7 * 24 * 60 * 60, **_cookie_flags())
     return {"user": {"user_id": user_id, "email": user["email"], "name": user["name"], "picture": user.get("picture"), "created_at": user["created_at"].isoformat()}, "session_token": session_token}
-
-@api_router.post("/auth/session")
-async def create_session(session_request: SessionRequest, response: Response):
-    auth_api_url = os.environ.get('AUTH_API_URL', 'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data')
-    try:
-        async with httpx.AsyncClient() as client_http:
-            auth_response = await client_http.get(auth_api_url, headers={"X-Session-ID": session_request.session_id})
-            if auth_response.status_code != 200:
-                raise HTTPException(status_code=401, detail="Invalid session ID")
-            auth_data = auth_response.json()
-    except httpx.RequestError:
-        logger.error("Auth service request failed")
-        raise HTTPException(status_code=500, detail="Authentication service unavailable")
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
-    existing_user = await db.users.find_one({"email": auth_data["email"]}, {"_id": 0})
-    if existing_user:
-        user_id = existing_user["user_id"]
-        await db.users.update_one({"user_id": user_id}, {"$set": {"name": auth_data.get("name", existing_user.get("name")), "picture": auth_data.get("picture", existing_user.get("picture"))}})
-    else:
-        new_user = User(user_id=user_id, email=auth_data["email"], name=auth_data.get("name", "User"), picture=auth_data.get("picture"))
-        await db.users.insert_one(new_user.model_dump())
-    session_token = auth_data.get("session_token", str(uuid.uuid4()))
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-    session = UserSession(user_id=user_id, session_token=session_token, expires_at=expires_at)
-    await db.user_sessions.delete_many({"user_id": user_id})
-    await db.user_sessions.insert_one(session.model_dump())
-    response.set_cookie(key="session_token", value=session_token, httponly=True, path="/", max_age=30 * 24 * 60 * 60, **_cookie_flags())
-    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
-    return {"user": user_doc, "session_token": session_token}
 
 @api_router.get("/auth/me", response_model=UserPublic)
 async def get_me(user: User = Depends(get_current_user)):
@@ -339,17 +311,19 @@ async def logout(request: Request, response: Response):
     else:
         session_token = request.cookies.get("session_token")
     if session_token:
-        await db.user_sessions.delete_many({"session_token": session_token})
+        token_hash = hashlib.sha256(session_token.encode()).hexdigest()
+        await db.user_sessions.delete_many({"session_token": token_hash})
     response.delete_cookie(key="session_token", path="/", **_cookie_flags())
     return {"message": "Logged out successfully"}
 
 @api_router.get("/auth/sessions")
 async def list_sessions(request: Request, user: User = Depends(get_current_user)):
-    current_token = request.cookies.get("session_token")
-    if not current_token:
+    raw_token = request.cookies.get("session_token")
+    if not raw_token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
-            current_token = auth_header[7:]
+            raw_token = auth_header[7:]
+    current_hash = hashlib.sha256(raw_token.encode()).hexdigest() if raw_token else None
     sessions = await db.user_sessions.find(
         {"user_id": user.user_id},
         {"_id": 0, "session_id": 1, "created_at": 1, "expires_at": 1, "session_token": 1}
@@ -360,7 +334,7 @@ async def list_sessions(request: Request, user: User = Depends(get_current_user)
             "session_id": s["session_id"],
             "created_at": s["created_at"].isoformat() if hasattr(s["created_at"], "isoformat") else str(s["created_at"]),
             "expires_at": s["expires_at"].isoformat() if hasattr(s["expires_at"], "isoformat") else str(s["expires_at"]),
-            "is_current": s.get("session_token") == current_token,
+            "is_current": s.get("session_token") == current_hash,
         })
     result.sort(key=lambda x: x["created_at"], reverse=True)
     return result

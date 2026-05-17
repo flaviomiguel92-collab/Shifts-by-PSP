@@ -65,7 +65,7 @@ def render_docx(context: dict[str, Any]) -> bytes:
 def convert_to_pdf(docx_bytes: bytes) -> bytes:
     """
     Convert DOCX bytes to PDF via LibreOffice headless.
-    Raises RuntimeError if LibreOffice is not installed.
+    Raises RuntimeError if LibreOffice is not installed or times out.
     """
     lo_bin = _resolve_libreoffice()
     if not lo_bin:
@@ -77,11 +77,23 @@ def convert_to_pdf(docx_bytes: bytes) -> bytes:
         docx_path = os.path.join(tmp, "report.docx")
         Path(docx_path).write_bytes(docx_bytes)
 
-        subprocess.run(
-            [lo_bin, "--headless", "--convert-to", "pdf", "--outdir", tmp, docx_path],
-            check=True,
-            capture_output=True,
-        )
+        try:
+            subprocess.run(
+                [
+                    lo_bin,
+                    "--headless",
+                    "--norestore",
+                    "--nofirststartwizard",
+                    "--convert-to", "pdf",
+                    "--outdir", tmp,
+                    docx_path,
+                ],
+                check=True,
+                capture_output=True,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Conversão para PDF excedeu o tempo limite (30s).")
 
         pdf_path = os.path.join(tmp, "report.pdf")
         return Path(pdf_path).read_bytes()

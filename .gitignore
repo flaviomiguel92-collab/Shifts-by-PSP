@@ -148,3 +148,8 @@ frontend/.metro-cache/
 
 # Local mock backend state
 backend/mock_data.json
+
+# Sensitive documents — never commit
+*.pdf
+temp_docx_fix*/
+backend/templates/temp_docx_fix*/
