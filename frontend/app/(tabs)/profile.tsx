@@ -7,19 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
-import { storage } from '../../src/utils/storage';
 import {
   exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV,
   exportFullBackup, pickAndReadJsonWeb, BackupPayload,
 } from '../../src/utils/exportUtils';
 import { toast } from '../../src/utils/toast';
-import { getSessions, revokeSession, SessionInfo } from '../../src/services/api';
+import { getSessions, revokeSession, getOccurrences, deleteOccurrence, SessionInfo } from '../../src/services/api';
 import { usePreferencesStore, i18n } from '../../src/store/preferencesStore';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
-
-const API_ROOT = process.env.EXPO_PUBLIC_API_URL || 'https://shift-olama-backend.onrender.com';
-const buildOccurrencesEndpoint = () => `${API_ROOT.replace(/\/$/, '')}/api/occurrences`;
 
 function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
@@ -145,16 +141,11 @@ export default function ProfileScreen() {
   };
 
   const purgeOccurrencesFromApi = async () => {
-    const token = await storage.getItem('session_token');
-    const ep = buildOccurrencesEndpoint();
-    const res = await fetch(ep, { headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: 'include' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const list = await res.json();
+    const list = await getOccurrences();
     if (!Array.isArray(list) || list.length === 0) return;
     await Promise.all(list.map(async (occ: { id?: string }) => {
       if (!occ?.id) return;
-      const dr = await fetch(`${ep}/${occ.id}`, { method: 'DELETE', headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: 'include' });
-      if (!dr.ok && dr.status !== 404) throw new Error(`HTTP ${dr.status}`);
+      await deleteOccurrence(occ.id);
     }));
   };
 

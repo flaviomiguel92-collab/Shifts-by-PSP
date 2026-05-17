@@ -11,7 +11,6 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from passlib.context import CryptContext
-import base64
 import re
 
 ROOT_DIR = Path(__file__).parent
@@ -155,25 +154,6 @@ class GratificationUpdate(BaseModel):
     note: Optional[str] = None
     shift_id: Optional[str] = None
 
-# ==================== HOUR BANK ====================
-
-class HourBankEntry(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    date: str
-    shift_id: Optional[str] = None
-    hours: float
-    type: str = "extra"  # extra, bonus, deduction
-    reason: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class HourBankEntryCreate(BaseModel):
-    date: str
-    hours: float
-    type: str = "extra"
-    reason: str = ""
-    shift_id: Optional[str] = None
-
 # ==================== CUSTOM SHIFT TYPES & CYCLES ====================
 
 class CustomShiftType(BaseModel):
@@ -220,10 +200,6 @@ class CustomCycleCreate(BaseModel):
 class CustomCycleUpdate(BaseModel):
     name: Optional[str] = None
     pattern: Optional[List[str]] = None
-
-class ReportGenerateRequest(BaseModel):
-    template_id: str
-    data: dict = Field(default_factory=dict)
 
 # ==================== AUTH HELPERS ====================
 
@@ -303,19 +279,19 @@ async def create_session(session_request: SessionRequest, response: Response):
         await db.users.update_one({"user_id": user_id}, {"$set": {"name": auth_data.get("name", existing_user.get("name")), "picture": auth_data.get("picture", existing_user.get("picture"))}})
     else:
         new_user = User(user_id=user_id, email=auth_data["email"], name=auth_data.get("name", "User"), picture=auth_data.get("picture"))
-        await db.users.insert_one(new_user.dict())
+        await db.users.insert_one(new_user.model_dump())
     session_token = auth_data.get("session_token", str(uuid.uuid4()))
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     session = UserSession(user_id=user_id, session_token=session_token, expires_at=expires_at)
     await db.user_sessions.delete_many({"user_id": user_id})
-    await db.user_sessions.insert_one(session.dict())
+    await db.user_sessions.insert_one(session.model_dump())
     response.set_cookie(key="session_token", value=session_token, httponly=True, secure=True, samesite="none", path="/", max_age=30 * 24 * 60 * 60)
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return {"user": user_doc, "session_token": session_token}
 
 @api_router.get("/auth/me", response_model=UserPublic)
 async def get_me(user: User = Depends(get_current_user)):
-    return UserPublic(**user.dict())
+    return UserPublic(**user.model_dump())
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
@@ -384,8 +360,8 @@ async def create_shift(shift_data: ShiftCreate, user: User = Depends(get_current
     if existing:
         raise HTTPException(status_code=400, detail="Shift already exists for this date")
     shift = Shift(user_id=user.user_id, date=shift_data.date, shift_type=shift_data.shift_type, start_time=shift_data.start_time, end_time=shift_data.end_time, note=shift_data.note)
-    await db.shifts.insert_one(shift.dict())
-    return shift.dict()
+    await db.shifts.insert_one(shift.model_dump())
+    return shift.model_dump()
 
 @api_router.post("/shifts/reset")
 async def reset_all_shifts(user: User = Depends(get_current_user)):
@@ -408,7 +384,7 @@ async def create_or_update_shifts_bulk(bulk_data: BulkShiftsRequest, user: User 
             updated_count += 1
         else:
             shift = Shift(user_id=user.user_id, date=shift_item.date, shift_type=shift_item.shift_type, start_time=shift_item.start_time, end_time=shift_item.end_time)
-            await db.shifts.insert_one(shift.dict())
+            await db.shifts.insert_one(shift.model_dump())
             created_count += 1
     return {"message": "Bulk operation completed", "created": created_count, "updated": updated_count, "total": created_count + updated_count}
 
@@ -422,7 +398,7 @@ async def update_shift(shift_id: str, shift_data: ShiftUpdate, user: User = Depe
     existing = await db.shifts.find_one({"id": shift_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Shift not found")
-    update_data = {k: v for k, v in shift_data.dict().items() if v is not None}
+    update_data = {k: v for k, v in shift_data.model_dump().items() if v is not None}
     if update_data:
         await db.shifts.update_one({"id": shift_id, "user_id": user.user_id}, {"$set": update_data})
     updated = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
@@ -452,15 +428,15 @@ async def get_gratifications(month: Optional[str] = None, year: Optional[str] = 
 @api_router.post("/gratifications", response_model=dict)
 async def create_gratification(grat_data: GratificationCreate, user: User = Depends(get_current_user)):
     gratification = Gratification(user_id=user.user_id, date=grat_data.date, gratification_type=grat_data.gratification_type, value=grat_data.value, note=grat_data.note, shift_id=grat_data.shift_id)
-    await db.gratifications.insert_one(gratification.dict())
-    return gratification.dict()
+    await db.gratifications.insert_one(gratification.model_dump())
+    return gratification.model_dump()
 
 @api_router.put("/gratifications/{grat_id}", response_model=dict)
 async def update_gratification(grat_id: str, grat_data: GratificationUpdate, user: User = Depends(get_current_user)):
     existing = await db.gratifications.find_one({"id": grat_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Gratification not found")
-    update_data = {k: v for k, v in grat_data.dict().items() if v is not None}
+    update_data = {k: v for k, v in grat_data.model_dump().items() if v is not None}
     if update_data:
         await db.gratifications.update_one({"id": grat_id, "user_id": user.user_id}, {"$set": update_data})
     updated = await db.gratifications.find_one({"id": grat_id}, {"_id": 0})
@@ -472,109 +448,6 @@ async def delete_gratification(grat_id: str, user: User = Depends(get_current_us
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Gratification not found")
     return {"message": "Gratification deleted successfully"}
-
-# ==================== HOUR BANK ENDPOINTS ====================
-
-@api_router.get("/hour-bank", response_model=List[dict])
-async def get_hour_bank_entries(year: Optional[str] = None, month: Optional[str] = None, user: User = Depends(get_current_user)):
-    """Get hour bank entries for current user."""
-    query = {"user_id": user.user_id}
-    if year:
-        validate_year_format(year)
-        if month:
-            validate_month_format(month)
-            query["date"] = {"$regex": f"^{month}"}
-        else:
-            query["date"] = {"$regex": f"^{year}"}
-    entries = await db.hour_bank.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
-    return entries
-
-@api_router.post("/hour-bank", response_model=dict)
-async def create_hour_bank_entry(data: HourBankEntryCreate, user: User = Depends(get_current_user)):
-    """Create a new hour bank entry."""
-    entry = HourBankEntry(
-        user_id=user.user_id,
-        date=data.date,
-        hours=data.hours,
-        type=data.type,
-        reason=data.reason,
-        shift_id=data.shift_id
-    )
-    await db.hour_bank.insert_one(entry.dict())
-    return entry.dict()
-
-@api_router.delete("/hour-bank/{entry_id}")
-async def delete_hour_bank_entry(entry_id: str, user: User = Depends(get_current_user)):
-    """Delete an hour bank entry."""
-    result = await db.hour_bank.delete_one({"id": entry_id, "user_id": user.user_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    return {"message": "Entry deleted successfully"}
-
-@api_router.get("/hour-bank/stats")
-async def get_hour_bank_stats(year: Optional[str] = None, user: User = Depends(get_current_user)):
-    """Get hour bank statistics (balance, monthly breakdown)."""
-    query = {"user_id": user.user_id}
-    if year:
-        validate_year_format(year)
-        query["date"] = {"$regex": f"^{year}"}
-    entries = await db.hour_bank.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
-    total_hours = sum(e["hours"] if e.get("type") in ("extra", "bonus") else -e["hours"] for e in entries)
-    by_month = {}
-    for e in entries:
-        m = e["date"][:7]
-        if m not in by_month:
-            by_month[m] = {"earned": 0.0, "deducted": 0.0, "net": 0.0}
-        if e.get("type") in ("extra", "bonus"):
-            by_month[m]["earned"] += e["hours"]
-            by_month[m]["net"] += e["hours"]
-        else:
-            by_month[m]["deducted"] += e["hours"]
-            by_month[m]["net"] -= e["hours"]
-    return {
-        "total_hours": total_hours,
-        "entry_count": len(entries),
-        "by_month": by_month,
-    }
-
-@api_router.get("/hour-bank/auto-calculate")
-async def auto_calculate_hours(month: str, user: User = Depends(get_current_user)):
-    """Auto-calculate extra hours from shifts for a given month.
-    
-    Logic: For each working shift, if hours worked > 8h, the excess goes to hour bank.
-    If no start/end time, skip.
-    """
-    validate_month_format(month)
-    shifts = await db.shifts.find({"user_id": user.user_id, "date": {"$regex": f"^{month}"}}, {"_id": 0}).to_list(1000)
-    shift_types = await db.shift_types.find({"user_id": user.user_id}, {"_id": 0}).to_list(500)
-    working_types = {st["name"] for st in shift_types if st.get("is_working", True)}
-    
-    entries_created = 0
-    for s in shifts:
-        if s["shift_type"] not in working_types:
-            continue
-        start = s.get("start_time")
-        end = s.get("end_time")
-        if not start or not end:
-            continue
-        sh, sm = map(int, start.split(":"))
-        eh, em = map(int, end.split(":"))
-        start_mins = sh * 60 + sm
-        end_mins = eh * 60 + em
-        if end_mins <= start_mins:
-            end_mins += 1440
-        total_hours = (end_mins - start_mins) / 60
-        if total_hours > 8:
-            extra = round(total_hours - 8, 2)
-            existing = await db.hour_bank.find_one({"user_id": user.user_id, "shift_id": s["id"]})
-            if not existing:
-                entry = HourBankEntry(user_id=user.user_id, date=s["date"], hours=extra, type="extra", reason="Excesso (>8h)", shift_id=s["id"])
-                await db.hour_bank.insert_one(entry.dict())
-                entries_created += 1
-    
-    # Recalculate stats
-    stats = await get_hour_bank_stats(year=month[:4], user=user)
-    return {"entries_created": entries_created, "stats": stats}
 
 # ==================== STATISTICS ENDPOINTS ====================
 
@@ -731,15 +604,15 @@ async def get_occurrence(occurrence_id: str, user: User = Depends(get_current_us
 @api_router.post("/occurrences", response_model=dict)
 async def create_occurrence(occ_data: OccurrenceCreate, user: User = Depends(get_current_user)):
     occurrence = Occurrence(user_id=user.user_id, date=occ_data.date, time=occ_data.time, location=occ_data.location, description=occ_data.description, classification=occ_data.classification, status=occ_data.status or "rascunho", photos=occ_data.photos or [])
-    await db.occurrences.insert_one(occurrence.dict())
-    return occurrence.dict()
+    await db.occurrences.insert_one(occurrence.model_dump())
+    return occurrence.model_dump()
 
 @api_router.put("/occurrences/{occurrence_id}", response_model=dict)
 async def update_occurrence(occurrence_id: str, occ_data: OccurrenceUpdate, user: User = Depends(get_current_user)):
     existing = await db.occurrences.find_one({"id": occurrence_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Occurrence not found")
-    update_data = {k: v for k, v in occ_data.dict().items() if v is not None}
+    update_data = {k: v for k, v in occ_data.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     if update_data:
         await db.occurrences.update_one({"id": occurrence_id, "user_id": user.user_id}, {"$set": update_data})
@@ -761,7 +634,7 @@ async def add_person_to_occurrence(occurrence_id: str, person_data: PersonCreate
     person = PersonInOccurrence(role=person_data.role, full_name=person_data.full_name, address=person_data.address, phone=person_data.phone, email=person_data.email, tax_id=person_data.tax_id, document_type=person_data.document_type, document_number=person_data.document_number, document_issue_date=person_data.document_issue_date, document_expiry_date=person_data.document_expiry_date, photos=person_data.photos or [], notes=person_data.notes)
     role_map = {"suspeito": "suspects", "testemunha": "witnesses", "lesado": "victims"}
     array_name = role_map.get(person_data.role, "suspects")
-    await db.occurrences.update_one({"id": occurrence_id, "user_id": user.user_id}, {"$push": {array_name: person.dict()}, "$set": {"updated_at": datetime.now(timezone.utc)}})
+    await db.occurrences.update_one({"id": occurrence_id, "user_id": user.user_id}, {"$push": {array_name: person.model_dump()}, "$set": {"updated_at": datetime.now(timezone.utc)}})
     updated = await db.occurrences.find_one({"id": occurrence_id, "user_id": user.user_id}, {"_id": 0})
     return updated
 
@@ -799,7 +672,7 @@ async def get_shift_types(current_user: User = Depends(get_current_user)):
 async def create_shift_type(data: CustomShiftTypeCreate, current_user: User = Depends(get_current_user)):
     short_name = data.short_name or data.name[:3].upper()
     shift_type = CustomShiftType(user_id=current_user.user_id, name=data.name, short_name=short_name, color=data.color, start_time=data.start_time, end_time=data.end_time, is_working=data.is_working, order=data.order)
-    doc = shift_type.dict()
+    doc = shift_type.model_dump()
     await db.shift_types.insert_one(doc)
     doc.pop("_id", None)
     doc["created_at"] = doc["created_at"].isoformat()
@@ -807,7 +680,7 @@ async def create_shift_type(data: CustomShiftTypeCreate, current_user: User = De
 
 @api_router.put("/shift-types/{shift_type_id}", response_model=dict)
 async def update_shift_type(shift_type_id: str, data: CustomShiftTypeUpdate, current_user: User = Depends(get_current_user)):
-    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar.")
     result = await db.shift_types.find_one_and_update({"id": shift_type_id, "user_id": current_user.user_id}, {"$set": update_data}, return_document=True, projection={"_id": 0})
@@ -823,85 +696,6 @@ async def delete_shift_type(shift_type_id: str, current_user: User = Depends(get
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Tipo de turno não encontrado.")
     return {"message": "Tipo de turno eliminado."}
-
-# ==================== REPORTS ====================
-
-def _pdf_escape(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-
-def _build_simple_pdf(lines: List[str]) -> bytes:
-    text_commands = ["BT", "/F1 11 Tf", "50 790 Td", "14 TL"]
-    for line in lines[:48]:
-        safe_line = _pdf_escape(line[:110])
-        text_commands.append(f"({safe_line}) Tj")
-        text_commands.append("T*")
-    text_commands.append("ET")
-    content = "\n".join(text_commands).encode("latin-1", errors="replace")
-    objects = [
-        b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length " + str(len(content)).encode("ascii") + b" >>\nstream\n" + content + b"\nendstream",
-    ]
-    pdf = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for index, obj in enumerate(objects, start=1):
-        offsets.append(len(pdf))
-        pdf.extend(f"{index} 0 obj\n".encode("ascii"))
-        pdf.extend(obj)
-        pdf.extend(b"\nendobj\n")
-    xref_offset = len(pdf)
-    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    pdf.extend(b"0000000000 65535 f \n")
-    for offset in offsets[1:]:
-        pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
-    pdf.extend(f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode("ascii"))
-    return bytes(pdf)
-
-@api_router.post("/reports/generate", response_model=dict)
-async def generate_report(report: ReportGenerateRequest, user: User = Depends(get_current_user)):
-    """Generate a lightweight PDF report."""
-    report_data = report.data or {}
-    report_date = str(report_data.get("reportDate") or datetime.now(timezone.utc).date())
-    title = "Relatorio de Servico Remunerado"
-    lines = [
-        title,
-        f"Template: {report.template_id}",
-        f"Data: {report_date} {report_data.get('reportHour') or ''}".strip(),
-        "",
-        f"Nome: {report_data.get('remuneratedName') or ''}",
-        f"Tipo de servico: {report_data.get('serviceType') or ''}",
-        f"Local: {report_data.get('serviceLocation') or ''}",
-        f"Referencia: {report_data.get('serviceReference') or ''}",
-        f"Efetivo total: {report_data.get('efetivoTotal') or ''}",
-        f"Chefes: {report_data.get('chefesCount') or ''}",
-        f"Agentes: {report_data.get('agentesCount') or ''}",
-        "",
-        "Graduado",
-        f"Posto: {report_data.get('graduadoPosto') or ''}",
-        f"Nome: {report_data.get('graduadoNome') or ''}",
-        f"Matricula: {report_data.get('graduadoMatricula') or ''}",
-        f"Comando: {report_data.get('graduadoComando') or ''}",
-        "",
-        f"Observacoes: {report_data.get('observacoes') or ''}",
-        f"Justificacoes: {report_data.get('justificacoes') or ''}",
-    ]
-    demais_efetivo = report_data.get("demaisEfetivo") or []
-    if isinstance(demais_efetivo, list) and demais_efetivo:
-        lines.extend(["", "Demais efetivo"])
-        for item in demais_efetivo[:12]:
-            if isinstance(item, dict):
-                lines.append(f"- {item.get('posto') or ''} {item.get('nome') or ''} {item.get('matricula') or ''}".strip())
-    expediente = report_data.get("expedienteEfetuado") or []
-    if isinstance(expediente, list) and expediente:
-        lines.extend(["", "Expediente efetuado"])
-        for item in expediente[:12]:
-            if isinstance(item, dict):
-                lines.append(f"- {item.get('descricao') or ''} {item.get('referencia') or ''}".strip())
-    pdf_bytes = _build_simple_pdf(lines)
-    safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in report_date)
-    return {"file_name": f"relatorio_{safe_name}.pdf", "mime_type": "application/pdf", "pdf_base64": base64.b64encode(pdf_bytes).decode("ascii")}
 
 # ==================== HEALTH & ROOT ====================
 
@@ -922,14 +716,12 @@ async def cleanup_all_data(user: User = Depends(get_current_user)):
         cycles_deleted = await db.cycles.delete_many(user_filter)
         occurrences_deleted = await db.occurrences.delete_many(user_filter)
         gratifications_deleted = await db.gratifications.delete_many(user_filter)
-        hour_bank_deleted = await db.hour_bank.delete_many(user_filter)
         return {
             "message": "User data cleaned successfully",
             "shifts_deleted": shifts_deleted.deleted_count,
             "cycles_deleted": cycles_deleted.deleted_count,
             "occurrences_deleted": occurrences_deleted.deleted_count,
             "gratifications_deleted": gratifications_deleted.deleted_count,
-            "hour_bank_deleted": hour_bank_deleted.deleted_count,
         }
     except Exception as error:
         raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(error)}")

@@ -119,6 +119,12 @@ export const createGratification = async (data: Omit<Gratification, 'id' | 'user
   return response.json();
 };
 
+export const updateGratification = async (id: string, data: Partial<Gratification>): Promise<Gratification> => {
+  const response = await apiFetch(`${API_BASE_URL}/gratifications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  if (!response.ok) throw new Error(`Failed to update gratification: ${response.statusText}`);
+  return response.json();
+};
+
 export const deleteGratification = async (id: string) => {
   const response = await apiFetch(`${API_BASE_URL}/gratifications/${id}`, { method: 'DELETE' });
   if (!response.ok) throw new Error(`Failed to delete gratification: ${response.statusText}`);
@@ -188,13 +194,3 @@ export const revokeSession = async (sessionId: string): Promise<void> => {
   if (!response.ok) throw new Error(`Failed to revoke session: ${response.statusText}`);
 };
 
-// ==================== REPORTS ====================
-
-export const generateReport = async (data: Record<string, unknown>, template_id = 'default'): Promise<{ file_name: string; mime_type: string; pdf_base64: string }> => {
-  const response = await apiFetch(`${API_BASE_URL}/reports/generate`, {
-    method: 'POST',
-    body: JSON.stringify({ template_id, data }),
-  });
-  if (!response.ok) throw new Error(`Failed to generate report: ${response.statusText}`);
-  return response.json();
-};

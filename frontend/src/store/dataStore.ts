@@ -238,12 +238,12 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   updateGratification: async (id, data) => {
+    await api.updateGratification(id, data);
     set((state) => ({
       gratifications: state.gratifications.map((g) =>
         g.id === id ? { ...g, ...data } : g
       ),
     }));
-    get().saveData();
   },
 
   deleteGratification: async (id) => {
