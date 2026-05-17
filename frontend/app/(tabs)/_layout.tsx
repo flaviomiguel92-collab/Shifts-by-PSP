@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import { CustomTabBar } from '../../src/components/TabBar';
 import { SearchModal } from '../../src/components/SearchModal';
 import { search } from '../../src/utils/search';
@@ -51,11 +51,7 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
-        tabBar={(props) => (
-          <View pointerEvents={paintActive ? 'none' : 'box-none'}>
-            <CustomTabBar {...props} />
-          </View>
-        )}
+        tabBar={(props) => paintActive ? null : <CustomTabBar {...props} />}
         screenOptions={{ headerShown: false }}
       >
         <Tabs.Screen name="index" />
