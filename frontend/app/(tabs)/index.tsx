@@ -106,6 +106,14 @@ export default function CalendarScreen() {
   const days = getCalendarDays(currentMonth);
   const today = dateToString(new Date());
 
+  const weeks = useMemo(() => {
+    const result: (Date | null)[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      result.push(days.slice(i, i + 7));
+    }
+    return result;
+  }, [days]);
+
   const gratifiedForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
     return (gratifiedEntries || []).filter((e: any) => e.date === selectedDate);
@@ -584,88 +592,92 @@ export default function CalendarScreen() {
             </View>
           ) : null}
           <View style={[styles.daysGrid, isLoadingShifts && !refreshing && { opacity: 0 }]}>
-            {days.map((day, index) => {
-              if (!day) {
-                return <View key={`empty-${index}`} style={styles.dayCell} />;
-              }
+            {weeks.map((week, wi) => (
+              <View key={wi} style={styles.weekRow}>
+                {week.map((day, di) => {
+                  if (!day) {
+                    return <View key={`empty-${wi}-${di}`} style={styles.dayCell} />;
+                  }
 
-              const dateStr = dateToString(day);
-              const shift = getShiftForDay(dateStr);
-              const isToday = dateStr === today;
-              const holiday = holidaysMap.get(dateStr);
-              const dayGratifiedEntries = gratifiedByDateMap.get(dateStr) || [];
-              const hasGratification = dayGratifiedEntries.length > 0;
-              const gratifiedCount = dayGratifiedEntries.length;
-              const isCycleStart = cycleStartDate === dateStr;
-              const inCycleRange = isInCycleRange(dateStr);
-              const isMultiSelected = editMode === 'multi_select' && selectedDates.has(dateStr);
+                  const dateStr = dateToString(day);
+                  const shift = getShiftForDay(dateStr);
+                  const isToday = dateStr === today;
+                  const holiday = holidaysMap.get(dateStr);
+                  const dayGratifiedEntries = gratifiedByDateMap.get(dateStr) || [];
+                  const hasGratification = dayGratifiedEntries.length > 0;
+                  const gratifiedCount = dayGratifiedEntries.length;
+                  const isCycleStart = cycleStartDate === dateStr;
+                  const inCycleRange = isInCycleRange(dateStr);
+                  const isMultiSelected = editMode === 'multi_select' && selectedDates.has(dateStr);
 
-              return (
-                <TouchableOpacity
-                  key={dateStr}
-                  style={[
-                    styles.dayCell,
-                    isToday && styles.todayCell,
-                    isMultiSelected && styles.multiSelectedCell,
-                    shift && !isMultiSelected && {
-                      backgroundColor: getShiftDisplayColor(shift.shift_type),
-                      opacity: 0.8,
-                    },
-                    isCycleStart && styles.cycleStartCell,
-                    inCycleRange && styles.inCycleRangeCell,
-                    editMode !== 'none' && styles.selectableCell,
-                  ]}
-                  onPress={() => handleDayPress(dateStr)}
-                  onLongPress={() => handleDayLongPress(dateStr)}
-                  delayLongPress={350}
-                >
-                  <Text style={[
-                    styles.dayText,
-                    isToday && styles.todayText,
-                    holiday && styles.holidayText,
-                    isCycleStart && styles.cycleStartText,
-                    shift && !isMultiSelected && styles.shiftDayText,
-                    isMultiSelected && styles.multiSelectedDayText,
-                  ]}>
-                    {format(day, 'd')}
-                  </Text>
-
-                  {isMultiSelected && (
-                    <View style={styles.multiCheckWrap}>
-                      <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
-                    </View>
-                  )}
-
-                  {hasGratification && !isMultiSelected && (
-                    <View style={styles.gratifiedDotWrap}>
-                      <Ionicons name="star-sharp" size={12} color="#F59E0B" />
-                      {gratifiedCount > 1 && (
-                        <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
-                      )}
-                    </View>
-                  )}
-
-                  {!isMultiSelected && (shift ? (
-                    <View style={styles.shiftNameBadge}>
-                      <Text style={styles.shiftNameText} numberOfLines={1}>
-                        {getShiftDisplayName(shift.shift_type)}
+                  return (
+                    <TouchableOpacity
+                      key={dateStr}
+                      style={[
+                        styles.dayCell,
+                        isToday && styles.todayCell,
+                        isMultiSelected && styles.multiSelectedCell,
+                        shift && !isMultiSelected && {
+                          backgroundColor: getShiftDisplayColor(shift.shift_type),
+                          opacity: 0.8,
+                        },
+                        isCycleStart && styles.cycleStartCell,
+                        inCycleRange && styles.inCycleRangeCell,
+                        editMode !== 'none' && styles.selectableCell,
+                      ]}
+                      onPress={() => handleDayPress(dateStr)}
+                      onLongPress={() => handleDayLongPress(dateStr)}
+                      delayLongPress={350}
+                    >
+                      <Text style={[
+                        styles.dayText,
+                        isToday && styles.todayText,
+                        holiday && styles.holidayText,
+                        isCycleStart && styles.cycleStartText,
+                        shift && !isMultiSelected && styles.shiftDayText,
+                        isMultiSelected && styles.multiSelectedDayText,
+                      ]}>
+                        {format(day, 'd')}
                       </Text>
-                      {shift.start_time ? (
-                        <Text style={styles.shiftTimeText} numberOfLines={1}>
-                          {shift.start_time}
-                        </Text>
-                      ) : null}
-                    </View>
-                  ) : holiday ? (
-                    <View style={styles.holidayBadge}>
-                      <Text style={styles.holidayBadgeText}>Feriado</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.emptyBadge} />
-                  ))}
-                </TouchableOpacity>
-              );
-            })}
+
+                      {isMultiSelected && (
+                        <View style={styles.multiCheckWrap}>
+                          <Ionicons name="checkmark-circle" size={14} color="#3B82F6" />
+                        </View>
+                      )}
+
+                      {hasGratification && !isMultiSelected && (
+                        <View style={styles.gratifiedDotWrap}>
+                          <Ionicons name="star-sharp" size={12} color="#F59E0B" />
+                          {gratifiedCount > 1 && (
+                            <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
+                          )}
+                        </View>
+                      )}
+
+                      {!isMultiSelected && (shift ? (
+                        <View style={styles.shiftNameBadge}>
+                          <Text style={styles.shiftNameText} numberOfLines={1}>
+                            {getShiftDisplayName(shift.shift_type)}
+                          </Text>
+                          {shift.start_time ? (
+                            <Text style={styles.shiftTimeText} numberOfLines={1}>
+                              {shift.start_time}
+                            </Text>
+                          ) : null}
+                        </View>
+                      ) : holiday ? (
+                        <View style={styles.holidayBadge}>
+                          <Text style={styles.holidayBadgeText}>Feriado</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.emptyBadge} />
+                      ))}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -1450,12 +1462,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6B7280',
   },
-  daysGrid: {
+  daysGrid: {},
+  weekRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
   },
   dayCell: {
-    width: '14.28%',
+    flex: 1,
     alignItems: 'center',
     paddingVertical: 4,
     minHeight: 58,
