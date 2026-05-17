@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { useRouter } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
 import { Shift } from '../../src/types';
 import {
@@ -38,22 +39,26 @@ import { SkeletonCalendarRow } from '../../src/components/ui/Skeleton';
 import { FAB } from '../../src/components/ui/FAB';
 import { toast } from '../../src/utils/toast';
 import { search } from '../../src/utils/search';
+import { DayContextPopup } from '../../src/components/calendar/DayContextPopup';
+import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
 export default function CalendarScreen() {
+  const router = useRouter();
   const store = useDataStore() as any;
   const {
     shifts,
     shiftTypes,
     cycles,
     gratifiedEntries,
-    deleteGratifiedEntry,
     fetchShifts,
     createShift,
     updateShift,
     bulkUpsertShifts,
     deleteShift,
+    createShiftType,
+    fetchShiftTypes,
     currentMonth,
     setCurrentMonth,
   } = store;
@@ -71,13 +76,16 @@ export default function CalendarScreen() {
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showGratifiedModal, setShowGratifiedModal] = useState(false);
-  const [showDayDetailModal, setShowDayDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteGratifiedId, setDeleteGratifiedId] = useState<string | null>(null);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [multiSelectShiftPicker, setMultiSelectShiftPicker] = useState(false);
+
+  // Context popup + shift type picker
+  const [popupDay, setPopupDay] = useState<string | null>(null);
+  const [popupAnchor, setPopupAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [showShiftPicker, setShowShiftPicker] = useState(false);
+
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
   const shiftTypesMap = useMemo(() => {
@@ -87,8 +95,6 @@ export default function CalendarScreen() {
       if (!name) return;
       map.set(name, shiftType);
     });
-    // Tipos só existem no servidor (strings em shift.shift_type); se shiftTypes local falhou a hidratar,
-    // ainda mostramos cores distintas por nome em vez de tudo cinzento.
     (shifts || []).forEach((s: any) => {
       const n = String(s?.shift_type || '').trim();
       if (!n || map.has(n)) return;
@@ -114,25 +120,17 @@ export default function CalendarScreen() {
     return result;
   }, [days]);
 
-  const gratifiedForSelectedDate = useMemo(() => {
-    if (!selectedDate) return [];
-    return (gratifiedEntries || []).filter((e: any) => e.date === selectedDate);
-  }, [gratifiedEntries, selectedDate]);
-
   const gratifiedByDateMap = useMemo(() => {
     const map = new Map<string, any[]>();
     (gratifiedEntries || []).forEach((entry: any) => {
       const date = String(entry?.date || '');
       if (!date) return;
-      if (!map.has(date)) {
-        map.set(date, []);
-      }
+      if (!map.has(date)) map.set(date, []);
       map.get(date)?.push(entry);
     });
     return map;
   }, [gratifiedEntries]);
 
-  // Create maps for quick lookup
   const shiftsMap = useMemo(() => {
     const map = new Map<string, Shift>();
     shifts.forEach((s: any) => map.set(s.date, s));
@@ -143,6 +141,11 @@ export default function CalendarScreen() {
     setIsLoadingShifts(true);
     fetchShifts(currentMonth).finally(() => setIsLoadingShifts(false));
   }, [currentMonth, fetchShifts]);
+
+  // Close popup when navigating months
+  useEffect(() => {
+    setPopupDay(null);
+  }, [currentMonth]);
 
   useEffect(() => {
     if (isOptionsExpanded) {
@@ -166,7 +169,6 @@ export default function CalendarScreen() {
     return shiftsMap.get(dateStr);
   }, [shiftsMap]);
 
-  // Start multi-select mode on long press
   const handleDayLongPress = (dateStr: string) => {
     if (editMode === 'none') {
       setEditMode('multi_select');
@@ -176,7 +178,6 @@ export default function CalendarScreen() {
     }
   };
 
-  // Apply a shift type to all selected dates
   const handleApplyToSelected = async (shiftType: string) => {
     if (selectedDates.size === 0) return;
     const bulkItems = Array.from(selectedDates).map((date) => ({ date, shift_type: shiftType }));
@@ -187,25 +188,18 @@ export default function CalendarScreen() {
     setMultiSelectShiftPicker(false);
   };
 
-  // Handle day press based on current mode
-  const handleDayPress = async (dateStr: string) => {
-    console.log('Day pressed:', dateStr, 'Mode:', editMode);
-
+  const handleDayPress = async (dateStr: string, pageX: number, pageY: number) => {
     if (editMode === 'multi_select') {
       setSelectedDates((prev) => {
         const next = new Set(prev);
-        if (next.has(dateStr)) {
-          next.delete(dateStr);
-        } else {
-          next.add(dateStr);
-        }
+        if (next.has(dateStr)) next.delete(dateStr);
+        else next.add(dateStr);
         return next;
       });
       return;
     }
 
     if (editMode === 'quick' && selectedShiftType) {
-      // Quick mode: assign selected shift type
       const existing = getShiftForDay(dateStr);
       if (existing) {
         if (existing.shift_type === selectedShiftType) {
@@ -217,46 +211,32 @@ export default function CalendarScreen() {
         await createShift({ date: dateStr, shift_type: selectedShiftType });
       }
       await fetchShifts(currentMonth);
-    } else if (editMode === 'cycle_start' && selectedCycle) {
-      // Cycle mode: first click = start date
-      console.log('Setting cycle start date:', dateStr);
+      return;
+    }
+
+    if (editMode === 'cycle_start' && selectedCycle) {
       setCycleStartDate(dateStr);
       setEditMode('cycle_end');
-    } else if (editMode === 'cycle_end' && selectedCycle && cycleStartDate) {
-      // Cycle mode: second click = end date, apply cycle
-      console.log('Setting cycle end date:', dateStr, 'Start was:', cycleStartDate);
+      return;
+    }
+
+    if (editMode === 'cycle_end' && selectedCycle && cycleStartDate) {
       await applyCycleFromDates(cycleStartDate, dateStr, selectedCycle.pattern);
-    } else {
-      // Normal mode: open detail modal
-      const shift = getShiftForDay(dateStr);
-      setSelectedDate(dateStr);
-      setSelectedShift(shift || null);
-      setShowDayDetailModal(true);
+      return;
     }
+
+    // Normal mode: show contextual popup
+    const shift = getShiftForDay(dateStr);
+    setSelectedDate(dateStr);
+    setSelectedShift(shift || null);
+    setPopupDay(dateStr);
+    setPopupAnchor({ x: pageX, y: pageY });
   };
 
-  const handleDeleteGratifiedEntry = (entryId: string) => {
-    setDeleteGratifiedId(entryId);
-  };
-
-  const confirmDeleteGratified = async () => {
-    if (!deleteGratifiedId) return;
-    try {
-      await deleteGratifiedEntry(deleteGratifiedId);
-      await fetchShifts(currentMonth);
-      setShowDayDetailModal(false);
-      setDeleteGratifiedId(null);
-    } catch (error) {
-      console.error('Error deleting gratified entry:', error);
-      Alert.alert('Erro', 'Não foi possível remover o gratificado');
-    }
-  };
-
-  // Apply cycle between two dates
   const applyCycleFromDates = async (startDate: string, endDate: string, cycle: string[]) => {
     setIsApplyingCycle(true);
 
-    const formatLocalDate = (date: Date) => {
+    const fmt = (date: Date) => {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const d = String(date.getDate()).padStart(2, '0');
@@ -283,34 +263,24 @@ export default function CalendarScreen() {
 
       let currentDate = new Date(start);
       let i = 0;
-
       const bulkItems: { date: string; shift_type: string }[] = [];
       while (currentDate <= end) {
-        const shiftType = normalizedCycle[i % normalizedCycle.length];
-        bulkItems.push({
-          date: formatLocalDate(currentDate),
-          shift_type: shiftType,
-        });
+        bulkItems.push({ date: fmt(currentDate), shift_type: normalizedCycle[i % normalizedCycle.length] });
         currentDate.setDate(currentDate.getDate() + 1);
         i++;
       }
 
       const result = await bulkUpsertShifts(bulkItems);
-      const createdCount = result?.created ?? 0;
-      const updatedCount = result?.updated ?? 0;
-
       await fetchShifts(currentMonth);
-
       setEditMode('none');
       setSelectedCycle(null);
       setCycleStartDate(null);
 
       Alert.alert(
         'Sucesso!',
-        `Ciclo aplicado com sucesso!\nCriados: ${createdCount}\nAtualizados: ${updatedCount}`
+        `Ciclo aplicado com sucesso!\nCriados: ${result?.created ?? 0}\nAtualizados: ${result?.updated ?? 0}`
       );
     } catch (error) {
-      console.error('Cycle error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
       Alert.alert('Erro ao aplicar ciclo', errorMsg);
     } finally {
@@ -318,7 +288,6 @@ export default function CalendarScreen() {
     }
   };
 
-  // Handle shift save from modal
   const handleShiftSave = async (shiftData: {
     shift_type: string;
     start_time?: string;
@@ -329,7 +298,6 @@ export default function CalendarScreen() {
       if (selectedShift) {
         await updateShift(selectedShift.id, shiftData);
       } else {
-        // Check if shift already exists in backend (handles desync cases)
         const existingShift = shiftsMap.get(selectedDate);
         if (existingShift) {
           await updateShift(existingShift.id, shiftData);
@@ -339,30 +307,90 @@ export default function CalendarScreen() {
       }
       await fetchShifts(currentMonth);
       setShowShiftModal(false);
-      setShowDayDetailModal(false);
+      setPopupDay(null);
       toast.success('Turno guardado');
     } catch {
       toast.error('Não foi possível guardar o turno');
     }
   };
 
-  const handleShiftDelete = async () => {
+  const handleShiftDelete = () => {
     if (!selectedShift) return;
-    setShowDeleteConfirm(true);
+    Alert.alert(
+      'Eliminar turno',
+      'Tem a certeza que quer eliminar este turno?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteShift(selectedShift.id);
+              await fetchShifts(currentMonth);
+              setShowShiftModal(false);
+              setPopupDay(null);
+              toast.success('Turno eliminado');
+            } catch {
+              toast.error('Não foi possível eliminar o turno');
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const confirmDeleteShift = async () => {
+  const handleApplyShiftFromPicker = async (typeName: string) => {
+    if (!selectedDate) return;
+    try {
+      const existing = getShiftForDay(selectedDate);
+      if (existing) {
+        await updateShift(existing.id, { shift_type: typeName });
+      } else {
+        await createShift({ date: selectedDate, shift_type: typeName });
+      }
+      await fetchShifts(currentMonth);
+      setShowShiftPicker(false);
+      setPopupDay(null);
+      toast.success('Turno aplicado');
+    } catch {
+      toast.error('Não foi possível aplicar o turno');
+    }
+  };
+
+  const handleDeleteShiftFromPicker = async () => {
     if (!selectedShift) return;
     try {
       await deleteShift(selectedShift.id);
       await fetchShifts(currentMonth);
-      setShowShiftModal(false);
-      setShowDayDetailModal(false);
-      setShowDeleteConfirm(false);
-      toast.success('Turno eliminado');
-    } catch (error) {
-      console.error('Error deleting shift:', error);
-      toast.error('Não foi possível eliminar o turno');
+      setShowShiftPicker(false);
+      setPopupDay(null);
+      toast.success('Turno removido');
+    } catch {
+      toast.error('Não foi possível remover o turno');
+    }
+  };
+
+  const handleCreateShiftType = async (data: {
+    name: string; color: string; start_time?: string; end_time?: string; is_working: boolean;
+  }) => {
+    try {
+      await createShiftType(data);
+      await fetchShiftTypes();
+    } catch {
+      toast.error('Não foi possível criar o tipo de turno');
+    }
+  };
+
+  const handleCreateAndApplyShiftType = async (data: {
+    name: string; color: string; start_time?: string; end_time?: string; is_working: boolean;
+  }) => {
+    try {
+      await createShiftType(data);
+      await fetchShiftTypes();
+      await handleApplyShiftFromPicker(data.name);
+    } catch {
+      toast.error('Não foi possível criar e aplicar o tipo de turno');
     }
   };
 
@@ -388,43 +416,9 @@ export default function CalendarScreen() {
     setMultiSelectShiftPicker(false);
   };
 
-  // Duplicate current day's shift to the next calendar day
-  const handleDuplicateShift = async () => {
-    if (!selectedShift || !selectedDate) return;
-    const next = new Date(selectedDate + 'T12:00:00');
-    next.setDate(next.getDate() + 1);
-    const nextDate = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
-    try {
-      const existing = shiftsMap.get(nextDate);
-      if (existing) {
-        await updateShift(existing.id, {
-          shift_type: selectedShift.shift_type,
-          start_time: selectedShift.start_time,
-          end_time: selectedShift.end_time,
-          note: selectedShift.note,
-        });
-      } else {
-        await createShift({
-          date: nextDate,
-          shift_type: selectedShift.shift_type,
-          start_time: selectedShift.start_time,
-          end_time: selectedShift.end_time,
-          note: selectedShift.note,
-        });
-      }
-      await fetchShifts(currentMonth);
-      setShowDayDetailModal(false);
-      toast.success(`Turno duplicado para ${nextDate.slice(8, 10)}/${nextDate.slice(5, 7)}`);
-    } catch {
-      toast.error('Não foi possível duplicar o turno');
-    }
-  };
-
-  // Copy all shifts from current calendar week to the following week
   const handleCopyWeek = async () => {
-    // Find Mon-Sun of the week containing today (or first day of visible month if today not in view)
     const refDate = new Date(currentMonth + '-01T12:00:00');
-    const dayOfWeek = refDate.getDay(); // 0=Sun
+    const dayOfWeek = refDate.getDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(refDate);
     monday.setDate(refDate.getDate() + mondayOffset);
@@ -470,7 +464,6 @@ export default function CalendarScreen() {
     }
   };
 
-  // Check if date is in cycle range
   const isInCycleRange = (dateStr: string) => {
     if (!cycleStartDate || editMode !== 'cycle_end') return false;
     return dateStr >= cycleStartDate;
@@ -498,9 +491,11 @@ export default function CalendarScreen() {
     );
   }
 
+  const popupShift = popupDay ? getShiftForDay(popupDay) || null : null;
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Custom Header with Options Toggle */}
+      {/* Header */}
       <View style={styles.customHeader}>
         <View>
           <Text style={styles.customHeaderTitle}>Turnos</Text>
@@ -552,13 +547,11 @@ export default function CalendarScreen() {
           </View>
         )}
 
-        {/* Month Summary */}
         <View style={styles.summaryContainer}>
           <Text style={styles.sectionEyebrow}>Resumo mensal</Text>
           <ShiftsSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
         </View>
 
-        {/* Calendar */}
         <View style={styles.calendarCard}>
           <View style={styles.calendarHeader}>
             <TouchableOpacity
@@ -591,6 +584,7 @@ export default function CalendarScreen() {
               ))}
             </View>
           ) : null}
+
           <View style={[styles.daysGrid, isLoadingShifts && !refreshing && { opacity: 0 }]}>
             {weeks.map((week, wi) => (
               <View key={wi} style={styles.weekRow}>
@@ -625,7 +619,10 @@ export default function CalendarScreen() {
                         inCycleRange && styles.inCycleRangeCell,
                         editMode !== 'none' && styles.selectableCell,
                       ]}
-                      onPress={() => handleDayPress(dateStr)}
+                      onPress={(e) => {
+                        const { pageX, pageY } = e.nativeEvent;
+                        handleDayPress(dateStr, pageX, pageY);
+                      }}
                       onLongPress={() => handleDayLongPress(dateStr)}
                       delayLongPress={350}
                     >
@@ -682,6 +679,7 @@ export default function CalendarScreen() {
         </View>
       </ScrollView>
 
+      {/* Options panel */}
       <Modal
         visible={isOptionsExpanded}
         transparent
@@ -762,7 +760,6 @@ export default function CalendarScreen() {
 
               <View style={styles.optionsDivider} />
 
-              {/* Copy week */}
               <View style={styles.optionsPanelSection}>
                 <Text style={styles.optionsSectionTitle}>Ações rápidas</Text>
                 <TouchableOpacity style={styles.copyWeekBtn} onPress={handleCopyWeek} activeOpacity={0.8}>
@@ -910,177 +907,46 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* Day Detail Modal */}
-      <Modal visible={showDayDetailModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.dayDetailModal}>
-            {/* Drag handle */}
-            <View style={styles.modalDragHandle} />
+      {/* Contextual day popup */}
+      <DayContextPopup
+        visible={!!popupDay}
+        day={popupDay || ''}
+        anchor={popupAnchor}
+        shift={popupShift}
+        shiftColor={popupShift ? getShiftDisplayColor(popupShift.shift_type) : '#374151'}
+        shiftName={popupShift ? getShiftDisplayName(popupShift.shift_type) : ''}
+        gratifiedCount={(popupDay && gratifiedByDateMap.get(popupDay)?.length) || 0}
+        onClose={() => setPopupDay(null)}
+        onAddShift={() => {
+          setShowShiftPicker(true);
+        }}
+        onEditShift={() => {
+          setPopupDay(null);
+          setShowShiftModal(true);
+        }}
+        onAddGratified={() => {
+          setPopupDay(null);
+          setShowGratifiedModal(true);
+        }}
+        onAddEvent={() => {
+          setPopupDay(null);
+          router.push('/(tabs)/ocorrencias');
+        }}
+      />
 
-            {/* Header */}
-            <View style={styles.modalHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalDateWeekday}>
-                  {selectedDate ? formatDate(selectedDate, 'EEEE') : ''}
-                </Text>
-                <Text style={styles.modalTitle}>
-                  {selectedDate ? formatDate(selectedDate, 'd MMMM yyyy') : ''}
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowDayDetailModal(false)}>
-                <Ionicons name="close" size={20} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
+      {/* Shift type picker (opened from popup) */}
+      <ShiftTypePicker
+        visible={showShiftPicker}
+        onClose={() => setShowShiftPicker(false)}
+        shiftTypes={shiftTypes}
+        hasExistingShift={!!popupShift}
+        onSelectType={handleApplyShiftFromPicker}
+        onDeleteShift={popupShift ? handleDeleteShiftFromPicker : undefined}
+        onCreateType={handleCreateShiftType}
+        onCreateAndApply={handleCreateAndApplyShiftType}
+      />
 
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              {/* Shift Section */}
-              <View style={styles.detailSection}>
-                <View style={styles.detailSectionHeader}>
-                  <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                  <Text style={styles.detailSectionTitle}>Turno</Text>
-                </View>
-                {selectedShift ? (
-                  <View style={[
-                    styles.shiftDetailCard,
-                    { borderLeftColor: getShiftDisplayColor(selectedShift.shift_type) }
-                  ]}>
-                    <View style={styles.shiftDetailCardTop}>
-                      <View style={[
-                        styles.shiftDetailBadge,
-                        { backgroundColor: getShiftDisplayColor(selectedShift.shift_type) + '22' }
-                      ]}>
-                        <Text style={[
-                          styles.shiftDetailBadgeText,
-                          { color: getShiftDisplayColor(selectedShift.shift_type) }
-                        ]}>
-                          {getShiftDisplayName(selectedShift.shift_type)}
-                        </Text>
-                      </View>
-                    </View>
-                    {selectedShift.start_time && selectedShift.end_time ? (
-                      <View style={styles.shiftTimeRow}>
-                        <Ionicons name="time-outline" size={14} color="#6B7280" />
-                        <Text style={styles.shiftTime}>
-                          {selectedShift.start_time} – {selectedShift.end_time}
-                        </Text>
-                      </View>
-                    ) : selectedShift.start_time ? (
-                      <View style={styles.shiftTimeRow}>
-                        <Ionicons name="time-outline" size={14} color="#6B7280" />
-                        <Text style={styles.shiftTime}>{selectedShift.start_time}</Text>
-                      </View>
-                    ) : null}
-                    {selectedShift.note ? (
-                      <View style={styles.shiftNoteRow}>
-                        <Ionicons name="document-text-outline" size={14} color="#6B7280" />
-                        <Text style={styles.noteText}>{selectedShift.note}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                ) : (
-                  <View style={styles.emptyStateRow}>
-                    <Ionicons name="calendar-outline" size={16} color="#4B5563" />
-                    <Text style={styles.noDataText}>Sem turno registado</Text>
-                  </View>
-                )}
-
-                {/* Action buttons */}
-                <View style={styles.actionButtonRow}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.actionBtnPrimary]}
-                    onPress={() => {
-                      setShowDayDetailModal(false);
-                      setShowShiftModal(true);
-                    }}
-                  >
-                    <Ionicons name={selectedShift ? 'pencil' : 'add'} size={16} color="#FFFFFF" />
-                    <Text style={styles.actionBtnText}>
-                      {selectedShift ? 'Editar' : 'Adicionar'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.actionBtnGreen]}
-                    onPress={() => {
-                      setShowDayDetailModal(false);
-                      setShowGratifiedModal(true);
-                    }}
-                  >
-                    <Ionicons name="cash-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.actionBtnText}>Gratificado</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {selectedShift && (
-                  <TouchableOpacity
-                    style={styles.duplicateBtn}
-                    onPress={handleDuplicateShift}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="copy-outline" size={15} color="#60A5FA" />
-                    <Text style={styles.duplicateBtnText}>Duplicar para amanhã</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Divider */}
-              <View style={styles.sectionDivider} />
-
-              {/* Gratified Section */}
-              <View style={styles.detailSection}>
-                <View style={styles.detailSectionHeader}>
-                  <Ionicons name="star-outline" size={14} color="#6B7280" />
-                  <Text style={styles.detailSectionTitle}>
-                    Gratificados
-                    {gratifiedForSelectedDate.length > 0 && (
-                      <Text style={styles.sectionCount}> ({gratifiedForSelectedDate.length})</Text>
-                    )}
-                  </Text>
-                </View>
-                {gratifiedForSelectedDate.length === 0 ? (
-                  <View style={styles.emptyStateRow}>
-                    <Ionicons name="star-outline" size={16} color="#4B5563" />
-                    <Text style={styles.noDataText}>Sem gratificados registados</Text>
-                  </View>
-                ) : (
-                  <View style={{ gap: 8 }}>
-                    {gratifiedForSelectedDate.map((g: any) => (
-                      <View key={g.id} style={styles.gratDetailCard}>
-                        <View style={styles.gratHeader}>
-                          <Text style={styles.gratName}>{g.name}</Text>
-                          <Text style={styles.gratValue}>{Number(g.value || 0).toFixed(2)}€</Text>
-                        </View>
-                        {g.start_time && g.end_time ? (
-                          <View style={styles.shiftTimeRow}>
-                            <Ionicons name="time-outline" size={13} color="#6B7280" />
-                            <Text style={styles.hintText}>{g.start_time} – {g.end_time} · já com desconto</Text>
-                          </View>
-                        ) : null}
-                        <TouchableOpacity
-                          style={styles.removeGratifiedBtn}
-                          onPress={() => handleDeleteGratifiedEntry(g.id)}
-                        >
-                          <Ionicons name="trash-outline" size={13} color="#FCA5A5" />
-                          <Text style={styles.removeGratifiedBtnText}>Remover</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-
-            {selectedShift && (
-              <TouchableOpacity style={styles.deleteBtn} onPress={handleShiftDelete}>
-                <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                <Text style={styles.deleteBtnText}>Eliminar Turno</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Shift Edit Modal */}
+      {/* Shift edit modal */}
       <ShiftModal
         visible={showShiftModal}
         onClose={() => setShowShiftModal(false)}
@@ -1103,61 +969,11 @@ export default function CalendarScreen() {
           !!selectedDate &&
           (() => {
             const d = new Date(selectedDate + 'T12:00:00');
-            const day = d.getDay(); // 0 Sunday, 6 Saturday
-            const isWeekend = day === 0 || day === 6;
-            const isHoliday = holidaysMap.has(selectedDate);
-            return isWeekend || isHoliday;
+            const day = d.getDay();
+            return day === 0 || day === 6 || holidaysMap.has(selectedDate);
           })()
         }
       />
-
-      {/* Delete Confirmation Modal */}
-      <Modal visible={showDeleteConfirm} animationType="fade" transparent>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ backgroundColor: 'rgba(11, 17, 32, 0.85)', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
-            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Eliminar turno</Text>
-            <Text style={{ color: '#9CA3AF', marginBottom: 20 }}>Tem a certeza que quer eliminar este turno?</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: 'rgba(30, 41, 59, 0.8)', padding: 10, borderRadius: 8, alignItems: 'center' }}
-                onPress={() => setShowDeleteConfirm(false)}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#EF4444', padding: 10, borderRadius: 8, alignItems: 'center' }}
-                onPress={confirmDeleteShift}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Eliminar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Delete Gratification Confirmation Modal */}
-      <Modal visible={deleteGratifiedId !== null} animationType="fade" transparent>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ backgroundColor: 'rgba(11, 17, 32, 0.85)', padding: 20, borderRadius: 12, width: '80%', maxWidth: 300 }}>
-            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Eliminar gratificado</Text>
-            <Text style={{ color: '#9CA3AF', marginBottom: 20 }}>Tem a certeza que quer eliminar este gratificado?</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: 'rgba(30, 41, 59, 0.8)', padding: 10, borderRadius: 8, alignItems: 'center' }}
-                onPress={() => setDeleteGratifiedId(null)}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#EF4444', padding: 10, borderRadius: 8, alignItems: 'center' }}
-                onPress={confirmDeleteGratified}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Eliminar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <FAB
         actions={[
@@ -1294,22 +1110,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.7,
   },
-  quickBar: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(11, 17, 32, 0.85)',
-    marginHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  sectionHeaderBtn: {
-    paddingVertical: 2,
-  },
-  sectionHeaderText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#E5E7EB',
-  },
   quickBarTitle: {
     fontSize: 11,
     fontWeight: '600',
@@ -1344,14 +1144,6 @@ const styles = StyleSheet.create({
     color: '#10B981',
     marginTop: 10,
     fontWeight: '600',
-  },
-  cyclesBar: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(11, 17, 32, 0.85)',
-    marginHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 8,
   },
   cycleButtons: {
     flexDirection: 'row',
@@ -1531,12 +1323,6 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
     fontWeight: '700',
   },
-  shiftBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-    maxWidth: '95%',
-  },
   shiftNameBadge: {
     paddingHorizontal: 2,
     paddingVertical: 1,
@@ -1557,12 +1343,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 1,
   },
-  shiftBadgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
   holidayBadge: {
     paddingHorizontal: 4,
     paddingVertical: 2,
@@ -1577,7 +1357,6 @@ const styles = StyleSheet.create({
   emptyBadge: {
     height: 18,
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -1635,230 +1414,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
-  detailSection: {
-    marginBottom: 16,
-  },
-  detailSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  detailSectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionCount: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#4B5563',
-    textTransform: 'none',
-    letterSpacing: 0,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    marginBottom: 16,
-  },
-  emptyStateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  shiftDetailCard: {
-    backgroundColor: '#050816',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
-  },
-  shiftDetailCardTop: {
-    marginBottom: 8,
-  },
-  shiftDetailBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  shiftDetailBadgeText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  shiftTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 6,
-  },
-  shiftNoteRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 8,
-  },
-  shiftTime: {
-    fontSize: 13,
-    color: '#9CA3AF',
-  },
-  excessHoursText: {
-    fontSize: 14,
-    color: '#EF4444',
-    marginTop: 8,
-    fontWeight: '600',
-  },
-  noteText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    flex: 1,
-    fontStyle: 'italic',
-  },
-  noDataText: {
-    fontSize: 14,
-    color: '#4B5563',
-  },
-  actionButtonRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 11,
-    borderRadius: 10,
-    gap: 6,
-  },
-  actionBtnPrimary: {
-    backgroundColor: '#3B82F6',
-  },
-  actionBtnGreen: {
-    backgroundColor: '#059669',
-  },
-  actionBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 8,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  gratDetailCard: {
-    backgroundColor: '#050816',
-    borderRadius: 12,
-    padding: 14,
-  },
-  gratHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  gratName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#D1D5DB',
-    flex: 1,
-    marginRight: 8,
-  },
-  gratBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  gratBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  gratValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#10B981',
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  removeGratifiedBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(239,68,68,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.25)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  removeGratifiedBtnText: {
-    color: '#FCA5A5',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 20,
-    marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    gap: 8,
-  },
-  deleteBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-
   skeletonGrid: {
     position: 'absolute',
     left: 10,
     right: 10,
     top: 56,
     gap: 4,
-  },
-  duplicateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    backgroundColor: 'rgba(59, 130, 246, 0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.18)',
-    alignSelf: 'flex-start',
-  },
-  duplicateBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#60A5FA',
   },
   copyWeekBtn: {
     flexDirection: 'row',
@@ -1889,8 +1450,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#475569',
   },
-
-  // Multi-select styles
   multiSelectedCell: {
     backgroundColor: 'rgba(59, 130, 246, 0.22)',
     borderWidth: 2,
