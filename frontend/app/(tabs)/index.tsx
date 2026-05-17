@@ -78,6 +78,7 @@ export default function CalendarScreen() {
   // Modal states
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
+  const [editingCycle, setEditingCycle] = useState<import('../../src/store/dataStore').Cycle | null>(null);
   const [showGratifiedModal, setShowGratifiedModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -854,6 +855,11 @@ export default function CalendarScreen() {
                           }
                           setIsOptionsExpanded(false);
                         }}
+                        onLongPress={() => {
+                          setEditingCycle(cycle);
+                          setShowCycleModal(true);
+                          setIsOptionsExpanded(false);
+                        }}
                       >
                         <Text style={[
                           styles.cycleBtnText,
@@ -1011,7 +1017,8 @@ export default function CalendarScreen() {
 
       <CycleModal
         visible={showCycleModal}
-        onClose={() => setShowCycleModal(false)}
+        editingCycle={editingCycle}
+        onClose={() => { setShowCycleModal(false); setEditingCycle(null); }}
       />
 
       <GratifiedModal

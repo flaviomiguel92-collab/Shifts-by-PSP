@@ -467,6 +467,17 @@ async def reset_all_cycles(user: User = Depends(get_current_user)):
     result = await db.cycles.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} cycles"}
 
+@api_router.put("/cycles/{cycle_id}", response_model=dict)
+async def update_cycle(cycle_id: str, data: CustomCycleUpdate, user: User = Depends(get_current_user)):
+    existing = await db.cycles.find_one({"id": cycle_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+    update_fields = {k: v for k, v in data.model_dump().items() if v is not None}
+    if update_fields:
+        await db.cycles.update_one({"id": cycle_id, "user_id": user.user_id}, {"$set": update_fields})
+    updated = await db.cycles.find_one({"id": cycle_id}, {"_id": 0})
+    return updated
+
 @api_router.delete("/cycles/{cycle_id}")
 async def delete_cycle(cycle_id: str, user: User = Depends(get_current_user)):
     result = await db.cycles.delete_one({"id": cycle_id, "user_id": user.user_id})

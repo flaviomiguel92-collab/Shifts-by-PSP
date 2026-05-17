@@ -10,51 +10,68 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useDataStore } from '../store/dataStore';
+import { useDataStore, Cycle } from '../store/dataStore';
 import { COLORS } from '../theme/colors';
 
 interface CycleModalProps {
   visible: boolean;
   onClose: () => void;
+  editingCycle?: Cycle | null;
 }
 
-export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose }) => {
-  const { shiftTypes, createCycle } = useDataStore();
+export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editingCycle }) => {
+  const { shiftTypes, createCycle, updateCycle, deleteCycle } = useDataStore();
+  const isEditing = !!editingCycle;
 
   const [name, setName] = useState('');
   const [pattern, setPattern] = useState<string[]>([]);
 
   useEffect(() => {
     if (!visible) return;
-    setName('');
-    setPattern([]);
-  }, [visible]);
+    if (editingCycle) {
+      setName(editingCycle.name ?? '');
+      setPattern(editingCycle.pattern ?? []);
+    } else {
+      setName('');
+      setPattern([]);
+    }
+  }, [visible, editingCycle]);
 
   const canSave = useMemo(() => name.trim().length > 0 && pattern.length > 0, [name, pattern]);
 
-  const appendToPattern = (shiftName: string) => {
-    setPattern((prev) => [...prev, shiftName]);
-  };
-
-  const removeLast = () => {
-    setPattern((prev) => prev.slice(0, -1));
-  };
-
+  const appendToPattern = (shiftName: string) => setPattern((prev) => [...prev, shiftName]);
+  const removeLast = () => setPattern((prev) => prev.slice(0, -1));
   const clearAll = () => setPattern([]);
 
   const handleSave = async () => {
     const trimmed = name.trim();
-    if (!trimmed) {
-      Alert.alert('Erro', 'Dá um nome ao ciclo.');
-      return;
-    }
-    if (!pattern.length) {
-      Alert.alert('Erro', 'Adiciona pelo menos 1 turno ao padrão.');
-      return;
-    }
+    if (!trimmed) { Alert.alert('Erro', 'Dá um nome ao ciclo.'); return; }
+    if (!pattern.length) { Alert.alert('Erro', 'Adiciona pelo menos 1 turno ao padrão.'); return; }
 
-    await createCycle({ name: trimmed, pattern });
+    if (isEditing && editingCycle) {
+      await updateCycle(editingCycle.id, { name: trimmed, pattern });
+    } else {
+      await createCycle({ name: trimmed, pattern });
+    }
     onClose();
+  };
+
+  const handleDelete = () => {
+    if (!editingCycle) return;
+    Alert.alert(
+      'Apagar ciclo',
+      `Tens a certeza que queres apagar "${editingCycle.name}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Apagar', style: 'destructive',
+          onPress: async () => {
+            await deleteCycle(editingCycle.id);
+            onClose();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -62,10 +79,17 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose }) => {
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Novo Ciclo</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#9CA3AF" />
-            </TouchableOpacity>
+            <Text style={styles.title}>{isEditing ? 'Editar Ciclo' : 'Novo Ciclo'}</Text>
+            <View style={styles.headerActions}>
+              {isEditing && (
+                <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={onClose}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Text style={styles.sectionTitle}>Nome</Text>
@@ -128,7 +152,7 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose }) => {
             onPress={handleSave}
             disabled={!canSave}
           >
-            <Text style={styles.saveText}>Guardar Ciclo</Text>
+            <Text style={styles.saveText}>{isEditing ? 'Guardar alterações' : 'Guardar Ciclo'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -137,113 +161,32 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-  },
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.7)' },
   container: {
     backgroundColor: COLORS.backgroundSecondary,
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  title: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionTitle: {
-    color: COLORS.textTertiary,
-    marginTop: 12,
-    marginBottom: 6,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: COLORS.background,
-    color: COLORS.textPrimary,
-    padding: 10,
-    borderRadius: 8,
-  },
-  patternRow: {
-    backgroundColor: COLORS.background,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-  },
-  patternChips: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: COLORS.backgroundTertiary,
-  },
-  chipText: {
-    color: COLORS.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  patternActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-  },
-  smallBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: COLORS.background,
-  },
-  smallBtnText: {
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  disabledText: {
-    color: COLORS.textMuted,
-  },
-  typeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  typeButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    backgroundColor: COLORS.background,
-  },
-  typeButtonText: {
-    fontWeight: '700',
-  },
-  emptyHint: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    marginTop: 6,
-  },
-  saveBtn: {
-    marginTop: 16,
-    backgroundColor: COLORS.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveBtnDisabled: {
-    opacity: 0.5,
-  },
-  saveText: {
-    color: COLORS.textPrimary,
-    fontWeight: 'bold',
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, alignItems: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  deleteBtn: { padding: 4 },
+  title: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '700' },
+  sectionTitle: { color: COLORS.textTertiary, marginTop: 12, marginBottom: 6, fontWeight: '600' },
+  input: { backgroundColor: COLORS.background, color: COLORS.textPrimary, padding: 10, borderRadius: 8 },
+  patternRow: { backgroundColor: COLORS.background, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 10 },
+  patternChips: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: COLORS.backgroundTertiary },
+  chipText: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '600' },
+  patternActions: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  smallBtn: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: COLORS.background },
+  smallBtnText: { color: COLORS.textSecondary, fontWeight: '600', fontSize: 12 },
+  disabledText: { color: COLORS.textMuted },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  typeButton: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, backgroundColor: COLORS.background },
+  typeButtonText: { fontWeight: '700' },
+  emptyHint: { color: COLORS.textMuted, fontSize: 12, marginTop: 6 },
+  saveBtn: { marginTop: 16, backgroundColor: COLORS.primary, padding: 12, borderRadius: 8, alignItems: 'center' },
+  saveBtnDisabled: { opacity: 0.5 },
+  saveText: { color: COLORS.textPrimary, fontWeight: 'bold' },
 });

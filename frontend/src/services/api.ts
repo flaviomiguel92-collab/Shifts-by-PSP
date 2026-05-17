@@ -245,6 +245,12 @@ export const createCycleApi = async (data: { name: string; pattern: string[] }):
   return response.json();
 };
 
+export const updateCycleApi = async (id: string, data: { name?: string; pattern?: string[] }): Promise<CycleApi> => {
+  const response = await apiFetch(`${API_BASE_URL}/cycles/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  if (!response.ok) throw new Error(`Failed to update cycle: ${response.statusText}`);
+  return response.json();
+};
+
 export const deleteCycleApi = async (id: string): Promise<void> => {
   const response = await apiFetch(`${API_BASE_URL}/cycles/${id}`, { method: 'DELETE' });
   if (!response.ok && response.status !== 404) throw new Error(`Failed to delete cycle: ${response.statusText}`);

@@ -99,6 +99,7 @@ interface DataStore {
 
   fetchCycles: () => Promise<void>;
   createCycle: (cycle: Omit<Cycle, 'id'>) => Promise<void>;
+  updateCycle: (id: string, data: { name?: string; pattern?: string[] }) => Promise<void>;
   deleteCycle: (id: string) => Promise<void>;
 
   setGratifiedConfig: (partial: Partial<GratifiedConfig>) => Promise<void>;
@@ -453,6 +454,17 @@ export const useDataStore = create<DataStore>((set, get) => ({
         pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
       };
       set((state) => ({ cycles: [newCycle, ...state.cycles] }));
+    }
+  },
+
+  updateCycle: async (id, data) => {
+    set((state) => ({
+      cycles: state.cycles.map((c) => (c.id === id ? { ...c, ...data } : c)),
+    }));
+    try {
+      await api.updateCycleApi(id, data);
+    } catch (error) {
+      console.warn('[dataStore] updateCycle API failed (local already updated):', error);
     }
   },
 
