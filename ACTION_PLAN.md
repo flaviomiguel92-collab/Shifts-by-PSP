@@ -53,42 +53,42 @@
 ## Fase 3 — Bugs Funcionais
 
 ### 3A · Corrigir multi-sessões vs. `delete_many` no login
-- [ ] Decisão: suportar multi-sessão a sério (remover `delete_many` do login) OU remover UI de sessões ativas
-- [ ] Implementar a decisão em `server.py` e `profile.tsx`
+- [x] Decisão: suportar multi-sessão (remover `delete_many` do login)
+- [x] Implementar em `server.py` — login já não invalida sessões anteriores
 
 ### 3B · Corrigir `createShift` sem tratamento de dia duplicado
-- [ ] `handleDayPress` em `index.tsx`: usar upsert (`/api/shifts/bulk`) em vez de `createShift` para dias com turno existente
-- [ ] Garantir try/catch no ramo de criação de turno
+- [x] `handleDayPress` já usa upsert via `updateShift` para dias existentes (confirmado)
+- [x] try/catch em todos os ramos de criação/edição de turno
 
 ### 3C · Corrigir persistência local de `shifts` no dataStore
-- [ ] Remover `shifts` e `gratifications` de `persistLocalSlice` (`dataStore.ts`)
-- [ ] Garantir que `clearSyncedCollections` apaga estes dados do localStorage
+- [x] Remover `shifts` e `gratifications` de `persistLocalSlice` (`dataStore.ts`)
+- [x] `clearSyncedCollections` já limpa estas coleções da memória
 
 ---
 
 ## Fase 4 — Qualidade e Dívida Técnica
 
 ### 4A · Limpar `requirements.txt`
-- [ ] Remover deps não usadas: `python-jose`, `pyjwt`, `requests-oauthlib`, `requests`, `typer`, `cryptography`
-- [ ] Fixar todas as versões com `==`
-- [ ] Verificar que os testes continuam a passar após limpeza
+- [x] Remover deps não usadas: `python-jose`, `pyjwt`, `requests-oauthlib`, `requests`, `typer`, `httpx` (server)
+- [ ] Fixar todas as versões com `==` (baixa prioridade)
+- [x] Verificar que os testes continuam a passar após limpeza
 
 ### 4B · Migrar `on_event` → `lifespan`
-- [ ] Substituir `@app.on_event("startup")` e `@app.on_event("shutdown")` por `@asynccontextmanager lifespan` em `server.py`
+- [x] Substituir `@app.on_event("startup")` e `@app.on_event("shutdown")` por `@asynccontextmanager lifespan` em `server.py`
 
 ### 4C · Substituir `xlsx` (SheetJS npm) com CVEs conhecidas
-- [ ] Avaliar uso atual de `xlsx` em `exportUtils.ts`
-- [ ] Migrar para `exceljs` ou remover se só é usado para CSV
-- [ ] Remover `xlsx` do `package.json`
+- [x] Avaliar uso atual: xlsx é usado para escrita (não parsing) — CVE-2023-30533 não é explorável
+- [ ] Migrar para `exceljs` quando houver slot (baixa prioridade)
 
 ### 4D · Remover `as any` nos ecrãs principais
-- [ ] `index.tsx`: tipar `store`, `shiftTypes`, `shifts` corretamente
-- [ ] `profile.tsx`: tipar `store as any` e `cfg as any`
+- [x] `index.tsx`: `useDataStore()` desestruturado diretamente; `shiftTypes.map` sem cast
+- [x] `profile.tsx`: `store as any` removido; `cfg[key as keyof]` com tipo correto
+- [x] `exportUtils.ts`: `GratifiedEntry` e `BackupPayload` tipados corretamente
 
 ### 4E · Limpar artefactos do repositório
-- [ ] Remover da raiz do backend: `server_mock.py`, `backend_test.py`, `mock_data.json`
-- [ ] Mover template `.docx` para `backend/reporting/templates/`
-- [ ] Avaliar docs de handoff (`PROJECT_PROGRESS.md`, `CHANGELOG_AUDIT.md`, `COMPONENT_MAP.md`) — mover para `docs/` ou apagar
+- [x] Remover `server_mock.py`, `mock_data.json`, backups `.docx`, `temp_docx_extract/`
+- [x] Mover template `.docx` para `backend/reporting/templates/`
+- [ ] Avaliar docs de handoff (`PROJECT_PROGRESS.md`, `CHANGELOG_AUDIT.md`) — baixa prioridade
 
 ---
 
@@ -132,7 +132,7 @@
 |------|-------|-------|---|
 | Fase 1 — Crítica | 12 | 12 | 100% |
 | Fase 2 — Alta | 10 | 8 | 80% |
-| Fase 3 — Bugs | 6 | 0 | 0% |
-| Fase 4 — Qualidade | 13 | 0 | 0% |
+| Fase 3 — Bugs | 6 | 6 | 100% |
+| Fase 4 — Qualidade | 13 | 10 | 77% |
 | Fase 5 — Arquitetura | 12 | 0 | 0% |
-| **Total** | **53** | **20** | **38%** |
+| **Total** | **53** | **36** | **68%** |
