@@ -194,3 +194,65 @@ export const revokeSession = async (sessionId: string): Promise<void> => {
   if (!response.ok) throw new Error(`Failed to revoke session: ${response.statusText}`);
 };
 
+// ==================== CYCLES ====================
+
+export interface CycleApi {
+  id: string;
+  name: string;
+  pattern: string[];
+  created_at?: string;
+}
+
+export const getCycles = async (): Promise<CycleApi[]> => {
+  const response = await apiFetch(`${API_BASE_URL}/cycles`, { method: 'GET' });
+  if (!response.ok) throw new Error(`Failed to fetch cycles: ${response.statusText}`);
+  return response.json();
+};
+
+export const createCycleApi = async (data: { name: string; pattern: string[] }): Promise<CycleApi> => {
+  const response = await apiFetch(`${API_BASE_URL}/cycles`, { method: 'POST', body: JSON.stringify(data) });
+  if (!response.ok) throw new Error(`Failed to create cycle: ${response.statusText}`);
+  return response.json();
+};
+
+export const deleteCycleApi = async (id: string): Promise<void> => {
+  const response = await apiFetch(`${API_BASE_URL}/cycles/${id}`, { method: 'DELETE' });
+  if (!response.ok && response.status !== 404) throw new Error(`Failed to delete cycle: ${response.statusText}`);
+};
+
+// ==================== GRATIFIED CALENDAR ENTRIES ====================
+
+export interface GratifiedEntryApi {
+  id: string;
+  date: string;
+  name: string;
+  start_time?: string;
+  end_time?: string;
+  value?: number;
+  subtotal?: number;
+  discount_percent?: number;
+  is_holiday_or_weekend?: boolean;
+  note?: string;
+  created_at?: string;
+}
+
+export const getGratifiedEntries = async (month?: string): Promise<GratifiedEntryApi[]> => {
+  const url = month
+    ? `${API_BASE_URL}/gratified-entries?month=${encodeURIComponent(month)}`
+    : `${API_BASE_URL}/gratified-entries`;
+  const response = await apiFetch(url, { method: 'GET' });
+  if (!response.ok) throw new Error(`Failed to fetch gratified entries: ${response.statusText}`);
+  return response.json();
+};
+
+export const createGratifiedEntryApi = async (data: Omit<GratifiedEntryApi, 'id'>): Promise<GratifiedEntryApi> => {
+  const response = await apiFetch(`${API_BASE_URL}/gratified-entries`, { method: 'POST', body: JSON.stringify(data) });
+  if (!response.ok) throw new Error(`Failed to create gratified entry: ${response.statusText}`);
+  return response.json();
+};
+
+export const deleteGratifiedEntryApi = async (id: string): Promise<void> => {
+  const response = await apiFetch(`${API_BASE_URL}/gratified-entries/${id}`, { method: 'DELETE' });
+  if (!response.ok && response.status !== 404) throw new Error(`Failed to delete gratified entry: ${response.statusText}`);
+};
+

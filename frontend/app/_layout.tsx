@@ -90,6 +90,16 @@ export default function RootLayout() {
           } catch (err) {
             console.warn('[init] fetchShiftTypes error:', err);
           }
+          try {
+            await useDataStore.getState().fetchCycles();
+          } catch (err) {
+            console.warn('[init] fetchCycles error:', err);
+          }
+          try {
+            await useDataStore.getState().fetchGratifiedEntries();
+          } catch (err) {
+            console.warn('[init] fetchGratifiedEntries error:', err);
+          }
         }
       } catch (err) {
         console.error('[init] Init error:', err);

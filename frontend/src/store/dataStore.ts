@@ -96,25 +96,25 @@ interface DataStore {
   createShiftType: (shiftType: Partial<ShiftTypeConfig>) => Promise<void>;
   deleteShiftType: (id: string) => Promise<void>;
 
+  fetchCycles: () => Promise<void>;
   createCycle: (cycle: Omit<Cycle, 'id'>) => Promise<void>;
   deleteCycle: (id: string) => Promise<void>;
 
   setGratifiedConfig: (partial: Partial<GratifiedConfig>) => Promise<void>;
   upsertGratifiedTemplate: (template: GratifiedTemplate) => Promise<void>;
   deleteGratifiedTemplate: (name: string) => Promise<void>;
+  fetchGratifiedEntries: (month?: string) => Promise<void>;
   createGratifiedEntry: (entry: Omit<GratifiedEntry, 'id'>) => Promise<void>;
   deleteGratifiedEntry: (id: string) => Promise<void>;
 }
 
-/** Keys persisted locally only (never trust disk for server-backed entities — avoids "ghost" rows). */
+/** Keys persisted locally only (server-backed entities are excluded to avoid ghost rows). */
 const persistLocalSlice = (state: DataStore) => ({
   shiftTypes: state.shiftTypes,
-  cycles: state.cycles,
   shifts: state.shifts,
   gratifications: state.gratifications,
   gratifiedConfig: state.gratifiedConfig,
   gratifiedTemplates: state.gratifiedTemplates,
-  gratifiedEntries: state.gratifiedEntries,
 });
 
 const DEFAULT_GRATIFIED_CONFIG: GratifiedConfig = {
@@ -268,12 +268,10 @@ export const useDataStore = create<DataStore>((set, get) => ({
     const parsed = JSON.parse(data) as Partial<DataStore>;
     set({
       shiftTypes: parsed?.shiftTypes ?? [],
-      cycles: parsed?.cycles ?? [],
       shifts: parsed?.shifts ?? [],
       gratifications: parsed?.gratifications ?? [],
       gratifiedConfig: parsed?.gratifiedConfig ?? get().gratifiedConfig,
       gratifiedTemplates: parsed?.gratifiedTemplates ?? [],
-      gratifiedEntries: parsed?.gratifiedEntries ?? [],
     });
     await get().saveData();
   },
@@ -409,21 +407,40 @@ export const useDataStore = create<DataStore>((set, get) => ({
 
   // ==================== CYCLES ====================
 
+  fetchCycles: async () => {
+    try {
+      const result = await api.getCycles();
+      set({ cycles: result as unknown as Cycle[] });
+    } catch (error) {
+      console.warn('[dataStore] fetchCycles failed:', error);
+    }
+  },
+
   createCycle: async (cycle) => {
-    const newCycle: Cycle = {
-      ...cycle,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
-    };
-    set((state) => ({ cycles: [newCycle, ...state.cycles] }));
-    get().saveData();
+    try {
+      const created = await api.createCycleApi({
+        name: cycle.name || 'Ciclo',
+        pattern: Array.isArray(cycle.pattern) ? cycle.pattern : [],
+      });
+      set((state) => ({ cycles: [created as unknown as Cycle, ...state.cycles] }));
+    } catch (error) {
+      console.warn('[dataStore] createCycle API failed, using local fallback:', error);
+      const newCycle: Cycle = {
+        ...cycle,
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        pattern: Array.isArray(cycle?.pattern) ? cycle.pattern : [],
+      };
+      set((state) => ({ cycles: [newCycle, ...state.cycles] }));
+    }
   },
 
   deleteCycle: async (id) => {
-    set((state) => ({
-      cycles: state.cycles.filter((c) => c.id !== id),
-    }));
-    get().saveData();
+    set((state) => ({ cycles: state.cycles.filter((c) => c.id !== id) }));
+    try {
+      await api.deleteCycleApi(id);
+    } catch (error) {
+      console.warn('[dataStore] deleteCycle API failed (local already removed):', error);
+    }
   },
 
   // ==================== GRATIFIED CONFIG ====================
@@ -458,19 +475,37 @@ export const useDataStore = create<DataStore>((set, get) => ({
     get().saveData();
   },
 
+  fetchGratifiedEntries: async (month?: string) => {
+    try {
+      const result = await api.getGratifiedEntries(month);
+      set({ gratifiedEntries: result as unknown as GratifiedEntry[] });
+    } catch (error) {
+      console.warn('[dataStore] fetchGratifiedEntries failed:', error);
+    }
+  },
+
   createGratifiedEntry: async (entry) => {
-    const newItem: GratifiedEntry = {
-      ...entry,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    };
-    set((state) => ({ gratifiedEntries: [newItem, ...state.gratifiedEntries] }));
-    get().saveData();
+    try {
+      const created = await api.createGratifiedEntryApi(entry as Parameters<typeof api.createGratifiedEntryApi>[0]);
+      set((state) => ({ gratifiedEntries: [created as unknown as GratifiedEntry, ...state.gratifiedEntries] }));
+    } catch (error) {
+      console.warn('[dataStore] createGratifiedEntry API failed, using local fallback:', error);
+      const newItem: GratifiedEntry = {
+        ...entry,
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      set((state) => ({ gratifiedEntries: [newItem, ...state.gratifiedEntries] }));
+    }
   },
 
   deleteGratifiedEntry: async (id) => {
     set((state) => ({
       gratifiedEntries: state.gratifiedEntries.filter((e) => e.id !== id),
     }));
-    get().saveData();
+    try {
+      await api.deleteGratifiedEntryApi(id);
+    } catch (error) {
+      console.warn('[dataStore] deleteGratifiedEntry API failed (local already removed):', error);
+    }
   },
 }));

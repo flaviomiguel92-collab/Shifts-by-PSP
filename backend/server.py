@@ -201,6 +201,31 @@ class CustomCycleUpdate(BaseModel):
     name: Optional[str] = None
     pattern: Optional[List[str]] = None
 
+class GratifiedCalendarEntry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    date: str
+    name: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    value: Optional[float] = None
+    subtotal: Optional[float] = None
+    discount_percent: Optional[float] = None
+    is_holiday_or_weekend: Optional[bool] = None
+    note: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class GratifiedCalendarEntryCreate(BaseModel):
+    date: str
+    name: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    value: Optional[float] = None
+    subtotal: Optional[float] = None
+    discount_percent: Optional[float] = None
+    is_holiday_or_weekend: Optional[bool] = None
+    note: Optional[str] = None
+
 # ==================== AUTH HELPERS ====================
 
 async def get_current_user(request: Request) -> User:
@@ -411,6 +436,26 @@ async def delete_shift(shift_id: str, user: User = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Shift not found")
     return {"message": "Shift deleted successfully"}
 
+# ==================== CYCLES ENDPOINTS ====================
+
+@api_router.get("/cycles", response_model=List[dict])
+async def get_cycles(user: User = Depends(get_current_user)):
+    cycles = await db.cycles.find({"user_id": user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return cycles
+
+@api_router.post("/cycles", response_model=dict)
+async def create_cycle(cycle_data: CustomCycleCreate, user: User = Depends(get_current_user)):
+    cycle = CustomCycle(user_id=user.user_id, name=cycle_data.name, pattern=cycle_data.pattern)
+    await db.cycles.insert_one(cycle.model_dump())
+    return cycle.model_dump()
+
+@api_router.delete("/cycles/{cycle_id}")
+async def delete_cycle(cycle_id: str, user: User = Depends(get_current_user)):
+    result = await db.cycles.delete_one({"id": cycle_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+    return {"message": "Cycle deleted"}
+
 # ==================== GRATIFICATION ENDPOINTS ====================
 
 @api_router.get("/gratifications", response_model=List[dict])
@@ -448,6 +493,31 @@ async def delete_gratification(grat_id: str, user: User = Depends(get_current_us
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Gratification not found")
     return {"message": "Gratification deleted successfully"}
+
+# ==================== GRATIFIED CALENDAR ENTRIES ====================
+
+@api_router.get("/gratified-entries", response_model=List[dict])
+async def get_gratified_entries(month: Optional[str] = None, user: User = Depends(get_current_user)):
+    query: dict = {"user_id": user.user_id}
+    if month:
+        validate_month_format(month)
+        query["date"] = {"$regex": f"^{month}"}
+    entries = await db.gratified_entries.find(query, {"_id": 0}).sort("date", -1).to_list(2000)
+    return entries
+
+@api_router.post("/gratified-entries", response_model=dict)
+async def create_gratified_entry(entry_data: GratifiedCalendarEntryCreate, user: User = Depends(get_current_user)):
+    validate_date_format(entry_data.date)
+    entry = GratifiedCalendarEntry(user_id=user.user_id, **entry_data.model_dump())
+    await db.gratified_entries.insert_one(entry.model_dump())
+    return entry.model_dump()
+
+@api_router.delete("/gratified-entries/{entry_id}")
+async def delete_gratified_entry(entry_id: str, user: User = Depends(get_current_user)):
+    result = await db.gratified_entries.delete_one({"id": entry_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Entry deleted"}
 
 # ==================== STATISTICS ENDPOINTS ====================
 
@@ -716,12 +786,14 @@ async def cleanup_all_data(user: User = Depends(get_current_user)):
         cycles_deleted = await db.cycles.delete_many(user_filter)
         occurrences_deleted = await db.occurrences.delete_many(user_filter)
         gratifications_deleted = await db.gratifications.delete_many(user_filter)
+        gratified_entries_deleted = await db.gratified_entries.delete_many(user_filter)
         return {
             "message": "User data cleaned successfully",
             "shifts_deleted": shifts_deleted.deleted_count,
             "cycles_deleted": cycles_deleted.deleted_count,
             "occurrences_deleted": occurrences_deleted.deleted_count,
             "gratifications_deleted": gratifications_deleted.deleted_count,
+            "gratified_entries_deleted": gratified_entries_deleted.deleted_count,
         }
     except Exception as error:
         raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(error)}")
@@ -731,6 +803,16 @@ async def root():
     return {"message": "ShiftExtra API", "version": "1.0.0"}
 
 app.include_router(api_router)
+
+@app.on_event("startup")
+async def create_indexes():
+    await db.sessions.create_index("token", unique=True, sparse=True)
+    await db.shifts.create_index([("user_id", 1), ("date", 1)])
+    await db.occurrences.create_index("user_id")
+    await db.gratifications.create_index([("user_id", 1), ("date", 1)])
+    await db.shift_types.create_index("user_id")
+    await db.cycles.create_index("user_id")
+    await db.gratified_entries.create_index([("user_id", 1), ("date", 1)])
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
