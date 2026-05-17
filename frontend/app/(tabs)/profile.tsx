@@ -14,7 +14,6 @@ import {
 import { toast } from '../../src/utils/toast';
 import { getSessions, revokeSession, getOccurrences, deleteOccurrence, SessionInfo } from '../../src/services/api';
 import { ReportModal } from '../../src/components/ReportModal';
-import { usePreferencesStore, i18n } from '../../src/store/preferencesStore';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
 
@@ -34,6 +33,21 @@ function GlassCard({ children, style }: { children: React.ReactNode; style?: obj
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
+function CollapseBtn({
+  label, expanded, onPress, danger,
+}: { label: string; expanded: boolean; onPress: () => void; danger?: boolean }) {
+  return (
+    <TouchableOpacity style={styles.collapseBtn} onPress={onPress} activeOpacity={0.7}>
+      <Text style={[styles.collapseBtnText, danger && { color: '#FCA5A5' }]}>{label}</Text>
+      <Ionicons
+        name={expanded ? 'chevron-up' : 'chevron-down'}
+        size={16}
+        color={danger ? '#EF4444' : '#475569'}
+      />
+    </TouchableOpacity>
+  );
+}
+
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
@@ -46,10 +60,6 @@ export default function ProfileScreen() {
   const store = useDataStore();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const language = usePreferencesStore((s) => s.language);
-  const setLanguage = usePreferencesStore((s) => s.setLanguage);
-  const loadPreferences = usePreferencesStore((s) => s.loadPreferences);
-  const t = i18n[language];
 
   const {
     shifts, shiftTypes, gratifiedEntries, gratifications, cycles,
@@ -60,6 +70,11 @@ export default function ProfileScreen() {
     restoreFromBackup,
   } = store;
 
+  const [isBackupExpanded, setIsBackupExpanded] = useState(false);
+  const [isShiftTypesExpanded, setIsShiftTypesExpanded] = useState(false);
+  const [isTemplatesExpanded, setIsTemplatesExpanded] = useState(false);
+  const [isExportExpanded, setIsExportExpanded] = useState(false);
+  const [isReportExpanded, setIsReportExpanded] = useState(false);
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isResetExpanded, setIsResetExpanded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -84,10 +99,6 @@ export default function ProfileScreen() {
     largeStart: String(gratifiedConfig?.largeStart ?? ''),
     largeEnd: String(gratifiedConfig?.largeEnd ?? ''),
   });
-
-  useEffect(() => {
-    loadPreferences();
-  }, [loadPreferences]);
 
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true);
@@ -248,11 +259,11 @@ export default function ProfileScreen() {
 
   const handleRevokeSession = async (sessionId: string) => {
     const confirmed = Platform.OS === 'web'
-      ? window.confirm(t['sessions_revoke_confirm'])
+      ? window.confirm('Revogar esta sessão?')
       : await new Promise<boolean>((res) =>
-          Alert.alert(t['sessions_revoke'], t['sessions_revoke_confirm'], [
+          Alert.alert('Revogar', 'Revogar esta sessão?', [
             { text: 'Cancelar', style: 'cancel', onPress: () => res(false) },
-            { text: t['sessions_revoke'], style: 'destructive', onPress: () => res(true) },
+            { text: 'Revogar', style: 'destructive', onPress: () => res(true) },
           ])
         );
     if (!confirmed) return;
@@ -317,176 +328,185 @@ export default function ProfileScreen() {
           </View>
         </LinearGradient>
 
-        {/* Language toggle */}
-        <Section title={t['language']} icon="globe-outline">
-          <GlassCard>
-            <View style={styles.langRow}>
-              {(['pt', 'en'] as const).map((lang) => (
+        {/* Backup & restore */}
+        <Section title="Cópia de segurança" icon="cloud-download-outline">
+          <CollapseBtn
+            label={isBackupExpanded ? 'Ocultar opções' : 'Exportar / Importar'}
+            expanded={isBackupExpanded}
+            onPress={() => setIsBackupExpanded(!isBackupExpanded)}
+          />
+          {isBackupExpanded && (
+            <GlassCard style={{ marginTop: 8 }}>
+              {[
+                {
+                  action: handleBackup,
+                  loading: isBackingUp,
+                  icon: 'archive-outline' as const,
+                  label: 'Exportar JSON',
+                  desc: 'Cópia completa de turnos, tipos, ciclos e configurações',
+                  color: '#3B82F6',
+                },
+                {
+                  action: handleRestore,
+                  loading: isRestoring,
+                  icon: 'refresh-outline' as const,
+                  label: 'Importar JSON',
+                  desc: 'Restaurar dados a partir de um ficheiro de backup',
+                  color: '#8B5CF6',
+                },
+              ].map((item, i, arr) => (
                 <TouchableOpacity
-                  key={lang}
-                  style={[styles.langBtn, language === lang && styles.langBtnActive]}
-                  onPress={() => setLanguage(lang)}
+                  key={item.label}
+                  style={[styles.exportBtn, i < arr.length - 1 && styles.exportBtnBorder]}
+                  onPress={item.action}
+                  disabled={item.loading}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.langBtnText, language === lang && styles.langBtnTextActive]}>
-                    {t[`language_${lang}` as 'language_pt' | 'language_en']}
-                  </Text>
+                  <View style={[styles.exportIcon, { backgroundColor: `${item.color}18` }]}>
+                    {item.loading
+                      ? <ActivityIndicator size="small" color={item.color} />
+                      : <Ionicons name={item.icon} size={16} color={item.color} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.exportLabel}>{item.label}</Text>
+                    <Text style={styles.exportDesc}>{item.desc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color="#334155" />
                 </TouchableOpacity>
               ))}
-            </View>
-          </GlassCard>
-        </Section>
-
-        {/* Backup & restore */}
-        <Section title={t['backup']} icon="cloud-download-outline">
-          <GlassCard>
-            {[
-              {
-                action: handleBackup,
-                loading: isBackingUp,
-                icon: 'archive-outline' as const,
-                label: t['backup_export'],
-                desc: t['backup_export_desc'],
-                color: '#3B82F6',
-              },
-              {
-                action: handleRestore,
-                loading: isRestoring,
-                icon: 'refresh-outline' as const,
-                label: t['backup_import'],
-                desc: t['backup_import_desc'],
-                color: '#8B5CF6',
-              },
-            ].map((item, i, arr) => (
-              <TouchableOpacity
-                key={item.label}
-                style={[styles.exportBtn, i < arr.length - 1 && styles.exportBtnBorder]}
-                onPress={item.action}
-                disabled={item.loading}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.exportIcon, { backgroundColor: `${item.color}18` }]}>
-                  {item.loading
-                    ? <ActivityIndicator size="small" color={item.color} />
-                    : <Ionicons name={item.icon} size={16} color={item.color} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exportLabel}>{item.label}</Text>
-                  <Text style={styles.exportDesc}>{item.desc}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={14} color="#334155" />
-              </TouchableOpacity>
-            ))}
-          </GlassCard>
+            </GlassCard>
+          )}
         </Section>
 
         {/* Shift types */}
         <Section title="Tipos de turno" icon="color-palette-outline">
-          <GlassCard>
-            {(!shiftTypes || shiftTypes.length === 0) ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>Sem tipos de turno criados.</Text>
-              </View>
-            ) : (
-              shiftTypes.map((item: any, i: number) => (
-                <View key={item.id} style={[styles.listRow, i === shiftTypes.length - 1 && { borderBottomWidth: 0 }]}>
-                  <View style={[styles.colorDot, { backgroundColor: item.color || '#475569' }]} />
-                  <Text style={styles.listRowText}>{item.name}</Text>
-                  <TouchableOpacity onPress={() => deleteShiftType(item.id)} style={styles.deleteBtn}>
-                    <Ionicons name="trash-outline" size={15} color="#EF4444" />
-                  </TouchableOpacity>
+          <CollapseBtn
+            label={isShiftTypesExpanded ? 'Ocultar tipos' : 'Ver tipos de turno'}
+            expanded={isShiftTypesExpanded}
+            onPress={() => setIsShiftTypesExpanded(!isShiftTypesExpanded)}
+          />
+          {isShiftTypesExpanded && (
+            <GlassCard style={{ marginTop: 8 }}>
+              {(!shiftTypes || shiftTypes.length === 0) ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>Sem tipos de turno criados.</Text>
                 </View>
-              ))
-            )}
-          </GlassCard>
+              ) : (
+                shiftTypes.map((item: any, i: number) => (
+                  <View key={item.id} style={[styles.listRow, i === shiftTypes.length - 1 && { borderBottomWidth: 0 }]}>
+                    <View style={[styles.colorDot, { backgroundColor: item.color || '#475569' }]} />
+                    <Text style={styles.listRowText}>{item.name}</Text>
+                    <TouchableOpacity onPress={() => deleteShiftType(item.id)} style={styles.deleteBtn}>
+                      <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </GlassCard>
+          )}
         </Section>
 
         {/* Gratified templates */}
         <Section title="Gratificados guardados" icon="bookmark-outline">
-          <GlassCard>
-            {(!gratifiedTemplates || gratifiedTemplates.length === 0) ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>Ainda não tens gratificados guardados.</Text>
-              </View>
-            ) : (
-              gratifiedTemplates.map((t: any, i: number) => (
-                <View key={t.name} style={[styles.listRow, i === gratifiedTemplates.length - 1 && { borderBottomWidth: 0 }]}>
-                  <Text style={[styles.listRowText, { flex: 1 }]}>{t.name}</Text>
-                  <TouchableOpacity onPress={() => deleteGratifiedTemplate(t.name)} style={styles.deleteBtn}>
-                    <Ionicons name="trash-outline" size={15} color="#EF4444" />
-                  </TouchableOpacity>
+          <CollapseBtn
+            label={isTemplatesExpanded ? 'Ocultar templates' : 'Ver templates guardados'}
+            expanded={isTemplatesExpanded}
+            onPress={() => setIsTemplatesExpanded(!isTemplatesExpanded)}
+          />
+          {isTemplatesExpanded && (
+            <GlassCard style={{ marginTop: 8 }}>
+              {(!gratifiedTemplates || gratifiedTemplates.length === 0) ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>Ainda não tens gratificados guardados.</Text>
                 </View>
-              ))
-            )}
-          </GlassCard>
+              ) : (
+                gratifiedTemplates.map((tmpl: any, i: number) => (
+                  <View key={tmpl.name} style={[styles.listRow, i === gratifiedTemplates.length - 1 && { borderBottomWidth: 0 }]}>
+                    <Text style={[styles.listRowText, { flex: 1 }]}>{tmpl.name}</Text>
+                    <TouchableOpacity onPress={() => deleteGratifiedTemplate(tmpl.name)} style={styles.deleteBtn}>
+                      <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </GlassCard>
+          )}
         </Section>
 
         {/* Export */}
         <Section title="Exportar dados" icon="download-outline">
-          <GlassCard>
-            <Text style={styles.exportMonthLabel}>Mês: {currentMonth}</Text>
-            {[
-              { type: 'pdf' as const, icon: 'document-text-outline' as const, label: 'PDF — Escala do mês', color: '#EF4444', desc: 'Calendário mensal formatado para imprimir' },
-              { type: 'shifts_csv' as const, icon: 'grid-outline' as const, label: 'CSV — Turnos do mês', color: '#10B981', desc: 'Tabela de turnos para Excel' },
-              { type: 'gratified_csv' as const, icon: 'cash-outline' as const, label: 'CSV — Gratificados do mês', color: '#F59E0B', desc: 'Tabela de gratificados para Excel' },
-            ].map((item, i, arr) => (
-              <TouchableOpacity
-                key={item.type}
-                style={[styles.exportBtn, i < arr.length - 1 && styles.exportBtnBorder]}
-                onPress={() => handleExport(item.type)}
-                disabled={isExporting}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.exportIcon, { backgroundColor: `${item.color}18` }]}>
-                  {isExporting ? (
-                    <ActivityIndicator size="small" color={item.color} />
-                  ) : (
-                    <Ionicons name={item.icon} size={16} color={item.color} />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exportLabel}>{item.label}</Text>
-                  <Text style={styles.exportDesc}>{item.desc}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={14} color="#334155" />
-              </TouchableOpacity>
-            ))}
-          </GlassCard>
+          <CollapseBtn
+            label={isExportExpanded ? 'Ocultar exportações' : 'Ver opções de exportação'}
+            expanded={isExportExpanded}
+            onPress={() => setIsExportExpanded(!isExportExpanded)}
+          />
+          {isExportExpanded && (
+            <GlassCard style={{ marginTop: 8 }}>
+              <Text style={styles.exportMonthLabel}>Mês: {currentMonth}</Text>
+              {[
+                { type: 'pdf' as const, icon: 'document-text-outline' as const, label: 'PDF — Escala do mês', color: '#EF4444', desc: 'Calendário mensal formatado para imprimir' },
+                { type: 'shifts_csv' as const, icon: 'grid-outline' as const, label: 'CSV — Turnos do mês', color: '#10B981', desc: 'Tabela de turnos para Excel' },
+                { type: 'gratified_csv' as const, icon: 'cash-outline' as const, label: 'CSV — Gratificados do mês', color: '#F59E0B', desc: 'Tabela de gratificados para Excel' },
+              ].map((item, i, arr) => (
+                <TouchableOpacity
+                  key={item.type}
+                  style={[styles.exportBtn, i < arr.length - 1 && styles.exportBtnBorder]}
+                  onPress={() => handleExport(item.type)}
+                  disabled={isExporting}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.exportIcon, { backgroundColor: `${item.color}18` }]}>
+                    {isExporting ? (
+                      <ActivityIndicator size="small" color={item.color} />
+                    ) : (
+                      <Ionicons name={item.icon} size={16} color={item.color} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.exportLabel}>{item.label}</Text>
+                    <Text style={styles.exportDesc}>{item.desc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color="#334155" />
+                </TouchableOpacity>
+              ))}
+            </GlassCard>
+          )}
         </Section>
 
         {/* Report */}
         <Section title="Relatório de Serviço" icon="document-text-outline">
-          <GlassCard>
-            <TouchableOpacity
-              style={styles.exportBtn}
-              onPress={() => setShowReportModal(true)}
-              activeOpacity={0.75}
-            >
-              <View style={[styles.exportIcon, { backgroundColor: '#6366F118' }]}>
-                <Ionicons name="document-attach-outline" size={16} color="#6366F1" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.exportLabel}>Gerar Boletim (.docx)</Text>
-                <Text style={styles.exportDesc}>Preenche e descarrega o modelo oficial PSP</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={14} color="#334155" />
-            </TouchableOpacity>
-          </GlassCard>
+          <CollapseBtn
+            label={isReportExpanded ? 'Ocultar relatório' : 'Gerar boletim PSP'}
+            expanded={isReportExpanded}
+            onPress={() => setIsReportExpanded(!isReportExpanded)}
+          />
+          {isReportExpanded && (
+            <GlassCard style={{ marginTop: 8 }}>
+              <TouchableOpacity
+                style={styles.exportBtn}
+                onPress={() => setShowReportModal(true)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.exportIcon, { backgroundColor: '#6366F118' }]}>
+                  <Ionicons name="document-attach-outline" size={16} color="#6366F1" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.exportLabel}>Gerar Boletim (.docx)</Text>
+                  <Text style={styles.exportDesc}>Preenche e descarrega o modelo oficial PSP</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color="#334155" />
+              </TouchableOpacity>
+            </GlassCard>
+          )}
         </Section>
 
         {/* Active sessions */}
-        <Section title={t['sessions']} icon="phone-portrait-outline">
-          <TouchableOpacity
-            style={styles.collapseBtn}
+        <Section title="Sessões ativas" icon="phone-portrait-outline">
+          <CollapseBtn
+            label={isSessionsExpanded ? 'Ocultar sessões' : 'Ver sessões ativas'}
+            expanded={isSessionsExpanded}
             onPress={() => setIsSessionsExpanded(!isSessionsExpanded)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.collapseBtnText}>
-              {isSessionsExpanded ? 'Ocultar sessões' : 'Ver sessões ativas'}
-            </Text>
-            <Ionicons name={isSessionsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#475569" />
-          </TouchableOpacity>
-
+          />
           {isSessionsExpanded && (
             <GlassCard style={{ marginTop: 8 }}>
               {sessionsLoading ? (
@@ -495,14 +515,14 @@ export default function ProfileScreen() {
                 </View>
               ) : sessionsError ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>{t['sessions_error']}</Text>
+                  <Text style={styles.emptyText}>Erro ao carregar sessões.</Text>
                   <TouchableOpacity onPress={loadSessions} style={{ marginTop: 8 }}>
                     <Text style={{ color: '#3B82F6', fontSize: 13 }}>Tentar novamente</Text>
                   </TouchableOpacity>
                 </View>
               ) : sessions.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>{t['sessions_empty']}</Text>
+                  <Text style={styles.emptyText}>Nenhuma sessão encontrada.</Text>
                 </View>
               ) : (
                 sessions.map((s, i) => (
@@ -512,12 +532,12 @@ export default function ProfileScreen() {
                         <Ionicons name="phone-portrait-outline" size={13} color={s.is_current ? '#3B82F6' : '#475569'} />
                         {s.is_current && (
                           <View style={styles.currentBadge}>
-                            <Text style={styles.currentBadgeText}>{t['sessions_current']}</Text>
+                            <Text style={styles.currentBadgeText}>Sessão atual</Text>
                           </View>
                         )}
                       </View>
-                      <Text style={styles.sessionMeta}>{t['sessions_created']}: {formatDate(s.created_at)}</Text>
-                      <Text style={styles.sessionMeta}>{t['sessions_expires']}: {formatDate(s.expires_at)}</Text>
+                      <Text style={styles.sessionMeta}>Criada em: {formatDate(s.created_at)}</Text>
+                      <Text style={styles.sessionMeta}>Expira em: {formatDate(s.expires_at)}</Text>
                     </View>
                     {!s.is_current && (
                       <TouchableOpacity
@@ -528,7 +548,7 @@ export default function ProfileScreen() {
                       >
                         {revokingId === s.session_id
                           ? <ActivityIndicator size="small" color="#EF4444" />
-                          : <Text style={styles.revokeBtnText}>{t['sessions_revoke']}</Text>}
+                          : <Text style={styles.revokeBtnText}>Revogar</Text>}
                       </TouchableOpacity>
                     )}
                   </View>
@@ -540,17 +560,11 @@ export default function ProfileScreen() {
 
         {/* Config */}
         <Section title="Configurações de gratificados" icon="settings-outline">
-          <TouchableOpacity
-            style={styles.collapseBtn}
+          <CollapseBtn
+            label={isConfigExpanded ? 'Ocultar configurações' : 'Mostrar configurações'}
+            expanded={isConfigExpanded}
             onPress={() => setIsConfigExpanded(!isConfigExpanded)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.collapseBtnText}>
-              {isConfigExpanded ? 'Ocultar configurações' : 'Mostrar configurações'}
-            </Text>
-            <Ionicons name={isConfigExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#475569" />
-          </TouchableOpacity>
-
+          />
           {isConfigExpanded && (
             <GlassCard style={{ marginTop: 8 }}>
               {cfgFields.map((f) => (
@@ -591,17 +605,12 @@ export default function ProfileScreen() {
 
         {/* Reset */}
         <Section title="Limpar dados" icon="warning-outline">
-          <TouchableOpacity
-            style={styles.collapseBtn}
+          <CollapseBtn
+            label={isResetExpanded ? 'Ocultar opções' : 'Opções de reset'}
+            expanded={isResetExpanded}
             onPress={() => setIsResetExpanded(!isResetExpanded)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.collapseBtnText, { color: '#FCA5A5' }]}>
-              {isResetExpanded ? 'Ocultar opções' : 'Opções de reset'}
-            </Text>
-            <Ionicons name={isResetExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#EF4444" />
-          </TouchableOpacity>
-
+            danger
+          />
           {isResetExpanded && (
             <View style={{ gap: 8, marginTop: 8 }}>
               {resetOptions.map((opt) => {
@@ -838,26 +847,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  langRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 10,
-  },
-  langBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  langBtnActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderColor: 'rgba(59, 130, 246, 0.4)',
-  },
-  langBtnText: { color: '#475569', fontWeight: '600', fontSize: 13 },
-  langBtnTextActive: { color: '#60A5FA' },
   sessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
