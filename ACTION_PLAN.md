@@ -119,10 +119,10 @@
 - [ ] Definir alertas para erros 5xx e autenticações falhadas
 
 ### 5F · Cobertura de testes
-- [ ] Testes para endpoint `/api/reports/generate`
-- [ ] Testes para CRUD de cycles
-- [ ] Testes para gratificações
-- [ ] Testes para rate limiting (mock do slowapi)
+- [x] Testes para endpoint `/api/reports/generate` (`test_reports.py` — 6 testes)
+- [x] Testes para CRUD de cycles (`test_cycles.py` — 6 testes)
+- [x] Testes para gratificações (`test_gratifications.py` — 14 testes)
+- [ ] Testes para rate limiting (mock do slowapi) — baixa prioridade
 
 ---
 
@@ -134,5 +134,5 @@
 | Fase 2 — Alta | 10 | 8 | 80% |
 | Fase 3 — Bugs | 6 | 6 | 100% |
 | Fase 4 — Qualidade | 13 | 10 | 77% |
-| Fase 5 — Arquitetura | 12 | 0 | 0% |
-| **Total** | **53** | **36** | **68%** |
+| Fase 5 — Arquitetura | 12 | 3 | 25% |
+| **Total** | **53** | **39** | **74%** |
