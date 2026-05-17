@@ -35,6 +35,13 @@ export default function TabLayout() {
   const setShiftType = usePaintStore((s) => s.setShiftType);
   const shiftTypes = useDataStore((s) => s.shiftTypes);
 
+  // Reset paint mode on every app open — prevents stale in-memory state
+  // from persisting across SPA navigations without a full page reload.
+  useEffect(() => {
+    setActive(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const handler = (e: KeyboardEvent) => {
@@ -42,16 +49,35 @@ export default function TabLayout() {
         e.preventDefault();
         search.open();
       }
-      if (e.key === 'Escape') search.close();
+      if (e.key === 'Escape') {
+        search.close();
+        setActive(false);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [setActive]);
 
   return (
     <>
       <Tabs
-        tabBar={(props) => paintActive ? null : <CustomTabBar {...props} />}
+        tabBar={(props) => (
+          <>
+            {/* Hide tab bar while painting — keeps it mounted so expo-router
+                doesn't fall back to its default implementation */}
+            {!paintActive && <CustomTabBar {...props} />}
+            {/* PaintModeBar lives here (same render context as CustomTabBar)
+                so z-index stacking is reliable and there are no competing
+                touch targets when paint mode is active */}
+            <PaintModeBar
+              visible={paintActive}
+              shiftTypes={shiftTypes}
+              selectedType={paintShiftType}
+              onSelectType={setShiftType}
+              onExit={() => setActive(false)}
+            />
+          </>
+        )}
         screenOptions={{ headerShown: false }}
       >
         <Tabs.Screen name="index" />
@@ -61,13 +87,6 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" />
       </Tabs>
       <SearchModal />
-      <PaintModeBar
-        visible={paintActive}
-        shiftTypes={shiftTypes}
-        selectedType={paintShiftType}
-        onSelectType={setShiftType}
-        onExit={() => setActive(false)}
-      />
     </>
   );
 }
