@@ -8,6 +8,23 @@ if (!process.env.EXPO_PUBLIC_API_URL) {
 }
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 
+function assertJsonResponse(response: Response): void {
+  if (!API_URL) {
+    throw new Error('Configuração inválida: EXPO_PUBLIC_API_URL não definida.');
+  }
+  const ct = response.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    throw new Error(`Resposta inesperada do servidor (${response.status}). Verifique a variável EXPO_PUBLIC_API_URL no Vercel.`);
+  }
+}
+
+function extractDetail(error: { detail?: unknown }): string {
+  const d = error?.detail;
+  if (typeof d === 'string') return d;
+  if (Array.isArray(d)) return d.map((e: { msg?: string }) => e?.msg).filter(Boolean).join(', ');
+  return '';
+}
+
 interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -104,9 +121,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         credentials: 'include',
       });
 
+      assertJsonResponse(response);
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Login failed');
+        throw new Error(extractDetail(error) || 'Login failed');
       }
 
       const data = await response.json();
@@ -153,9 +172,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         credentials: 'include',
       });
 
+      assertJsonResponse(response);
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Registration failed');
+        throw new Error(extractDetail(error) || 'Registration failed');
       }
 
       const data = await response.json();
@@ -202,13 +223,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         credentials: 'include',
       });
 
+      assertJsonResponse(response);
+
       if (!response.ok) {
         set({ isLoading: false });
         return false;
       }
 
       const data = await response.json();
-      
+
       // Store session token
       await storage.setItem('session_token', data.session_token);
       useDataStore.getState().clearSyncedCollections();
