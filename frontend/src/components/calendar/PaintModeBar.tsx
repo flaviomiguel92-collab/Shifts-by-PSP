@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
-  Modal,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,88 +30,76 @@ export function PaintModeBar({
   onExit,
 }: PaintModeBarProps) {
   const slideAnim = useRef(new Animated.Value(BAR_HEIGHT)).current;
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (visible) {
-      setMounted(true);
-    }
     Animated.spring(slideAnim, {
       toValue: visible ? 0 : BAR_HEIGHT,
       useNativeDriver: true,
       tension: 200,
       friction: 20,
-    }).start(({ finished }) => {
-      if (finished && !visible) setMounted(false);
-    });
+    }).start();
   }, [visible, slideAnim]);
 
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={onExit}>
-      <View style={styles.overlay} pointerEvents="box-none">
-        <Animated.View
-          style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
-          pointerEvents="auto"
-        >
-          <View style={styles.inner}>
-            <View style={styles.topRow}>
-              <View style={styles.paintLabel}>
-                <Ionicons name="brush-outline" size={14} color="#60A5FA" />
-                <Text style={styles.paintLabelText}>Modo pintura</Text>
-              </View>
-              <TouchableOpacity style={styles.exitBtn} onPress={onExit} activeOpacity={0.8}>
-                <Ionicons name="close" size={14} color="#F1F5F9" />
-                <Text style={styles.exitBtnText}>Sair</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRow}
-              keyboardShouldPersistTaps="handled"
-            >
-              {shiftTypes.map((st) => {
-                const active = selectedType === st.name;
-                return (
-                  <TouchableOpacity
-                    key={st.id}
-                    style={[
-                      styles.chip,
-                      active
-                        ? { backgroundColor: st.color, borderColor: st.color }
-                        : { borderColor: st.color + '55' },
-                    ]}
-                    onPress={() => onSelectType(st.name)}
-                    activeOpacity={0.75}
-                  >
-                    {!active && <View style={[styles.chipDot, { backgroundColor: st.color }]} />}
-                    <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]}>
-                      {st.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-              {shiftTypes.length === 0 && (
-                <Text style={styles.emptyText}>Sem tipos de turno</Text>
-              )}
-            </ScrollView>
+    <Animated.View
+      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+      pointerEvents={visible ? 'auto' : 'none'}
+    >
+      <View style={styles.inner}>
+        <View style={styles.topRow}>
+          <View style={styles.paintLabel}>
+            <Ionicons name="brush-outline" size={14} color="#60A5FA" />
+            <Text style={styles.paintLabelText}>Modo pintura</Text>
           </View>
-        </Animated.View>
+          <TouchableOpacity style={styles.exitBtn} onPress={onExit} activeOpacity={0.8}>
+            <Ionicons name="close" size={14} color="#F1F5F9" />
+            <Text style={styles.exitBtnText}>Sair</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+          keyboardShouldPersistTaps="handled"
+        >
+          {shiftTypes.map((st) => {
+            const active = selectedType === st.name;
+            return (
+              <TouchableOpacity
+                key={st.id}
+                style={[
+                  styles.chip,
+                  active
+                    ? { backgroundColor: st.color, borderColor: st.color }
+                    : { borderColor: st.color + '55' },
+                ]}
+                onPress={() => onSelectType(st.name)}
+                activeOpacity={0.75}
+              >
+                {!active && <View style={[styles.chipDot, { backgroundColor: st.color }]} />}
+                <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]}>
+                  {st.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          {shiftTypes.length === 0 && (
+            <Text style={styles.emptyText}>Sem tipos de turno</Text>
+          )}
+        </ScrollView>
       </View>
-    </Modal>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-  },
   container: {
     position: 'absolute',
     bottom: BOTTOM,
     left: 0,
     right: 0,
+    zIndex: 200,
   },
   inner: {
     marginHorizontal: 10,
@@ -127,7 +114,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 16,
+    elevation: 40,
   },
   topRow: {
     flexDirection: 'row',

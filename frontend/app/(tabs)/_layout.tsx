@@ -4,6 +4,9 @@ import { Platform } from 'react-native';
 import { CustomTabBar } from '../../src/components/TabBar';
 import { SearchModal } from '../../src/components/SearchModal';
 import { search } from '../../src/utils/search';
+import { PaintModeBar } from '../../src/components/calendar/PaintModeBar';
+import { usePaintStore } from '../../src/store/paintStore';
+import { useDataStore } from '../../src/store/dataStore';
 
 // Inject Inter font on web
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -26,6 +29,12 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 }
 
 export default function TabLayout() {
+  const paintActive = usePaintStore((s) => s.active);
+  const paintShiftType = usePaintStore((s) => s.shiftType);
+  const setActive = usePaintStore((s) => s.setActive);
+  const setShiftType = usePaintStore((s) => s.setShiftType);
+  const shiftTypes = useDataStore((s) => s.shiftTypes);
+
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const handler = (e: KeyboardEvent) => {
@@ -52,6 +61,13 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" />
       </Tabs>
       <SearchModal />
+      <PaintModeBar
+        visible={paintActive}
+        shiftTypes={shiftTypes}
+        selectedType={paintShiftType}
+        onSelectType={setShiftType}
+        onExit={() => setActive(false)}
+      />
     </>
   );
 }

@@ -42,7 +42,7 @@ import { search } from '../../src/utils/search';
 import { DayContextPopup } from '../../src/components/calendar/DayContextPopup';
 import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
 import { DayShiftEditor } from '../../src/components/calendar/DayShiftEditor';
-import { PaintModeBar } from '../../src/components/calendar/PaintModeBar';
+import { usePaintStore } from '../../src/store/paintStore';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
@@ -91,8 +91,29 @@ export default function CalendarScreen() {
   const [showShiftPicker, setShowShiftPicker] = useState(false);
   const [showDayShiftEditor, setShowDayShiftEditor] = useState(false);
 
-  // Paint mode
-  const [paintMode, setPaintMode] = useState(false);
+  // Paint mode (state lives in paintStore so PaintModeBar can be rendered above the tab bar in _layout)
+  const paintMode = usePaintStore((s) => s.active);
+  const setPaintMode = usePaintStore((s) => s.setActive);
+  const storePaintShiftType = usePaintStore((s) => s.shiftType);
+  const setStorePaintShiftType = usePaintStore((s) => s.setShiftType);
+
+  // Sync: when user picks a type in the PaintModeBar (rendered in _layout), update local selectedShiftType
+  useEffect(() => {
+    if (paintMode && storePaintShiftType !== null) {
+      setSelectedShiftType(storePaintShiftType);
+    }
+  }, [storePaintShiftType, paintMode]);
+
+  // Sync: when paint mode is deactivated from the bar's "Sair" button (in _layout), clean up edit state
+  useEffect(() => {
+    if (!paintMode && editMode === 'quick') {
+      setEditMode('none');
+      setSelectedShiftType(null);
+      setStorePaintShiftType(null);
+    }
+  // editMode intentionally read via ref-like pattern — only paintMode drives this
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paintMode]);
 
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -584,9 +605,11 @@ export default function CalendarScreen() {
               if (paintMode) {
                 cancelEditMode();
               } else {
+                const firstType = shiftTypes[0]?.name || null;
                 setPaintMode(true);
                 setEditMode('quick');
-                setSelectedShiftType(shiftTypes[0]?.name || null);
+                setSelectedShiftType(firstType);
+                setStorePaintShiftType(firstType);
                 setPopupDay(null);
               }
             }}
@@ -1037,17 +1060,6 @@ export default function CalendarScreen() {
         }
       />
 
-      {/* Paint mode bar */}
-      <PaintModeBar
-        visible={paintMode}
-        shiftTypes={shiftTypes}
-        selectedType={selectedShiftType}
-        onSelectType={(name) => {
-          setSelectedShiftType(name);
-          setEditMode('quick');
-        }}
-        onExit={cancelEditMode}
-      />
 
       <FAB
         actions={[
