@@ -1119,7 +1119,10 @@ export default function CalendarScreen() {
         day={popupDay || ''}
         items={popupItems}
         onClose={() => setPopupDay(null)}
-        onAddShift={() => setShowShiftPicker(true)}
+        onAddShift={() => {
+          setPopupDay(null);
+          setShowShiftPicker(true);
+        }}
         onAddEvent={() => {
           setPopupDay(null);
           setEditingEvent(null);
