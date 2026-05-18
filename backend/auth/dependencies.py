@@ -17,6 +17,8 @@ async def _validate_session(session_token: str) -> User:
     if not session_doc:
         raise HTTPException(status_code=401, detail="Invalid session")
     expires_at = session_doc["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at < datetime.now(timezone.utc):

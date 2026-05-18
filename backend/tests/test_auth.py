@@ -123,3 +123,27 @@ async def test_expired_token_returns_401(http, mock_db):
 
     resp = await http.get("/api/shifts", headers=auth(token))
     assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_string_expires_at_does_not_crash(http, mock_db):
+    """Regression: _validate_session must tolerate expires_at stored as ISO string."""
+    import hashlib, secrets as _secrets
+    raw = _secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw.encode()).hexdigest()
+    user_id = str(uuid.uuid4())
+    await mock_db.users.insert_one({
+        "user_id": user_id, "email": "strdate@test.com",
+        "name": "StrDate", "password_hash": "x",
+        "created_at": datetime.now(timezone.utc),
+    })
+    await mock_db.user_sessions.insert_one({
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": token_hash,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    resp = await http.get("/api/shifts", headers=auth(raw))
+    assert resp.status_code == 200
