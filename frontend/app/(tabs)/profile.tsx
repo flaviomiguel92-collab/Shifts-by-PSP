@@ -60,6 +60,8 @@ export default function ProfileScreen() {
   const store = useDataStore();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const {
     shifts, shiftTypes, gratifiedEntries, gratifications, cycles,
@@ -150,6 +152,44 @@ export default function ProfileScreen() {
     Alert.alert('Terminar Sessão', 'Tem a certeza que deseja terminar a sessão?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Terminar', style: 'destructive', onPress: doLogout },
+    ]);
+  };
+
+  const doDeleteAccount = async () => {
+    if (isDeletingAccount) return;
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount();
+      // authStore clears auth state; RootLayout redirects to /login.
+    } catch (err) {
+      console.error('[deleteAccount]', err);
+      const msg = err instanceof Error ? err.message : 'Erro ao eliminar a conta.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Erro', msg);
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    const msg1 = 'Eliminar a conta apaga PERMANENTEMENTE todos os seus dados (turnos, ciclos, ocorrências, gratificações). Esta ação é irreversível. Continuar?';
+    const msg2 = 'Tem mesmo a certeza? Não há forma de recuperar os dados.';
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(msg1) && window.confirm(msg2)) {
+        doDeleteAccount();
+      }
+      return;
+    }
+    Alert.alert('Eliminar Conta', msg1, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Continuar',
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert('Confirmação Final', msg2, [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Eliminar Conta', style: 'destructive', onPress: doDeleteAccount },
+          ]),
+      },
     ]);
   };
 
@@ -652,6 +692,19 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Terminar Sessão</Text>
         </TouchableOpacity>
 
+        {/* Delete account (GDPR erasure) */}
+        <TouchableOpacity
+          style={[styles.deleteAccountBtn, isDeletingAccount && { opacity: 0.6 }]}
+          onPress={handleDeleteAccount}
+          disabled={isDeletingAccount}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="trash-outline" size={16} color="#F87171" />
+          <Text style={styles.deleteAccountText}>
+            {isDeletingAccount ? 'A eliminar…' : 'Eliminar Conta'}
+          </Text>
+        </TouchableOpacity>
+
       </ScrollView>
 
       <ReportModal visible={showReportModal} onClose={() => setShowReportModal(false)} />
@@ -808,6 +861,20 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logoutText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  deleteAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'transparent',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#7F1D1D',
+    paddingVertical: 12,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  deleteAccountText: { color: '#F87171', fontSize: 13, fontWeight: '700' },
   exportMonthLabel: {
     color: '#475569',
     fontSize: 11,

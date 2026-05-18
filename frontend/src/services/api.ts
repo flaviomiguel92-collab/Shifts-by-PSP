@@ -224,6 +224,18 @@ export const revokeSession = async (sessionId: string): Promise<void> => {
   if (!response.ok) throw new Error(`Failed to revoke session: ${response.statusText}`);
 };
 
+export const deleteAccount = async (): Promise<void> => {
+  const response = await apiFetch(`${API_BASE_URL}/auth/account`, { method: 'DELETE' });
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+    } catch { /* ignore parse error */ }
+    throw new Error(`[${response.status}] ${detail}`);
+  }
+};
+
 // ==================== CYCLES ====================
 
 export interface CycleApi {

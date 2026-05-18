@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { storage } from '../utils/storage';
 import { User } from '../types';
 import { useDataStore } from './dataStore';
+import { deleteAccount as apiDeleteAccount } from '../services/api';
 
 if (!process.env.EXPO_PUBLIC_API_URL) {
   console.error('[auth] ERRO: EXPO_PUBLIC_API_URL não definida. Configure no .env');
@@ -37,6 +38,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 /** Valida a password no frontend antes de enviar ao servidor */
@@ -263,5 +265,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       throw error;
     }
+  },
+
+  deleteAccount: async () => {
+    // Must succeed server-side before clearing local state, so the user
+    // gets a real error if erasure failed (unlike fire-and-forget logout).
+    await apiDeleteAccount();
+    await storage.removeItem('session_token');
+    await storage.removeItem('device_id');
+    useDataStore.getState().clearSyncedCollections();
+    set({ user: null, isAuthenticated: false, sessionToken: null });
   },
 }));
