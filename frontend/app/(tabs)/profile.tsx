@@ -13,7 +13,6 @@ import {
 } from '../../src/utils/exportUtils';
 import { toast } from '../../src/utils/toast';
 import { getSessions, revokeSession, getOccurrences, deleteOccurrence, SessionInfo } from '../../src/services/api';
-import { ReportModal } from '../../src/components/ReportModal';
 
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
 
@@ -76,7 +75,6 @@ export default function ProfileScreen() {
   const [isShiftTypesExpanded, setIsShiftTypesExpanded] = useState(false);
   const [isTemplatesExpanded, setIsTemplatesExpanded] = useState(false);
   const [isExportExpanded, setIsExportExpanded] = useState(false);
-  const [isReportExpanded, setIsReportExpanded] = useState(false);
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isResetExpanded, setIsResetExpanded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -89,7 +87,6 @@ export default function ProfileScreen() {
   const [sessionsError, setSessionsError] = useState(false);
   const [isSessionsExpanded, setIsSessionsExpanded] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [cfg, setCfg] = useState({
     baseSmall4h: String(gratifiedConfig?.baseSmall4h ?? ''),
     baseLarge4h: String(gratifiedConfig?.baseLarge4h ?? ''),
@@ -513,33 +510,6 @@ export default function ProfileScreen() {
           )}
         </Section>
 
-        {/* Report */}
-        <Section title="Relatório de Serviço" icon="document-text-outline">
-          <CollapseBtn
-            label={isReportExpanded ? 'Ocultar relatório' : 'Gerar boletim PSP'}
-            expanded={isReportExpanded}
-            onPress={() => setIsReportExpanded(!isReportExpanded)}
-          />
-          {isReportExpanded && (
-            <GlassCard style={{ marginTop: 8 }}>
-              <TouchableOpacity
-                style={styles.exportBtn}
-                onPress={() => setShowReportModal(true)}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.exportIcon, { backgroundColor: '#6366F118' }]}>
-                  <Ionicons name="document-attach-outline" size={16} color="#6366F1" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exportLabel}>Gerar Boletim (.docx)</Text>
-                  <Text style={styles.exportDesc}>Preenche e descarrega o modelo oficial PSP</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={14} color="#334155" />
-              </TouchableOpacity>
-            </GlassCard>
-          )}
-        </Section>
-
         {/* Active sessions */}
         <Section title="Sessões ativas" icon="phone-portrait-outline">
           <CollapseBtn
@@ -707,7 +677,6 @@ export default function ProfileScreen() {
 
       </ScrollView>
 
-      <ReportModal visible={showReportModal} onClose={() => setShowReportModal(false)} />
     </SafeAreaView>
   );
 }

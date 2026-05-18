@@ -299,32 +299,3 @@ export async function exportMonthlyPDF(
     await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Escala ${month}` });
   }
 }
-
-// ─── DOCX Download ────────────────────────────────────────────────────────────
-
-export async function downloadDocx(blob: Blob, filename: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    return;
-  }
-  const reader = new FileReader();
-  const b64: string = await new Promise((resolve, reject) => {
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-  const FileSystem = await import('expo-file-system/legacy');
-  const path = `${FileSystem.documentDirectory}${filename}`;
-  await FileSystem.writeAsStringAsync(path, b64, { encoding: 'base64' as any });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(path, {
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      dialogTitle: filename,
-    });
-  }
-}

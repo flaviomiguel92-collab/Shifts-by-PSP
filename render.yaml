@@ -8,5 +8,3 @@ services:
     envVars:
       - key: PORT
         value: 8000
-      - key: LIBREOFFICE_BIN
-        value: soffice
