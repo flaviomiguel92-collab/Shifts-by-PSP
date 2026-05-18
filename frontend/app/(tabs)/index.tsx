@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { useDataStore } from '../../src/store/dataStore';
-import { Shift } from '../../src/types';
+import { Shift, CalendarEvent } from '../../src/types';
 import {
   formatMonth,
   getCalendarDays,
@@ -36,10 +36,11 @@ import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
 import { SkeletonCalendarRow } from '../../src/components/ui/Skeleton';
-import { FAB } from '../../src/components/ui/FAB';
 import { toast } from '../../src/utils/toast';
 import { search } from '../../src/utils/search';
-import { DayContextPopup } from '../../src/components/calendar/DayContextPopup';
+import { DayPopover, DayItem } from '../../src/components/calendar/DayPopover';
+import { DetailSheet } from '../../src/components/calendar/DetailSheet';
+import { EventFormModal } from '../../src/components/calendar/EventFormModal';
 import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
 import { DayShiftEditor } from '../../src/components/calendar/DayShiftEditor';
 import { usePaintStore } from '../../src/store/paintStore';
@@ -53,6 +54,7 @@ export default function CalendarScreen() {
     shiftTypes,
     cycles,
     gratifiedEntries,
+    events,
     fetchShifts,
     createShift,
     updateShift,
@@ -61,6 +63,11 @@ export default function CalendarScreen() {
     createShiftType,
     fetchShiftTypes,
     updateShiftType,
+    fetchEvents,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    deleteGratifiedEntry,
     currentMonth,
     setCurrentMonth,
   } = useDataStore();
@@ -89,6 +96,11 @@ export default function CalendarScreen() {
   const [popupAnchor, setPopupAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showShiftPicker, setShowShiftPicker] = useState(false);
   const [showDayShiftEditor, setShowDayShiftEditor] = useState(false);
+
+  // Day-centric flow: event form + generic detail sheet
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [detailItem, setDetailItem] = useState<DayItem | null>(null);
 
   // Paint mode (state lives in paintStore so PaintModeBar can be rendered above the tab bar in _layout)
   const paintMode = usePaintStore((s) => s.active);
@@ -161,6 +173,17 @@ export default function CalendarScreen() {
     });
     return map;
   }, [gratifiedEntries]);
+
+  const eventsByDateMap = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    (events || []).forEach((ev) => {
+      const date = String(ev?.date || '');
+      if (!date) return;
+      if (!map.has(date)) map.set(date, []);
+      map.get(date)?.push(ev);
+    });
+    return map;
+  }, [events]);
 
   const shiftsMap = useMemo(() => {
     const map = new Map<string, Shift>();
@@ -593,6 +616,101 @@ export default function CalendarScreen() {
 
   const popupShift = popupDay ? getShiftForDay(popupDay) || null : null;
 
+  const popupItems: DayItem[] = (() => {
+    if (!popupDay) return [];
+    const out: DayItem[] = [];
+    if (popupShift) {
+      out.push({
+        id: popupShift.id,
+        kind: 'shift',
+        iconName: 'calendar',
+        color: getShiftDisplayColor(popupShift.shift_type),
+        title: getShiftDisplayName(popupShift.shift_type),
+        time: [popupShift.start_time, popupShift.end_time].filter(Boolean).join(' – ') || undefined,
+      });
+    }
+    (eventsByDateMap.get(popupDay) || []).forEach((ev) => {
+      out.push({
+        id: ev.id,
+        kind: 'event',
+        iconName: 'reader',
+        color: '#3B82F6',
+        title: ev.title,
+        time: [ev.start_time, ev.end_time].filter(Boolean).join(' – ') || undefined,
+      });
+    });
+    (gratifiedByDateMap.get(popupDay) || []).forEach((g: any) => {
+      out.push({
+        id: g.id,
+        kind: 'grat',
+        iconName: 'cash',
+        color: '#10B981',
+        title: g.name || 'Gratificado',
+        time: [g.start_time, g.end_time].filter(Boolean).join(' – ') || undefined,
+        trailing: g.value != null ? `${Number(g.value).toFixed(2)} €` : undefined,
+      });
+    });
+    return out;
+  })();
+
+  const handleOpenItem = (item: DayItem) => {
+    setPopupDay(null);
+    setDetailItem(item);
+  };
+
+  const handleDetailEdit = () => {
+    if (!detailItem) return;
+    if (detailItem.kind === 'shift') {
+      setDetailItem(null);
+      setShowDayShiftEditor(true);
+    } else if (detailItem.kind === 'event') {
+      const ev = (events || []).find((e) => e.id === detailItem.id) || null;
+      setEditingEvent(ev);
+      setDetailItem(null);
+      setShowEventForm(true);
+    }
+  };
+
+  const handleDetailRemove = async () => {
+    if (!detailItem) return;
+    const { kind, id } = detailItem;
+    setDetailItem(null);
+    try {
+      if (kind === 'shift') {
+        await deleteShift(id);
+        await fetchShifts(currentMonth);
+        toast.success('Turno removido deste dia');
+      } else if (kind === 'event') {
+        await deleteEvent(id);
+        toast.success('Evento eliminado');
+      } else {
+        await deleteGratifiedEntry(id);
+        toast.success('Gratificado eliminado');
+      }
+    } catch {
+      toast.error('Não foi possível remover');
+    }
+  };
+
+  const handleSaveEvent = async (data: {
+    title: string; start_time?: string; end_time?: string; location?: string; note?: string;
+  }) => {
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, data);
+        toast.success('Evento atualizado');
+      } else {
+        await createEvent({ date: selectedDate, ...data });
+        toast.success('Evento criado');
+      }
+      await fetchEvents(currentMonth);
+      setShowEventForm(false);
+      setEditingEvent(null);
+    } catch {
+      toast.error('Não foi possível guardar o evento');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -718,6 +836,7 @@ export default function CalendarScreen() {
                   const dayGratifiedEntries = gratifiedByDateMap.get(dateStr) || [];
                   const hasGratification = dayGratifiedEntries.length > 0;
                   const gratifiedCount = dayGratifiedEntries.length;
+                  const hasEvent = (eventsByDateMap.get(dateStr) || []).length > 0;
                   const isCycleStart = cycleStartDate === dateStr;
                   const inCycleRange = isInCycleRange(dateStr);
                   const isMultiSelected = editMode === 'multi_select' && selectedDates.has(dateStr);
@@ -767,6 +886,12 @@ export default function CalendarScreen() {
                           {gratifiedCount > 1 && (
                             <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
                           )}
+                        </View>
+                      )}
+
+                      {hasEvent && !isMultiSelected && (
+                        <View style={styles.eventBadge}>
+                          <Text style={styles.eventBadgeText} numberOfLines={1}>Evento</Text>
                         </View>
                       )}
 
@@ -988,32 +1113,87 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* Contextual day popup */}
-      <DayContextPopup
+      {/* Day-centric contextual popover */}
+      <DayPopover
         visible={!!popupDay}
         day={popupDay || ''}
-        anchor={popupAnchor}
-        shift={popupShift}
-        shiftColor={popupShift ? getShiftDisplayColor(popupShift.shift_type) : '#374151'}
-        shiftName={popupShift ? getShiftDisplayName(popupShift.shift_type) : ''}
-        gratifiedCount={(popupDay && gratifiedByDateMap.get(popupDay)?.length) || 0}
+        items={popupItems}
         onClose={() => setPopupDay(null)}
-        onAddShift={() => {
-          setShowShiftPicker(true);
-        }}
-        onEditShift={() => {
-          setSelectedShift(popupShift);
+        onAddShift={() => setShowShiftPicker(true)}
+        onAddEvent={() => {
           setPopupDay(null);
-          setShowDayShiftEditor(true);
+          setEditingEvent(null);
+          setShowEventForm(true);
         }}
-        onAddGratified={() => {
+        onAddGrat={() => {
           setPopupDay(null);
           setShowGratifiedModal(true);
         }}
-        onAddEvent={() => {
-          setPopupDay(null);
-          router.push('/(tabs)/ocorrencias');
-        }}
+        onOpenItem={handleOpenItem}
+      />
+
+      {/* Generic detail sheet (shift / event / grat) */}
+      <DetailSheet
+        visible={!!detailItem}
+        accentColor={detailItem?.color || '#374151'}
+        iconName={detailItem?.iconName || 'ellipse-outline'}
+        kindLabel={
+          detailItem?.kind === 'shift'
+            ? 'Detalhe do turno'
+            : detailItem?.kind === 'event'
+            ? 'Detalhe do evento'
+            : 'Detalhe do gratificado'
+        }
+        title={detailItem?.title || ''}
+        subtitle={detailItem?.time}
+        rows={(() => {
+          if (!detailItem) return [];
+          const [start = '—', end = '—'] = (detailItem.time || '').split(' – ');
+          if (detailItem.kind === 'grat') {
+            return [
+              { label: 'Início', value: start },
+              { label: 'Fim', value: end },
+              { label: 'Valor', value: 'Calculado automaticamente' },
+            ];
+          }
+          return [
+            { label: 'Início', value: start },
+            { label: 'Fim', value: end },
+          ];
+        })()}
+        note={
+          detailItem?.kind === 'shift'
+            ? 'Remove apenas a aplicação deste dia. O turno continua na lista de turnos.'
+            : detailItem?.kind === 'grat'
+            ? 'Valor calculado automaticamente pela app com base nas horas.'
+            : undefined
+        }
+        removeLabel={
+          detailItem?.kind === 'shift'
+            ? 'Retirar turno deste dia'
+            : detailItem?.kind === 'event'
+            ? 'Eliminar evento'
+            : 'Eliminar gratificado'
+        }
+        confirmMessage={
+          detailItem?.kind === 'shift'
+            ? 'Retirar o turno deste dia?'
+            : detailItem?.kind === 'event'
+            ? 'Eliminar este evento?'
+            : 'Eliminar este gratificado?'
+        }
+        onClose={() => setDetailItem(null)}
+        onEdit={detailItem && detailItem.kind !== 'grat' ? handleDetailEdit : undefined}
+        onRemove={handleDetailRemove}
+      />
+
+      {/* Event form (create / edit) */}
+      <EventFormModal
+        visible={showEventForm}
+        date={selectedDate}
+        event={editingEvent}
+        onClose={() => { setShowEventForm(false); setEditingEvent(null); }}
+        onSave={handleSaveEvent}
       />
 
       {/* Shift type picker (opened from popup) */}
@@ -1071,29 +1251,6 @@ export default function CalendarScreen() {
       />
 
 
-      <FAB
-        actions={[
-          {
-            icon: 'cash-outline',
-            label: 'Novo Gratificado',
-            color: '#10B981',
-            onPress: () => {
-              setSelectedDate(today);
-              setShowGratifiedModal(true);
-            },
-          },
-          {
-            icon: 'calendar-outline',
-            label: 'Novo Turno',
-            color: '#3B82F6',
-            onPress: () => {
-              setSelectedDate(today);
-              setSelectedShift(null);
-              setShowShiftModal(true);
-            },
-          },
-        ]}
-      />
     </SafeAreaView>
   );
 }
@@ -1457,6 +1614,21 @@ const styles = StyleSheet.create({
   },
   emptyBadge: {
     height: 18,
+  },
+  eventBadge: {
+    marginTop: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59,130,246,0.12)',
+    alignSelf: 'center',
+  },
+  eventBadgeText: {
+    fontSize: 7,
+    fontWeight: '700',
+    color: '#60A5FA',
   },
   modalOverlay: {
     flex: 1,
