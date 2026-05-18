@@ -32,8 +32,39 @@ async def _ensure_index(collection, keys, **kwargs):
         await collection.create_index(keys, **kwargs)
 
 
+async def _dedupe_users_by_email(collection):
+    """Remove duplicate users sharing an email before building the unique index.
+
+    For each email with >1 document, keep the one with the most recent
+    ``created_at`` (falling back to ``_id``, which is monotonic by insert
+    time, when ``created_at`` is missing/null) and delete the rest.
+    """
+    pipeline = [
+        {"$group": {"_id": "$email", "ids": {"$push": "$_id"}, "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gt": 1}}},
+    ]
+    async for group in collection.aggregate(pipeline):
+        email = group["_id"]
+        docs = await collection.find(
+            {"email": email}, {"_id": 1, "created_at": 1}
+        ).to_list(None)
+
+        def _sort_key(doc):
+            created = doc.get("created_at")
+            # Docs with a created_at sort above those without; among those
+            # without, the ObjectId (monotonic) acts as the tie-breaker.
+            return (created is not None, created, doc["_id"])
+
+        docs.sort(key=_sort_key)
+        keep = docs[-1]["_id"]
+        to_delete = [d["_id"] for d in docs if d["_id"] != keep]
+        if to_delete:
+            await collection.delete_many({"_id": {"$in": to_delete}})
+
+
 @asynccontextmanager
 async def lifespan(app):
+    await _dedupe_users_by_email(db.users)
     await _ensure_index(db.users, "email", unique=True)
     await _ensure_index(db.user_sessions, "session_token", unique=True)
     await db.shifts.create_index([("user_id", 1), ("date", 1)])
