@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from config import DATE_RE
 
@@ -25,7 +25,8 @@ class GratificationCreate(BaseModel):
     note: Optional[str] = None
     shift_id: Optional[str] = None
 
-    @validator('date')
+    @field_validator('date')
+    @classmethod
     def validate_date(cls, v):
         if not DATE_RE.match(v):
             raise ValueError(f"Formato de data inválido: {v}. Use YYYY-MM-DD")
@@ -65,7 +66,8 @@ class GratifiedCalendarEntryCreate(BaseModel):
     is_holiday_or_weekend: Optional[bool] = None
     note: Optional[str] = None
 
-    @validator('date')
+    @field_validator('date')
+    @classmethod
     def validate_date(cls, v):
         if not DATE_RE.match(v):
             raise ValueError(f"Formato de data inválido: {v}. Use YYYY-MM-DD")

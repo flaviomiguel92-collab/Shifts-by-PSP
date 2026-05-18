@@ -57,9 +57,16 @@ async def reset_all_shifts(request: Request, user: User = Depends(require_header
 async def create_or_update_shifts_bulk(bulk_data: BulkShiftsRequest, user: User = Depends(get_current_user)):
     from pymongo import UpdateOne, InsertOne
 
+    dates = [s.date for s in bulk_data.shifts]
+    existing_cursor = _db.db.shifts.find(
+        {"user_id": user.user_id, "date": {"$in": dates}},
+        {"_id": 1, "date": 1},
+    )
+    existing_by_date = {d["date"]: d for d in await existing_cursor.to_list(length=None)}
+
     operations = []
     for shift_item in bulk_data.shifts:
-        existing = await _db.db.shifts.find_one({"user_id": user.user_id, "date": shift_item.date})
+        existing = existing_by_date.get(shift_item.date)
         if existing:
             update_fields: dict = {"shift_type": shift_item.shift_type}
             if shift_item.start_time is not None:
@@ -83,7 +90,7 @@ async def create_or_update_shifts_bulk(bulk_data: BulkShiftsRequest, user: User 
             operations.append(InsertOne(shift.model_dump()))
 
     if operations:
-        result = await _db.db.shifts.bulk_write(operations)
+        result = await _db.db.shifts.bulk_write(operations, ordered=False)
         return {
             "message": "Bulk operation completed",
             "created": result.inserted_count,

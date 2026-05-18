@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 _MAX_PHOTOS = 5
 _MAX_PHOTO_CHARS = 3_000_000  # ~2 MB raw before base64 encoding
@@ -50,7 +50,8 @@ class OccurrenceCreate(BaseModel):
     status: Optional[str] = "rascunho"
     photos: Optional[List[str]] = []
 
-    @validator('photos')
+    @field_validator('photos')
+    @classmethod
     def validate_photos(cls, v):
         if v and len(v) > _MAX_PHOTOS:
             raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
@@ -85,7 +86,8 @@ class PersonCreate(BaseModel):
     photos: Optional[List[str]] = []
     notes: Optional[str] = None
 
-    @validator('photos')
+    @field_validator('photos')
+    @classmethod
     def validate_photos(cls, v):
         if v and len(v) > _MAX_PHOTOS:
             raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -38,7 +38,8 @@ class RegisterRequest(BaseModel):
     password: str
     name: str
 
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if len(v) > 128:
             raise ValueError("Password não pode exceder 128 caracteres")
