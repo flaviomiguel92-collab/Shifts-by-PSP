@@ -51,7 +51,6 @@ export default function OcorrenciasScreen() {
       const token = await storage.getItem('session_token');
       const response = await fetch(`${API_URL}/api/occurrences`, {
         headers: { 'Authorization': `Bearer ${token}` },
-        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -162,7 +161,6 @@ export default function OcorrenciasScreen() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
-        credentials: 'include',
       });
 
       if (response.ok) {
@@ -186,7 +184,6 @@ export default function OcorrenciasScreen() {
         const response = await fetch(`${API_URL}/api/occurrences/${occurrenceId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` },
-          credentials: 'include',
         });
 
         if (!response.ok) {

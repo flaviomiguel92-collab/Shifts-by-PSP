@@ -51,7 +51,6 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ date, time, location, description, classification }),
-        credentials: 'include',
       });
       if (response.ok) {
         const newOcc: Occurrence = await response.json();

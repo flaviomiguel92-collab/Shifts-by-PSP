@@ -101,7 +101,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           'Authorization': `Bearer ${storedToken}`,
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
       });
 
       if (response.status === 401) {
@@ -113,11 +112,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!response.ok) {
-        // Erro do servidor (503, 502, etc.) — cold start ou indisponibilidade temporária.
-        // Não afirmar autenticado com token não validado; aguardar próximo checkAuth.
-        console.warn(`[checkAuth] Server error ${response.status} — token retido, sessão suspensa`);
-        set({ isLoading: false });
-        return false;
+        // Erro do servidor (503, 502, etc.) — cold start do Render ou
+        // indisponibilidade temporária. NÃO deslogar: manter a sessão (o
+        // token continua a ser validado pelo servidor em cada pedido). O
+        // utilizador só sai com logout explícito ou token inválido (401).
+        console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
+        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
+        return true;
       }
 
       const userData = await response.json();
@@ -151,7 +152,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'include',
       });
 
       assertJsonResponse(response);
@@ -199,7 +199,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name, email, password }),
-        credentials: 'include',
       });
 
       assertJsonResponse(response);
@@ -241,7 +240,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${storedToken}` },
-          credentials: 'include',
           signal: controller.signal,
         })
           .catch(() => {})

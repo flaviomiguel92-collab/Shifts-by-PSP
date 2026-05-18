@@ -133,7 +133,6 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(person),
-        credentials: 'include',
       });
       if (response.ok) {
         const updated: Occurrence = await response.json();
