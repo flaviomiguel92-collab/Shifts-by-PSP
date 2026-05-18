@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: shift-olama-backend
+    name: shifts-by-psp-1
     runtime: docker
     rootDir: backend
     plan: free
