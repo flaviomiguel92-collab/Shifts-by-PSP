@@ -24,6 +24,13 @@ limiter = Limiter(key_func=_client_ip_key)
 # ── Environment ────────────────────────────────────────────────────────────────
 _IS_PRODUCTION = os.environ.get('ENVIRONMENT', '').lower() == 'production'
 
+# Session lifetime (days). Operators can tighten this without a code change;
+# a full refresh-token rotation model is intentionally a separate product decision.
+try:
+    SESSION_TTL_DAYS = max(1, int(os.environ.get('SESSION_TTL_DAYS', '7')))
+except ValueError:
+    SESSION_TTL_DAYS = 7
+
 CORS_ORIGINS = os.environ.get(
     'CORS_ORIGINS',
     'https://shifts-by-psp.vercel.app,http://localhost:3000,http://localhost:8000'

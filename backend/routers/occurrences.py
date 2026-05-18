@@ -17,8 +17,24 @@ from models.occurrences import (
     _MAX_PHOTOS,
     _MAX_PHOTO_CHARS,
 )
+from security import crypto
 
 router = APIRouter()
+
+
+def _decrypt_occurrence(occ: dict) -> dict:
+    """Transparently decrypt PII in person arrays before returning.
+
+    Pure pass-through when PII encryption is disabled. Tolerates legacy
+    plaintext values.
+    """
+    if not occ:
+        return occ
+    for array_name in ("suspects", "witnesses", "victims"):
+        people = occ.get(array_name)
+        if people:
+            occ[array_name] = [crypto.decrypt_person(p) for p in people]
+    return occ
 
 
 @router.post("/occurrences/reset")
@@ -40,7 +56,7 @@ async def get_occurrences(
     if classification:
         query["classification"] = classification
     occurrences = await _db.db.occurrences.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return occurrences
+    return [_decrypt_occurrence(o) for o in occurrences]
 
 
 @router.get("/occurrences/{occurrence_id}")
@@ -50,7 +66,7 @@ async def get_occurrence(occurrence_id: str, user: User = Depends(get_current_us
     )
     if not occurrence:
         raise HTTPException(status_code=404, detail="Occurrence not found")
-    return occurrence
+    return _decrypt_occurrence(occurrence)
 
 
 @router.post("/occurrences", response_model=dict)
@@ -119,10 +135,10 @@ async def add_person_to_occurrence(
     array_name = role_map.get(person_data.role, "suspects")
     await _db.db.occurrences.update_one(
         {"id": occurrence_id, "user_id": user.user_id},
-        {"$push": {array_name: person.model_dump()}, "$set": {"updated_at": datetime.now(timezone.utc)}},
+        {"$push": {array_name: crypto.encrypt_person(person.model_dump())}, "$set": {"updated_at": datetime.now(timezone.utc)}},
     )
     updated = await _db.db.occurrences.find_one({"id": occurrence_id, "user_id": user.user_id}, {"_id": 0})
-    return updated
+    return _decrypt_occurrence(updated)
 
 
 @router.delete("/occurrences/{occurrence_id}/persons/{person_id}")

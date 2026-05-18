@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -7,9 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pymongo.errors import DuplicateKeyError
 
 import db as _db
-from auth.dependencies import get_current_user
-from config import _AUTH_RATE, _IS_PRODUCTION, limiter
+from auth.dependencies import get_current_user, require_header_auth
+from config import _AUTH_RATE, _IS_PRODUCTION, SESSION_TTL_DAYS, limiter
 from models.auth import LoginRequest, RegisterRequest, User, UserPublic, pwd_context
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -41,7 +44,7 @@ async def register(data: RegisterRequest, request: Request, response: Response):
         raise HTTPException(status_code=400, detail="Email já registado")
     session_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(session_token.encode()).hexdigest()
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_TTL_DAYS)
     session = {
         "session_id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -73,7 +76,7 @@ async def login(data: LoginRequest, request: Request, response: Response):
     user_id = user["user_id"]
     session_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(session_token.encode()).hexdigest()
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_TTL_DAYS)
     session = {
         "session_id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -137,3 +140,27 @@ async def revoke_session(session_id: str, user: User = Depends(get_current_user)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Session not found")
     return {"message": "Session revoked"}
+
+
+@router.delete("/auth/account")
+@limiter.limit(_AUTH_RATE)
+async def delete_account(request: Request, user: User = Depends(require_header_auth)):
+    try:
+        for coll in (
+            "shifts",
+            "cycles",
+            "occurrences",
+            "gratifications",
+            "gratified_entries",
+            "shift_types",
+        ):
+            await _db.db[coll].delete_many({"user_id": user.user_id})
+        await _db.db.user_sessions.delete_many({"user_id": user.user_id})
+        await _db.db.users.delete_one({"user_id": user.user_id})
+        return {"message": "Account deleted", "user_id": user.user_id}
+    except Exception:
+        logger.exception("delete_account failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao eliminar a conta. Tente novamente.",
+        )

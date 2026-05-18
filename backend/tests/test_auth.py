@@ -147,3 +147,57 @@ async def test_string_expires_at_does_not_crash(http, mock_db):
 
     resp = await http.get("/api/shifts", headers=auth(raw))
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_delete_account_erases_user_and_data(http, user_a):
+    token = user_a["token"]
+    # Seed some data for the user
+    await http.post(
+        "/api/shifts",
+        json={"date": "2026-09-01", "shift_type": "Diurno"},
+        headers=auth(token),
+    )
+
+    resp = await http.delete("/api/auth/account", headers=auth(token))
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["message"] == "Account deleted"
+
+    # Token is now invalid (sessions deleted) and the user is gone
+    me = await http.get("/api/auth/me", headers=auth(token))
+    assert me.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_delete_account_requires_bearer(http, user_a):
+    # Cookie-only must be rejected (CSRF-safe, like other destructive endpoints)
+    resp = await http.delete(
+        "/api/auth/account", cookies={"session_token": user_a["token"]}
+    )
+    assert resp.status_code == 403
+
+
+def test_pii_crypto_roundtrip_and_legacy_passthrough(monkeypatch):
+    """PII layer: no-op without key; encrypt/decrypt round-trips; legacy plaintext passes through."""
+    import importlib
+    from cryptography.fernet import Fernet
+    from security import crypto
+
+    # No key -> strict no-op
+    monkeypatch.delenv("PII_ENC_KEY", raising=False)
+    crypto._fernet_cache = crypto._UNSET
+    plain = {"full_name": "Joao", "tax_id": "123", "role": "suspeito"}
+    assert crypto.encrypt_person(plain) == plain
+    assert crypto.decrypt_person(plain) == plain
+
+    # With key -> encrypt at rest, decrypt transparently, never mutate input
+    monkeypatch.setenv("PII_ENC_KEY", Fernet.generate_key().decode())
+    crypto._fernet_cache = crypto._UNSET
+    enc = crypto.encrypt_person(plain)
+    assert enc["full_name"].startswith("enc::")
+    assert enc["role"] == "suspeito"  # non-PII untouched
+    assert plain["full_name"] == "Joao"  # input not mutated
+    assert crypto.decrypt_person(enc) == plain
+    # Legacy plaintext (no sentinel) still passes through unchanged
+    assert crypto.decrypt_person({"full_name": "PlainLegacy"}) == {"full_name": "PlainLegacy"}
+    crypto._fernet_cache = crypto._UNSET
