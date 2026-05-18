@@ -40,6 +40,5 @@ COPY auth/ auth/
 COPY models/ models/
 COPY routers/ routers/
 COPY reporting/ reporting/
-COPY templates/ templates/
 
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
