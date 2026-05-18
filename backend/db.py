@@ -109,6 +109,7 @@ async def lifespan(app):
         await _ensure_index(db.shift_types, "user_id")
         await _ensure_index(db.cycles, "user_id")
         await _ensure_index(db.gratified_entries, [("user_id", 1), ("date", 1)])
+        await _ensure_index(db.events, [("user_id", 1), ("date", 1)])
     else:
         # --- Normal startup: idempotent, never drops anything ---
         await _ensure_index_safe(db.users, "email", unique=True)
@@ -119,5 +120,6 @@ async def lifespan(app):
         await _ensure_index_safe(db.shift_types, "user_id")
         await _ensure_index_safe(db.cycles, "user_id")
         await _ensure_index_safe(db.gratified_entries, [("user_id", 1), ("date", 1)])
+        await _ensure_index_safe(db.events, [("user_id", 1), ("date", 1)])
     yield
     client.close()
