@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as api from '../services/api';
 import { storage } from '../utils/storage';
-import { ShiftTypeConfig, Shift, Gratification } from '../types';
+import { ShiftTypeConfig, Shift, Gratification, CalendarEvent } from '../types';
 import { Occurrence } from '../types/occurrence';
 
 const STORAGE_KEY = 'app_data';
@@ -72,6 +72,7 @@ interface DataStore {
   shiftTypes: ShiftTypeConfig[];
   gratifications: Gratification[];
   cycles: Cycle[];
+  events: CalendarEvent[];
   occurrences: Occurrence[];
   gratifiedConfig: GratifiedConfig;
   gratifiedTemplates: GratifiedTemplate[];
@@ -122,6 +123,11 @@ interface DataStore {
   updateCycle: (id: string, data: { name?: string; pattern?: string[] }) => Promise<void>;
   deleteCycle: (id: string) => Promise<void>;
 
+  fetchEvents: (month?: string) => Promise<void>;
+  createEvent: (data: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>) => Promise<CalendarEvent>;
+  updateEvent: (id: string, data: Partial<CalendarEvent>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
+
   setGratifiedConfig: (partial: Partial<GratifiedConfig>) => Promise<void>;
   upsertGratifiedTemplate: (template: GratifiedTemplate) => Promise<void>;
   deleteGratifiedTemplate: (name: string) => Promise<void>;
@@ -154,6 +160,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   shiftTypes: [],
   gratifications: [],
   cycles: [],
+  events: [],
   occurrences: [],
   gratifiedConfig: DEFAULT_GRATIFIED_CONFIG,
   gratifiedTemplates: [],
@@ -165,7 +172,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   setCurrentYear: (year) => set({ currentYear: year }),
 
   clearSyncedCollections: () =>
-    set({ shifts: [], gratifications: [], occurrences: [], cycles: [], gratifiedEntries: [] }),
+    set({ shifts: [], gratifications: [], occurrences: [], cycles: [], events: [], gratifiedEntries: [] }),
 
   // ==================== OCCURRENCES ====================
 
@@ -314,8 +321,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   resetCalendarData: async () => {
-    await Promise.all([api.resetShifts(), api.resetCycles()]);
-    set({ shifts: [], shiftTypes: [], cycles: [] });
+    await Promise.all([api.resetShifts(), api.resetCycles(), api.resetEvents()]);
+    set({ shifts: [], shiftTypes: [], cycles: [], events: [] });
     await get().saveData();
   },
 
@@ -485,6 +492,33 @@ export const useDataStore = create<DataStore>((set, get) => ({
     } catch (error) {
       console.warn('[dataStore] deleteCycle API failed (local already removed):', error);
     }
+  },
+
+  // ==================== EVENTS ====================
+
+  fetchEvents: async (month) => {
+    try {
+      const result = await api.getEvents(month);
+      set({ events: result });
+    } catch (error) {
+      console.warn('[dataStore] fetchEvents failed:', error);
+    }
+  },
+
+  createEvent: async (data) => {
+    const created = await api.createEventApi(data);
+    set((state) => ({ events: [created, ...state.events] }));
+    return created;
+  },
+
+  updateEvent: async (id, data) => {
+    const updated = await api.updateEventApi(id, data);
+    set((state) => ({ events: state.events.map((e) => (e.id === id ? updated : e)) }));
+  },
+
+  deleteEvent: async (id) => {
+    await api.deleteEventApi(id);
+    set((state) => ({ events: state.events.filter((e) => e.id !== id) }));
   },
 
   // ==================== GRATIFIED CONFIG ====================

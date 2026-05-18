@@ -100,6 +100,11 @@ export default function RootLayout() {
           } catch (err) {
             console.warn('[init] fetchGratifiedEntries error:', err);
           }
+          try {
+            await useDataStore.getState().fetchEvents();
+          } catch (err) {
+            console.warn('[init] fetchEvents error:', err);
+          }
         }
       } catch (err) {
         console.error('[init] Init error:', err);

@@ -1,5 +1,5 @@
 import { storage } from '../utils/storage';
-import { ShiftTypeConfig, Shift, Gratification } from '../types';
+import { ShiftTypeConfig, Shift, Gratification, CalendarEvent } from '../types';
 import { Occurrence } from '../types/occurrence';
 
 if (!process.env.EXPO_PUBLIC_API_URL) {
@@ -309,4 +309,47 @@ export const createGratifiedEntryApi = async (data: Omit<GratifiedEntryApi, 'id'
 export const deleteGratifiedEntryApi = async (id: string): Promise<void> => {
   const response = await apiFetch(`${API_BASE_URL}/gratified-entries/${id}`, { method: 'DELETE' });
   if (!response.ok && response.status !== 404) throw new Error(`Failed to delete gratified entry: ${response.statusText}`);
+};
+
+// ==================== EVENTS ====================
+
+export const getEvents = async (month?: string): Promise<CalendarEvent[]> => {
+  const url = month
+    ? `${API_BASE_URL}/events?month=${encodeURIComponent(month)}`
+    : `${API_BASE_URL}/events`;
+  const response = await apiFetch(url, { method: 'GET' });
+  if (!response.ok) throw new Error(`Failed to fetch events: ${response.statusText}`);
+  return response.json();
+};
+
+export const createEventApi = async (
+  data: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>
+): Promise<CalendarEvent> => {
+  const response = await apiFetch(`${API_BASE_URL}/events`, { method: 'POST', body: JSON.stringify(data) });
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+    } catch { /* ignore parse error */ }
+    throw new Error(`[${response.status}] ${detail}`);
+  }
+  return response.json();
+};
+
+export const updateEventApi = async (id: string, data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
+  const response = await apiFetch(`${API_BASE_URL}/events/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  if (!response.ok) throw new Error(`Failed to update event: ${response.statusText}`);
+  return response.json();
+};
+
+export const deleteEventApi = async (id: string): Promise<void> => {
+  const response = await apiFetch(`${API_BASE_URL}/events/${id}`, { method: 'DELETE' });
+  if (!response.ok && response.status !== 404) throw new Error(`Failed to delete event: ${response.statusText}`);
+};
+
+export const resetEvents = async () => {
+  const response = await apiFetch(`${API_BASE_URL}/events/reset`, { method: 'POST' });
+  if (!response.ok) throw new Error(`Failed to reset events: ${response.statusText}`);
+  return response.json();
 };

@@ -33,6 +33,18 @@ export interface Shift {
   created_at?: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  user_id: string;
+  date: string;
+  title: string;
+  start_time?: string;
+  end_time?: string;
+  location?: string;
+  note?: string;
+  created_at?: string;
+}
+
 export type GratificationType = 'hora_extra' | 'gratificacao' | 'premio';
 
 export interface Gratification {

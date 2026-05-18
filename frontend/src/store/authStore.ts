@@ -71,6 +71,11 @@ async function initializeData(): Promise<void> {
   } catch (e) {
     console.warn('[auth] fetchGratifiedEntries error:', e);
   }
+  try {
+    await useDataStore.getState().fetchEvents();
+  } catch (e) {
+    console.warn('[auth] fetchEvents error:', e);
+  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
