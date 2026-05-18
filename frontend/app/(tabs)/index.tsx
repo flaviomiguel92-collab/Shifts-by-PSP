@@ -539,54 +539,6 @@ export default function CalendarScreen() {
     setPaintMode(false);
   };
 
-  const handleCopyWeek = async () => {
-    const refDate = new Date(currentMonth + '-01T12:00:00');
-    const dayOfWeek = refDate.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(refDate);
-    monday.setDate(refDate.getDate() + mondayOffset);
-
-    const weekShifts: { date: string; shift_type: string; start_time?: string; end_time?: string; note?: string }[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const shift = shiftsMap.get(dateStr);
-      if (shift) {
-        weekShifts.push({
-          date: dateStr,
-          shift_type: shift.shift_type,
-          start_time: shift.start_time,
-          end_time: shift.end_time,
-          note: shift.note,
-        });
-      }
-    }
-
-    if (weekShifts.length === 0) {
-      toast.warning('Sem turnos nesta semana para copiar');
-      return;
-    }
-
-    const nextWeekItems = weekShifts.map((s) => {
-      const d = new Date(s.date + 'T12:00:00');
-      d.setDate(d.getDate() + 7);
-      return {
-        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-        shift_type: s.shift_type,
-      };
-    });
-
-    try {
-      setIsOptionsExpanded(false);
-      await bulkUpsertShifts(nextWeekItems);
-      await fetchShifts(currentMonth);
-      toast.success(`${nextWeekItems.length} turno(s) copiado(s) para a semana seguinte`);
-    } catch {
-      toast.error('Erro ao copiar semana');
-    }
-  };
-
   const isInCycleRange = (dateStr: string) => {
     if (!cycleStartDate || editMode !== 'cycle_end') return false;
     return dateStr >= cycleStartDate;
@@ -959,22 +911,6 @@ export default function CalendarScreen() {
               contentContainerStyle={styles.optionsPanelContent}
               keyboardShouldPersistTaps="handled"
             >
-              <View style={styles.optionsPanelSection}>
-                <Text style={styles.optionsSectionTitle}>Ações rápidas</Text>
-                <TouchableOpacity style={styles.copyWeekBtn} onPress={handleCopyWeek} activeOpacity={0.8}>
-                  <View style={styles.copyWeekIcon}>
-                    <Ionicons name="copy-outline" size={16} color="#60A5FA" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.copyWeekLabel}>Copiar semana para próxima</Text>
-                    <Text style={styles.copyWeekHint}>Copia todos os turnos desta semana para a semana seguinte</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={14} color="#475569" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.optionsDivider} />
-
               <View style={styles.optionsPanelSection}>
                 <Text style={styles.optionsSectionTitle}>Ciclos</Text>
                 <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
