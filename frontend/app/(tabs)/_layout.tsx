@@ -61,23 +61,7 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
-        tabBar={(props) => (
-          <>
-            {/* Hide tab bar while painting — keeps it mounted so expo-router
-                doesn't fall back to its default implementation */}
-            {!paintActive && <CustomTabBar {...props} />}
-            {/* PaintModeBar lives here (same render context as CustomTabBar)
-                so z-index stacking is reliable and there are no competing
-                touch targets when paint mode is active */}
-            <PaintModeBar
-              visible={paintActive}
-              shiftTypes={shiftTypes}
-              selectedType={paintShiftType}
-              onSelectType={setShiftType}
-              onExit={() => setActive(false)}
-            />
-          </>
-        )}
+        tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{ headerShown: false }}
       >
         <Tabs.Screen name="index" />
@@ -87,6 +71,17 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" />
       </Tabs>
       <SearchModal />
+      {/* PaintModeBar must be at root level — position:absolute here is
+          relative to the full screen, not the tabBar container (~60px).
+          Inside tabBar prop, bottom:86 would position it above that small
+          container, overlapping screen content even when hidden. */}
+      <PaintModeBar
+        visible={paintActive}
+        shiftTypes={shiftTypes}
+        selectedType={paintShiftType}
+        onSelectType={setShiftType}
+        onExit={() => setActive(false)}
+      />
     </>
   );
 }
