@@ -1149,21 +1149,7 @@ export default function CalendarScreen() {
         }
         title={detailItem?.title || ''}
         subtitle={detailItem?.time}
-        rows={(() => {
-          if (!detailItem) return [];
-          const [start = '—', end = '—'] = (detailItem.time || '').split(' – ');
-          if (detailItem.kind === 'grat') {
-            return [
-              { label: 'Início', value: start },
-              { label: 'Fim', value: end },
-              { label: 'Valor', value: 'Calculado automaticamente' },
-            ];
-          }
-          return [
-            { label: 'Início', value: start },
-            { label: 'Fim', value: end },
-          ];
-        })()}
+        rows={[]}
         note={
           detailItem?.kind === 'shift'
             ? 'Remove apenas a aplicação deste dia. O turno continua na lista de turnos.'

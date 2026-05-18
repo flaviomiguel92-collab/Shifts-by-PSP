@@ -77,14 +77,16 @@ export function DetailSheet({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.body}>
-            {rows.map((r, i) => (
-              <View key={i} style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{r.label}</Text>
-                <Text style={styles.infoValue}>{r.value}</Text>
-              </View>
-            ))}
-          </View>
+          {rows.length > 0 && (
+            <View style={styles.body}>
+              {rows.map((r, i) => (
+                <View key={i} style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{r.label}</Text>
+                  <Text style={styles.infoValue}>{r.value}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={styles.actions}>
             {onEdit && (
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: { color: '#9CA3AF' },
   infoValue: { color: '#F1F5F9', fontWeight: '700' },
-  actions: { flexDirection: 'row', gap: 12, paddingHorizontal: 18 },
+  actions: { flexDirection: 'row', gap: 12, paddingHorizontal: 18, paddingTop: 18 },
   editBtn: {
     flex: 1,
     backgroundColor: '#374151',
