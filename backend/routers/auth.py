@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pymongo.errors import DuplicateKeyError
 
 import db as _db
 from auth.dependencies import get_current_user
@@ -34,7 +35,10 @@ async def register(data: RegisterRequest, request: Request, response: Response):
         "password_hash": password_hash,
         "created_at": datetime.now(timezone.utc),
     }
-    await _db.db.users.insert_one(user)
+    try:
+        await _db.db.users.insert_one(user)
+    except DuplicateKeyError:
+        raise HTTPException(status_code=400, detail="Email já registado")
     session_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(session_token.encode()).hexdigest()
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
@@ -46,10 +50,6 @@ async def register(data: RegisterRequest, request: Request, response: Response):
         "created_at": datetime.now(timezone.utc),
     }
     await _db.db.user_sessions.insert_one(session)
-    response.set_cookie(
-        key="session_token", value=session_token,
-        httponly=True, path="/", max_age=7 * 24 * 60 * 60, **_cookie_flags()
-    )
     return {
         "user": {
             "user_id": user_id,
@@ -82,10 +82,6 @@ async def login(data: LoginRequest, request: Request, response: Response):
         "created_at": datetime.now(timezone.utc),
     }
     await _db.db.user_sessions.insert_one(session)
-    response.set_cookie(
-        key="session_token", value=session_token,
-        httponly=True, path="/", max_age=7 * 24 * 60 * 60, **_cookie_flags()
-    )
     return {
         "user": {
             "user_id": user_id,
@@ -106,10 +102,7 @@ async def get_me(user: User = Depends(get_current_user)):
 @router.post("/auth/logout")
 async def logout(request: Request, response: Response):
     auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        session_token = auth_header[7:]
-    else:
-        session_token = request.cookies.get("session_token")
+    session_token = auth_header[7:] if auth_header and auth_header.startswith("Bearer ") else None
     if session_token:
         token_hash = hashlib.sha256(session_token.encode()).hexdigest()
         await _db.db.user_sessions.delete_many({"session_token": token_hash})
@@ -119,11 +112,8 @@ async def logout(request: Request, response: Response):
 
 @router.get("/auth/sessions")
 async def list_sessions(request: Request, user: User = Depends(get_current_user)):
-    raw_token = request.cookies.get("session_token")
-    if not raw_token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            raw_token = auth_header[7:]
+    auth_header = request.headers.get("Authorization")
+    raw_token = auth_header[7:] if auth_header and auth_header.startswith("Bearer ") else None
     current_hash = hashlib.sha256(raw_token.encode()).hexdigest() if raw_token else None
     sessions = await _db.db.user_sessions.find(
         {"user_id": user.user_id},

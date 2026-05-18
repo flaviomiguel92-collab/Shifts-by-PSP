@@ -12,7 +12,14 @@ _TESTING = os.environ.get('TESTING', '') == 'true'
 _AUTH_RATE = "9999/minute" if _TESTING else "5/minute"
 _REPORT_RATE = "9999/minute" if _TESTING else "3/minute"
 
-limiter = Limiter(key_func=get_remote_address)
+# Behind Render's reverse proxy, request.client.host is the proxy IP for every user, not the real client.
+def _client_ip_key(request) -> str:
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return get_remote_address(request)
+
+limiter = Limiter(key_func=_client_ip_key)
 
 # ── Environment ────────────────────────────────────────────────────────────────
 _IS_PRODUCTION = os.environ.get('ENVIRONMENT', '').lower() == 'production'

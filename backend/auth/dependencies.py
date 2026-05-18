@@ -31,11 +31,9 @@ async def _validate_session(session_token: str) -> User:
 
 async def get_current_user(request: Request) -> User:
     auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        session_token = auth_header[7:]
-    else:
-        session_token = request.cookies.get("session_token")
-    return await _validate_session(session_token)
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return await _validate_session(auth_header[7:])
 
 
 async def require_header_auth(request: Request) -> User:

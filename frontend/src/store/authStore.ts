@@ -36,7 +36,6 @@ interface AuthState {
   checkAuth: () => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
-  exchangeSession: (sessionId: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -112,10 +111,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!response.ok) {
-        // Erro do servidor (503, 502, etc.) — cold start ou indisponibilidade temporária
-        console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
-        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
-        return true;
+        // Erro do servidor (503, 502, etc.) — cold start ou indisponibilidade temporária.
+        // Não afirmar autenticado com token não validado; aguardar próximo checkAuth.
+        console.warn(`[checkAuth] Server error ${response.status} — token retido, sessão suspensa`);
+        set({ isLoading: false });
+        return false;
       }
 
       const userData = await response.json();
@@ -225,47 +225,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error('Register error:', error);
       set({ isLoading: false });
       throw error;
-    }
-  },
-
-  exchangeSession: async (sessionId: string) => {
-    try {
-      set({ isLoading: true });
-
-      const response = await fetch(`${API_URL}/api/auth/session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ session_id: sessionId }),
-        credentials: 'include',
-      });
-
-      assertJsonResponse(response);
-
-      if (!response.ok) {
-        set({ isLoading: false });
-        return false;
-      }
-
-      const data = await response.json();
-
-      // Store session token
-      await storage.setItem('session_token', data.session_token);
-      await initializeData();
-
-      set({
-        user: data.user,
-        isAuthenticated: true,
-        isLoading: false,
-        sessionToken: data.session_token
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Session exchange error:', error);
-      set({ isLoading: false });
-      return false;
     }
   },
 
