@@ -363,26 +363,30 @@ export default function CalendarScreen() {
 
   const handleShiftDelete = () => {
     if (!selectedShift) return;
+    const doDelete = async () => {
+      try {
+        await deleteShift(selectedShift.id);
+        await fetchShifts(currentMonth);
+        setShowShiftModal(false);
+        setPopupDay(null);
+        toast.success('Turno eliminado');
+      } catch {
+        toast.error('Não foi possível eliminar o turno');
+      }
+    };
+    // RN Web's Alert.alert does not invoke button onPress callbacks.
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Tem a certeza que quer eliminar este turno?')) {
+        doDelete();
+      }
+      return;
+    }
     Alert.alert(
       'Eliminar turno',
       'Tem a certeza que quer eliminar este turno?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteShift(selectedShift.id);
-              await fetchShifts(currentMonth);
-              setShowShiftModal(false);
-              setPopupDay(null);
-              toast.success('Turno eliminado');
-            } catch {
-              toast.error('Não foi possível eliminar o turno');
-            }
-          },
-        },
+        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
       ]
     );
   };

@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore, Cycle } from '../store/dataStore';
@@ -62,18 +63,23 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editin
 
   const handleDelete = () => {
     if (!editingCycle) return;
+    const doDelete = async () => {
+      await deleteCycle(editingCycle.id);
+      onClose();
+    };
+    // RN Web's Alert.alert does not invoke button onPress callbacks.
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Tens a certeza que queres apagar "${editingCycle.name}"?`)) {
+        doDelete();
+      }
+      return;
+    }
     Alert.alert(
       'Apagar ciclo',
       `Tens a certeza que queres apagar "${editingCycle.name}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Apagar', style: 'destructive',
-          onPress: async () => {
-            await deleteCycle(editingCycle.id);
-            onClose();
-          },
-        },
+        { text: 'Apagar', style: 'destructive', onPress: doDelete },
       ]
     );
   };

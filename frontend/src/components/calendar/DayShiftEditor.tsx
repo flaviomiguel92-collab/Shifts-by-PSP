@@ -82,16 +82,20 @@ export function DayShiftEditor({
   };
 
   const handleDelete = () => {
+    const doDelete = () => {
+      onDelete?.();
+      onClose();
+    };
+    // RN Web's Alert.alert does not invoke button onPress callbacks.
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Remover o turno deste dia?')) {
+        doDelete();
+      }
+      return;
+    }
     Alert.alert('Remover turno', 'Remover o turno deste dia?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: () => {
-          onDelete?.();
-          onClose();
-        },
-      },
+      { text: 'Remover', style: 'destructive', onPress: doDelete },
     ]);
   };
 
