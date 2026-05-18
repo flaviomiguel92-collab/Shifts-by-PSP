@@ -32,13 +32,9 @@ RUN apt-get update \
 # Ensure .local/bin is in PATH
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy only application code (exclude tests, .env, etc.)
-COPY server.py .
-COPY config.py .
-COPY db.py .
-COPY auth/ auth/
-COPY models/ models/
-COPY routers/ routers/
-COPY reporting/ reporting/
+# Copy the whole backend (a .dockerignore excludes tests/.env/caches).
+# Selective COPY previously broke deploys whenever a new module dir was
+# added (templates, then security/) — copying all + ignore is robust.
+COPY . .
 
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]

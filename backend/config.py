@@ -24,12 +24,14 @@ limiter = Limiter(key_func=_client_ip_key)
 # ── Environment ────────────────────────────────────────────────────────────────
 _IS_PRODUCTION = os.environ.get('ENVIRONMENT', '').lower() == 'production'
 
-# Session lifetime (days). Operators can tighten this without a code change;
-# a full refresh-token rotation model is intentionally a separate product decision.
+# Session lifetime (days). Sliding renewal (see auth.dependencies) keeps
+# actively-used sessions alive indefinitely; this is the idle ceiling before
+# a totally unused session expires. Default 30 so infrequent use never logs
+# the user out. Operators can override via env without a code change.
 try:
-    SESSION_TTL_DAYS = max(1, int(os.environ.get('SESSION_TTL_DAYS', '7')))
+    SESSION_TTL_DAYS = max(1, int(os.environ.get('SESSION_TTL_DAYS', '30')))
 except ValueError:
-    SESSION_TTL_DAYS = 7
+    SESSION_TTL_DAYS = 30
 
 CORS_ORIGINS = os.environ.get(
     'CORS_ORIGINS',
