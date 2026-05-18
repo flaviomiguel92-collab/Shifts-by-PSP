@@ -8,3 +8,9 @@ services:
     envVars:
       - key: PORT
         value: 8000
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: shiftextra_db
+      - key: ENVIRONMENT
+        value: production
