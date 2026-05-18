@@ -14,7 +14,7 @@ router = APIRouter()
 async def get_monthly_stats(month: str, user: User = Depends(get_current_user)):
     validate_month_format(month)
     gratifications = await _db.db.gratifications.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{month}"}}, {"_id": 0}
+        {"user_id": user.user_id, "date": {"$gte": f"{month}-01", "$lte": f"{month}-31"}}, {"_id": 0}
     ).to_list(1000)
     total = sum(g["value"] for g in gratifications)
     count = len(gratifications)
@@ -26,7 +26,7 @@ async def get_monthly_stats(month: str, user: User = Depends(get_current_user)):
         by_type[gtype]["total"] += g["value"]
         by_type[gtype]["count"] += 1
     shifts = await _db.db.shifts.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{month}"}}, {"_id": 0}
+        {"user_id": user.user_id, "date": {"$gte": f"{month}-01", "$lte": f"{month}-31"}}, {"_id": 0}
     ).to_list(1000)
     shifts_by_type: dict = {}
     for s in shifts:
@@ -48,7 +48,7 @@ async def get_monthly_stats(month: str, user: User = Depends(get_current_user)):
 async def get_yearly_stats(year: str, user: User = Depends(get_current_user)):
     validate_year_format(year)
     gratifications = await _db.db.gratifications.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{year}"}}, {"_id": 0}
+        {"user_id": user.user_id, "date": {"$gte": f"{year}-01-01", "$lte": f"{year}-12-31"}}, {"_id": 0}
     ).to_list(1000)
     total = sum(g["value"] for g in gratifications)
     count = len(gratifications)
@@ -83,7 +83,7 @@ async def get_comparison_stats(user: User = Depends(get_current_user)):
         month_date = today - timedelta(days=30 * i)
         month_str = month_date.strftime("%Y-%m")
         gratifications = await _db.db.gratifications.find(
-            {"user_id": user.user_id, "date": {"$regex": f"^{month_str}"}}, {"_id": 0}
+            {"user_id": user.user_id, "date": {"$gte": f"{month_str}-01", "$lte": f"{month_str}-31"}}, {"_id": 0}
         ).to_list(1000)
         total = sum(g["value"] for g in gratifications)
         months_data.append({"month": month_str, "total": total, "count": len(gratifications)})
@@ -95,11 +95,11 @@ async def get_dashboard_stats(user: User = Depends(get_current_user)):
     current_year = str(datetime.now().year)
     current_month = datetime.now().strftime("%Y-%m")
     monthly_grats = await _db.db.gratifications.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{current_month}"}}, {"_id": 0}
+        {"user_id": user.user_id, "date": {"$gte": f"{current_month}-01", "$lte": f"{current_month}-31"}}, {"_id": 0}
     ).to_list(1000)
     monthly_total = sum(g["value"] for g in monthly_grats)
     yearly_grats = await _db.db.gratifications.find(
-        {"user_id": user.user_id, "date": {"$regex": f"^{current_year}"}}, {"_id": 0}
+        {"user_id": user.user_id, "date": {"$gte": f"{current_year}-01-01", "$lte": f"{current_year}-12-31"}}, {"_id": 0}
     ).to_list(1000)
     yearly_total = sum(g["value"] for g in yearly_grats)
     return {

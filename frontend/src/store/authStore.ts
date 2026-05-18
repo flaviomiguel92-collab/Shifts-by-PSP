@@ -40,6 +40,38 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
+/** Valida a password no frontend antes de enviar ao servidor */
+export function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'A password deve ter pelo menos 8 caracteres';
+  if (!/[A-Z]/.test(password)) return 'A password deve conter pelo menos uma letra maiúscula';
+  if (!/\d/.test(password)) return 'A password deve conter pelo menos um número';
+  return null;
+}
+
+async function initializeData(): Promise<void> {
+  useDataStore.getState().clearSyncedCollections();
+  try {
+    await useDataStore.getState().loadData();
+  } catch (e) {
+    console.warn('[auth] loadData error:', e);
+  }
+  try {
+    await useDataStore.getState().fetchShiftTypes();
+  } catch (e) {
+    console.warn('[auth] fetchShiftTypes error:', e);
+  }
+  try {
+    await useDataStore.getState().fetchCycles();
+  } catch (e) {
+    console.warn('[auth] fetchCycles error:', e);
+  }
+  try {
+    await useDataStore.getState().fetchGratifiedEntries();
+  } catch (e) {
+    console.warn('[auth] fetchGratifiedEntries error:', e);
+  }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
@@ -72,7 +104,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (response.status === 401) {
-        // Token genuinely invalid — clear it
+        // Token genuinamente inválido — limpar
         await storage.removeItem('session_token');
         useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
@@ -80,9 +112,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!response.ok) {
-        // Server error (503, 502, etc.) — backend cold start or temporary outage.
-        // Keep the token and treat as authenticated so the user isn't logged out.
-        console.warn(`[checkAuth] Server error ${response.status} — keeping session`);
+        // Erro do servidor (503, 502, etc.) — cold start ou indisponibilidade temporária
+        console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
         set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
         return true;
       }
@@ -96,8 +127,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       return true;
     } catch (error) {
-      // Network error (offline, timeout) — keep the token, don't log out.
-      console.warn('[checkAuth] Network error — keeping session:', error);
+      // Erro de rede (offline, timeout) — manter token, não deslogar
+      console.warn('[checkAuth] Network error — a manter sessão:', error);
       const storedToken = await storage.getItem('session_token');
       if (storedToken) {
         set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
@@ -125,34 +156,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(extractDetail(error) || 'Login failed');
+        throw new Error(extractDetail(error) || 'Falha no login');
       }
 
       const data = await response.json();
 
       // Store session token
       await storage.setItem('session_token', data.session_token);
-      useDataStore.getState().clearSyncedCollections();
-      try {
-        await useDataStore.getState().loadData();
-      } catch (e) {
-        console.warn('[auth] loadData after login:', e);
-      }
-      try {
-        await useDataStore.getState().fetchShiftTypes();
-      } catch (e) {
-        console.warn('[auth] fetchShiftTypes after login:', e);
-      }
-      try {
-        await useDataStore.getState().fetchCycles();
-      } catch (e) {
-        console.warn('[auth] fetchCycles after login:', e);
-      }
-      try {
-        await useDataStore.getState().fetchGratifiedEntries();
-      } catch (e) {
-        console.warn('[auth] fetchGratifiedEntries after login:', e);
-      }
+      await initializeData();
 
       set({
         user: data.user,
@@ -170,6 +181,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   register: async (name: string, email: string, password: string) => {
+    // Validar password no frontend antes de enviar
+    const pwError = validatePassword(password);
+    if (pwError) {
+      set({ isLoading: false });
+      throw new Error(pwError);
+    }
+
     try {
       set({ isLoading: true });
 
@@ -186,34 +204,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(extractDetail(error) || 'Registration failed');
+        throw new Error(extractDetail(error) || 'Falha no registo');
       }
 
       const data = await response.json();
 
       // Store session token
       await storage.setItem('session_token', data.session_token);
-      useDataStore.getState().clearSyncedCollections();
-      try {
-        await useDataStore.getState().loadData();
-      } catch (e) {
-        console.warn('[auth] loadData after register:', e);
-      }
-      try {
-        await useDataStore.getState().fetchShiftTypes();
-      } catch (e) {
-        console.warn('[auth] fetchShiftTypes after register:', e);
-      }
-      try {
-        await useDataStore.getState().fetchCycles();
-      } catch (e) {
-        console.warn('[auth] fetchCycles after register:', e);
-      }
-      try {
-        await useDataStore.getState().fetchGratifiedEntries();
-      } catch (e) {
-        console.warn('[auth] fetchGratifiedEntries after register:', e);
-      }
+      await initializeData();
 
       set({
         user: data.user,
@@ -254,27 +252,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Store session token
       await storage.setItem('session_token', data.session_token);
-      useDataStore.getState().clearSyncedCollections();
-      try {
-        await useDataStore.getState().loadData();
-      } catch (e) {
-        console.warn('[auth] loadData after session exchange:', e);
-      }
-      try {
-        await useDataStore.getState().fetchShiftTypes();
-      } catch (e) {
-        console.warn('[auth] fetchShiftTypes after session exchange:', e);
-      }
-      try {
-        await useDataStore.getState().fetchCycles();
-      } catch (e) {
-        console.warn('[auth] fetchCycles after session exchange:', e);
-      }
-      try {
-        await useDataStore.getState().fetchGratifiedEntries();
-      } catch (e) {
-        console.warn('[auth] fetchGratifiedEntries after session exchange:', e);
-      }
+      await initializeData();
 
       set({
         user: data.user,

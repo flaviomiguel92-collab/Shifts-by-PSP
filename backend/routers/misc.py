@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 import db as _db
 from auth.dependencies import require_header_auth
+from config import limiter
 from models.auth import User
 
 router = APIRouter()
@@ -20,7 +21,8 @@ async def health_check():
 
 
 @router.post("/cleanup/all-data")
-async def cleanup_all_data(user: User = Depends(require_header_auth)):
+@limiter.limit("1/minute")
+async def cleanup_all_data(request: Request, user: User = Depends(require_header_auth)):
     try:
         user_filter = {"user_id": user.user_id}
         shifts_deleted = await _db.db.shifts.delete_many(user_filter)

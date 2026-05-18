@@ -1,10 +1,12 @@
+import base64
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
+from config import limiter
 from models.auth import User
 from models.occurrences import Occurrence, OccurrenceCreate, OccurrenceUpdate, PersonCreate, PersonInOccurrence
 
@@ -12,7 +14,8 @@ router = APIRouter()
 
 
 @router.post("/occurrences/reset")
-async def reset_all_occurrences(user: User = Depends(require_header_auth)):
+@limiter.limit("2/minute")
+async def reset_all_occurrences(request: Request, user: User = Depends(require_header_auth)):
     result = await _db.db.occurrences.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} occurrences"}
 
@@ -145,6 +148,24 @@ async def add_photo_to_occurrence(
     photo_base64 = photo_data.get("photo")
     if not photo_base64:
         raise HTTPException(status_code=400, detail="Photo data required")
+
+    # Validate base64 content is a real image (check magic bytes)
+    try:
+        decoded = base64.b64decode(photo_base64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Base64 inválido")
+    if len(decoded) < 12:
+        raise HTTPException(status_code=400, detail="Dados de imagem inválidos")
+    magic = decoded[:8]
+    is_valid_image = any([
+        magic.startswith(b'\xff\xd8\xff'),           # JPEG
+        decoded[:8] == b'\x89PNG\r\n\x1a\n',          # PNG
+        magic.startswith(b'GIF87a') or magic.startswith(b'GIF89a'),  # GIF
+        decoded[:4] == b'RIFF' and decoded[4:8] == b'WEB',          # WebP
+    ])
+    if not is_valid_image:
+        raise HTTPException(status_code=400, detail="Formato de imagem inválido. Use JPEG, PNG, GIF ou WebP")
+
     await _db.db.occurrences.update_one(
         {"id": occurrence_id, "user_id": user.user_id},
         {"$push": {"photos": photo_base64}, "$set": {"updated_at": datetime.now(timezone.utc)}},

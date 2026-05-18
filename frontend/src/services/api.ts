@@ -32,7 +32,7 @@ const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> 
 
 export const createOccurrence = async (data: Partial<Occurrence>): Promise<Occurrence> => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences`, { method: 'POST', body: JSON.stringify(data) });
-  if (!response.ok) throw new Error(`Failed to create occurrence: ${response.statusText}`);
+  if (!response.ok) throw new Error(`Erro ao criar ocorrência: ${response.statusText}`);
   return response.json();
 };
 
@@ -43,19 +43,19 @@ export const getOccurrences = async (status?: string, classification?: string) =
   if (classification) params.append('classification', classification);
   if (params.toString()) url += `?${params.toString()}`;
   const response = await apiFetch(url, { method: 'GET' });
-  if (!response.ok) throw new Error(`Failed to fetch occurrences: ${response.statusText}`);
+  if (!response.ok) throw new Error(`Erro ao obter ocorrências: ${response.statusText}`);
   return response.json();
 };
 
 export const updateOccurrence = async (id: string, data: Partial<Occurrence>): Promise<Occurrence> => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  if (!response.ok) throw new Error(`Failed to update occurrence: ${response.statusText}`);
+  if (!response.ok) throw new Error(`Erro ao atualizar ocorrência: ${response.statusText}`);
   return response.json();
 };
 
 export const deleteOccurrence = async (id: string) => {
   const response = await apiFetch(`${API_BASE_URL}/occurrences/${id}`, { method: 'DELETE' });
-  if (!response.ok) throw new Error(`Failed to delete occurrence: ${response.statusText}`);
+  if (!response.ok) throw new Error(`Erro ao eliminar ocorrência: ${response.statusText}`);
   return response.json();
 };
 

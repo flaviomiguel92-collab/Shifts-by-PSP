@@ -1,9 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
+from config import limiter
 from models.auth import User
 from models.cycles import CustomCycle, CustomCycleCreate, CustomCycleUpdate
 
@@ -24,7 +25,8 @@ async def create_cycle(cycle_data: CustomCycleCreate, user: User = Depends(get_c
 
 
 @router.post("/cycles/reset")
-async def reset_all_cycles(user: User = Depends(require_header_auth)):
+@limiter.limit("2/minute")
+async def reset_all_cycles(request: Request, user: User = Depends(require_header_auth)):
     result = await _db.db.cycles.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} cycles"}
 

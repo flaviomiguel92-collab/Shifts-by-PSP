@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
-from config import validate_date_format, validate_month_format, validate_year_format
+from config import validate_date_format, validate_month_format, validate_year_format, limiter
 from models.auth import User
 from models.gratifications import (
     Gratification,
@@ -21,16 +21,19 @@ router = APIRouter()
 async def get_gratifications(
     month: Optional[str] = None,
     year: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 100,
     user: User = Depends(get_current_user),
 ):
     query = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
-        query["date"] = {"$regex": f"^{month}"}
+        query["date"] = {"$gte": f"{month}-01", "$lte": f"{month}-31"}
     elif year:
         validate_year_format(year)
-        query["date"] = {"$regex": f"^{year}"}
-    gratifications = await _db.db.gratifications.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
+        query["date"] = {"$gte": f"{year}-01-01", "$lte": f"{year}-12-31"}
+    skip = (page - 1) * per_page if page > 0 else 0
+    gratifications = await _db.db.gratifications.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(per_page).to_list(length=None)
     return gratifications
 
 
@@ -69,12 +72,18 @@ async def delete_gratification(grat_id: str, user: User = Depends(get_current_us
 
 
 @router.get("/gratified-entries", response_model=List[dict])
-async def get_gratified_entries(month: Optional[str] = None, user: User = Depends(get_current_user)):
+async def get_gratified_entries(
+    month: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 100,
+    user: User = Depends(get_current_user),
+):
     query: dict = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
-        query["date"] = {"$regex": f"^{month}"}
-    entries = await _db.db.gratified_entries.find(query, {"_id": 0}).sort("date", -1).to_list(2000)
+        query["date"] = {"$gte": f"{month}-01", "$lte": f"{month}-31"}
+    skip = (page - 1) * per_page if page > 0 else 0
+    entries = await _db.db.gratified_entries.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(per_page).to_list(length=None)
     return entries
 
 
@@ -95,6 +104,7 @@ async def delete_gratified_entry(entry_id: str, user: User = Depends(get_current
 
 
 @router.post("/gratified-entries/reset")
-async def reset_all_gratified_entries(user: User = Depends(require_header_auth)):
+@limiter.limit("2/minute")
+async def reset_all_gratified_entries(request: Request, user: User = Depends(require_header_auth)):
     result = await _db.db.gratified_entries.delete_many({"user_id": user.user_id})
     return {"message": f"Reset: deleted {result.deleted_count} gratified entries"}

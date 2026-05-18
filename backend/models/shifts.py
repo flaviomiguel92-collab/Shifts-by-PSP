@@ -45,6 +45,12 @@ class BulkShiftItem(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
 
+    @validator('date')
+    def validate_date(cls, v):
+        if not DATE_RE.match(v):
+            raise ValueError(f"Formato de data inválido: {v}. Use YYYY-MM-DD")
+        return v
+
 
 class BulkShiftsRequest(BaseModel):
     shifts: List[BulkShiftItem]
