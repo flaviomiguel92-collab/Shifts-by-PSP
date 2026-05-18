@@ -18,6 +18,8 @@ async def get_shifts(
     per_page: int = 100,
     user: User = Depends(get_current_user),
 ):
+    per_page = max(1, min(per_page, 500))
+    page = max(1, page)
     query = {"user_id": user.user_id}
     if month:
         validate_month_format(month)

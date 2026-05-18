@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -8,6 +9,7 @@ from config import _REPORT_RATE, limiter
 from models.auth import User
 from models.reports import ReportGenerateRequest
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -34,8 +36,9 @@ async def generate_report(data: ReportGenerateRequest, request: Request, _user: 
     }
     try:
         docx_bytes = render_docx(context)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Erro ao gerar documento: {exc}")
+    except Exception:
+        logger.exception("report render failed")
+        raise HTTPException(status_code=500, detail="Erro ao gerar o documento.")
 
     if data.format == "pdf":
         try:

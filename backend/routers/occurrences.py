@@ -8,7 +8,15 @@ import db as _db
 from auth.dependencies import get_current_user, require_header_auth
 from config import limiter
 from models.auth import User
-from models.occurrences import Occurrence, OccurrenceCreate, OccurrenceUpdate, PersonCreate, PersonInOccurrence
+from models.occurrences import (
+    Occurrence,
+    OccurrenceCreate,
+    OccurrenceUpdate,
+    PersonCreate,
+    PersonInOccurrence,
+    _MAX_PHOTOS,
+    _MAX_PHOTO_CHARS,
+)
 
 router = APIRouter()
 
@@ -161,10 +169,19 @@ async def add_photo_to_occurrence(
         magic.startswith(b'\xff\xd8\xff'),           # JPEG
         decoded[:8] == b'\x89PNG\r\n\x1a\n',          # PNG
         magic.startswith(b'GIF87a') or magic.startswith(b'GIF89a'),  # GIF
-        decoded[:4] == b'RIFF' and decoded[4:8] == b'WEB',          # WebP
+        decoded[:4] == b'RIFF' and decoded[8:12] == b'WEBP',          # WebP
     ])
     if not is_valid_image:
         raise HTTPException(status_code=400, detail="Formato de imagem inválido. Use JPEG, PNG, GIF ou WebP")
+
+    # Validate photo size
+    if len(photo_base64) > _MAX_PHOTO_CHARS:
+        raise HTTPException(status_code=400, detail="Cada foto não pode exceder 2 MB")
+
+    # Validate photo count
+    current_photo_count = len(existing.get("photos", []))
+    if current_photo_count >= _MAX_PHOTOS:
+        raise HTTPException(status_code=400, detail=f"Máximo de {_MAX_PHOTOS} fotos permitidas")
 
     await _db.db.occurrences.update_one(
         {"id": occurrence_id, "user_id": user.user_id},

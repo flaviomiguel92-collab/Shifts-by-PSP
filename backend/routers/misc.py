@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -7,6 +8,7 @@ from auth.dependencies import require_header_auth
 from config import limiter
 from models.auth import User
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -38,8 +40,9 @@ async def cleanup_all_data(request: Request, user: User = Depends(require_header
             "gratifications_deleted": gratifications_deleted.deleted_count,
             "gratified_entries_deleted": gratified_entries_deleted.deleted_count,
         }
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(error)}")
+    except Exception:
+        logger.exception("cleanup_all_data failed")
+        raise HTTPException(status_code=500, detail="Erro ao limpar dados. Tente novamente.")
 
 
 @router.get("/")

@@ -25,6 +25,8 @@ async def get_gratifications(
     per_page: int = 100,
     user: User = Depends(get_current_user),
 ):
+    per_page = max(1, min(per_page, 500))
+    page = max(1, page)
     query = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
@@ -78,6 +80,8 @@ async def get_gratified_entries(
     per_page: int = 100,
     user: User = Depends(get_current_user),
 ):
+    per_page = max(1, min(per_page, 500))
+    page = max(1, page)
     query: dict = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
