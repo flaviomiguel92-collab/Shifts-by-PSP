@@ -283,7 +283,14 @@ export const getGratifiedEntries = async (month?: string): Promise<GratifiedEntr
 
 export const createGratifiedEntryApi = async (data: Omit<GratifiedEntryApi, 'id'>): Promise<GratifiedEntryApi> => {
   const response = await apiFetch(`${API_BASE_URL}/gratified-entries`, { method: 'POST', body: JSON.stringify(data) });
-  if (!response.ok) throw new Error(`Failed to create gratified entry: ${response.statusText}`);
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+    } catch { /* ignore parse error */ }
+    throw new Error(`[${response.status}] ${detail}`);
+  }
   return response.json();
 };
 

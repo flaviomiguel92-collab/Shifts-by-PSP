@@ -314,7 +314,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
 
   resetCalendarData: async () => {
-    await Promise.allSettled([api.resetShifts(), api.resetCycles()]);
+    await Promise.all([api.resetShifts(), api.resetCycles()]);
     set({ shifts: [], shiftTypes: [], cycles: [] });
     await get().saveData();
   },

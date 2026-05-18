@@ -80,11 +80,10 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
         subtotal: calc.subtotal,
         discount_percent: calc.discountPercent,
         is_holiday_or_weekend: isHolidayOrWeekend,
-        lines: calc.lines,
-        created_at: new Date().toISOString(),
       });
-    } catch {
-      Alert.alert('Erro', 'Não foi possível guardar o registo. Verifica a ligação e tenta de novo.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      Alert.alert('Erro ao guardar', msg);
       return;
     }
 
