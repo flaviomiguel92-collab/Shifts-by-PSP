@@ -9,12 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
-import { PSPLogo } from '../src/components/PSPLogo';
+const turnosLogo = require('../assets/images/icon.png');
 import { useTheme } from '../src/theme/themes';
 
 export default function LoginScreen() {
@@ -59,11 +60,11 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.logoSection}>
             <View style={styles.logoBadge}>
-              <PSPLogo size={68} variant="badge" />
               <View style={styles.badgeGlow} />
+              <Image source={turnosLogo} style={styles.logoImage} resizeMode="contain" />
             </View>
-            <Text style={[styles.appTitle, isLight && { color: th.textPrimary }]}>PSP Turnos</Text>
-            <Text style={[styles.appSubtitle, isLight && { color: th.textMuted }]}>GESTÃO DE TURNOS PROFISSIONAIS</Text>
+            <Text style={[styles.appTitle, isLight && { color: th.textPrimary }]}>Turnos</Text>
+            <Text style={[styles.appSubtitle, isLight && { color: th.textMuted }]}>Gestão de Turnos Profissionais</Text>
           </View>
 
           <View style={styles.card}>
@@ -174,28 +175,34 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     position: 'relative',
-    marginBottom: 18,
+    marginBottom: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    width: 120,
+    height: 120,
   },
   badgeGlow: {
     position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(59, 130, 246, 0.18)',
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
   },
   appTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
     color: '#F1F5F9',
     letterSpacing: -0.5,
     marginBottom: 6,
   },
   appSubtitle: {
-    fontSize: 10,
-    color: '#334155',
-    letterSpacing: 2,
+    fontSize: 12,
+    color: '#94A3B8',
+    letterSpacing: 0.4,
     fontWeight: '600',
   },
   card: {

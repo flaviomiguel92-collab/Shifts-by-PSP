@@ -255,8 +255,8 @@ export default function StatsScreen() {
     <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
       <View style={styles.pageHeader}>
         <View>
-          <Text style={styles.pageTitle}>Painel</Text>
-          <Text style={styles.pageSubtitle}>Estatísticas · {currentYear}</Text>
+          <Text style={[styles.pageTitle, isLight && { color: th.textPrimary }]}>Painel</Text>
+          <Text style={[styles.pageSubtitle, isLight && { color: th.textMuted }]}>Estatísticas · {currentYear}</Text>
         </View>
       </View>
 
@@ -323,7 +323,7 @@ export default function StatsScreen() {
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}>
-                      <Text style={[styles.donutCenterValue, { color: '#FFFFFF', lineHeight: 22 }]}>{monthShifts.length}</Text>
+                      <Text style={[styles.donutCenterValue, { color: isLight ? th.textPrimary : '#FFFFFF', lineHeight: 22 }]}>{monthShifts.length}</Text>
                       <Text style={[styles.donutCenterLabel, { color: '#94A3B8' }]}>turnos</Text>
                     </View>
                   </View>
@@ -333,7 +333,7 @@ export default function StatsScreen() {
                 {shiftTypeBreakdown.map(item => (
                   <View key={item.name} style={styles.donutLegendItem}>
                     <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                    <Text style={styles.legendName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.legendName, isLight && { color: th.textPrimary }]} numberOfLines={1}>{item.name}</Text>
                     <Text style={styles.legendCount}>{item.count}×</Text>
                   </View>
                 ))}
@@ -351,7 +351,7 @@ export default function StatsScreen() {
               return (
                 <View key={item.name} style={[styles.tableRow, i === shiftTypeBreakdown.length - 1 && { borderBottomWidth: 0 }]}>
                   <View style={[styles.typeDot, { backgroundColor: item.color }]} />
-                  <Text style={styles.tableMonth}>{item.name}</Text>
+                  <Text style={[styles.tableMonth, isLight && { color: th.textPrimary }]}>{item.name}</Text>
                   <View style={styles.tableBarWrap}>
                     <View style={[styles.tableBar, { width: `${Math.max(pct, 2)}%` as any, backgroundColor: item.color }]} />
                   </View>
@@ -509,7 +509,7 @@ export default function StatsScreen() {
                 const pct = max > 0 ? Math.max(((total as number) / max) * 100, 2) : 2;
                 return (
                   <View key={month} style={[styles.tableRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
-                    <Text style={styles.tableMonth}>{formatMonth(month)}</Text>
+                    <Text style={[styles.tableMonth, isLight && { color: th.textPrimary }]}>{formatMonth(month)}</Text>
                     <View style={styles.tableBarWrap}>
                       <View style={[styles.tableBar, { width: `${pct}%` as any }]} />
                     </View>
@@ -534,7 +534,7 @@ export default function StatsScreen() {
             >
               <Ionicons name="chevron-back" size={18} color="#60A5FA" />
             </TouchableOpacity>
-            <Text style={styles.monthLabel}>{formatMonth(currentMonth)}</Text>
+            <Text style={[styles.monthLabel, isLight && { color: th.textPrimary }]}>{formatMonth(currentMonth)}</Text>
             <TouchableOpacity
               style={styles.navBtn}
               onPress={() => {
@@ -549,7 +549,7 @@ export default function StatsScreen() {
 
           <View style={styles.monthTotalRow}>
             <Ionicons name="cash-outline" size={16} color="#10B981" />
-            <Text style={styles.monthTotalLabel}>Total</Text>
+            <Text style={[styles.monthTotalLabel, isLight && { color: th.textSecondary }]}>Total</Text>
             <Text style={styles.monthTotalValue}>{formatCurrency(totalSelectedMonth)}</Text>
           </View>
 
@@ -561,8 +561,8 @@ export default function StatsScreen() {
             selectedMonthItems.map((g: any, i: number) => (
               <View key={g.id} style={[styles.tableRow, i === selectedMonthItems.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.entryName}>{g.name}</Text>
-                  <Text style={styles.entryMeta}>{g.date} · {g.start_time}–{g.end_time}</Text>
+                  <Text style={[styles.entryName, isLight && { color: th.textPrimary }]}>{g.name}</Text>
+                  <Text style={[styles.entryMeta, isLight && { color: th.textMuted }]}>{g.date} · {g.start_time}–{g.end_time}</Text>
                 </View>
                 <Text style={styles.entryValue}>{formatCurrency(Number(g.value || 0))}</Text>
               </View>

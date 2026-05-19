@@ -89,7 +89,7 @@ export default function RegisterScreen() {
             </TouchableOpacity>
             <View>
               <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Criar Conta</Text>
-              <Text style={[styles.subtitle, isLight && { color: th.textMuted }]}>PSP Turnos</Text>
+              <Text style={[styles.subtitle, isLight && { color: th.textMuted }]}>Turnos · Gestão de Turnos Profissionais</Text>
             </View>
           </View>
 

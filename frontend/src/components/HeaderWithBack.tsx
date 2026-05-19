@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../theme/colors';
+import { useTheme } from '../theme/themes';
 
 interface HeaderWithBackProps {
   title: string;
@@ -11,15 +12,17 @@ interface HeaderWithBackProps {
 
 export function HeaderWithBack({ title, showBackButton = true }: HeaderWithBackProps) {
   const router = useRouter();
+  const th = useTheme();
+  const isLight = !th.isDark;
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, isLight && { backgroundColor: th.bgAlt, borderBottomColor: th.border }]}>
       {showBackButton && (
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={28} color={isLight ? th.textPrimary : '#FFFFFF'} />
         </TouchableOpacity>
       )}
-      <Text style={[styles.title, !showBackButton && styles.titleCentered]}>{title}</Text>
+      <Text style={[styles.title, isLight && { color: th.textPrimary }, !showBackButton && styles.titleCentered]}>{title}</Text>
       <View style={styles.spacer} />
     </View>
   );
