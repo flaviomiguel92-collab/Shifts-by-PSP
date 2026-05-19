@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { ShiftTypeConfig, Shift } from '../../types';
 import { formatDate } from '../../utils/helpers';
+import { useTheme } from '../../theme/themes';
 
 interface DayShiftEditorProps {
   visible: boolean;
@@ -100,6 +101,10 @@ export function DayShiftEditor({
   };
 
   const dateLabel = date ? formatDate(date, 'EEEE, d MMM yyyy') : '';
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputStyleLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
+  const placeholderLight = isLight ? th.textMuted : '#4B5563';
 
   const getTypeColor = (name: string) => {
     const st = shiftTypes.find((t) => t.name === name);
@@ -109,16 +114,16 @@ export function DayShiftEditor({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={styles.dragHandle} />
+        <View style={[styles.sheet, isLight && { backgroundColor: th.surfaceAlt }]}>
+          <View style={[styles.dragHandle, isLight && { backgroundColor: th.borderStrong }]} />
 
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerLabel}>Turno de</Text>
-              <Text style={styles.headerDate} numberOfLines={1}>{dateLabel}</Text>
+              <Text style={[styles.headerLabel, isLight && { color: th.textMuted }]}>Turno de</Text>
+              <Text style={[styles.headerDate, isLight && { color: th.textPrimary }]} numberOfLines={1}>{dateLabel}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color="#9CA3AF" />
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)' }]}>
+              <Ionicons name="close" size={20} color={isLight ? th.textSecondary : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
 
@@ -129,7 +134,7 @@ export function DayShiftEditor({
             contentContainerStyle={{ paddingBottom: 24 }}
           >
             {/* Type chip selector */}
-            <Text style={styles.fieldLabel}>Tipo de turno</Text>
+            <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }]}>Tipo de turno</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               <View style={styles.chipRow}>
                 {shiftTypes.map((st) => {
@@ -139,6 +144,7 @@ export function DayShiftEditor({
                       key={st.id}
                       style={[
                         styles.chip,
+                        isLight && { backgroundColor: 'rgba(15,23,42,0.04)', borderColor: th.borderStrong },
                         active && { backgroundColor: st.color, borderColor: st.color },
                       ]}
                       onPress={() => handleTypeSelect(st)}
@@ -147,7 +153,7 @@ export function DayShiftEditor({
                       {!active && (
                         <View style={[styles.chipDot, { backgroundColor: st.color }]} />
                       )}
-                      <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]}>
+                      <Text style={[styles.chipText, isLight && !active && { color: th.textSecondary }, active && { color: '#fff', fontWeight: '700' }]}>
                         {st.name}
                       </Text>
                     </TouchableOpacity>
@@ -162,14 +168,14 @@ export function DayShiftEditor({
             {selectedType ? (
               <View style={[styles.selectedBadge, { borderColor: getTypeColor(selectedType) + '44' }]}>
                 <View style={[styles.selectedDot, { backgroundColor: getTypeColor(selectedType) }]} />
-                <Text style={styles.selectedName}>{selectedType}</Text>
+                <Text style={[styles.selectedName, isLight && { color: th.textPrimary }]}>{selectedType}</Text>
               </View>
             ) : null}
 
             {/* All-day toggle */}
-            <View style={styles.toggleRow}>
-              <Ionicons name="time-outline" size={18} color="#6B7280" style={{ marginRight: 10 }} />
-              <Text style={styles.toggleLabel}>Dia inteiro</Text>
+            <View style={[styles.toggleRow, isLight && { borderColor: th.border }]}>
+              <Ionicons name="time-outline" size={18} color={isLight ? th.textMuted : '#6B7280'} style={{ marginRight: 10 }} />
+              <Text style={[styles.toggleLabel, isLight && { color: th.textPrimary }]}>Dia inteiro</Text>
               <Switch
                 value={allDay}
                 onValueChange={setAllDay}
@@ -184,9 +190,9 @@ export function DayShiftEditor({
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fieldLabel}>Início</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputStyleLight]}
                     placeholder="08:00"
-                    placeholderTextColor="#4B5563"
+                    placeholderTextColor={placeholderLight}
                     value={startTime}
                     onChangeText={setStartTime}
                     keyboardType="numbers-and-punctuation"
@@ -196,9 +202,9 @@ export function DayShiftEditor({
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fieldLabel}>Fim</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputStyleLight]}
                     placeholder="16:00"
-                    placeholderTextColor="#4B5563"
+                    placeholderTextColor={placeholderLight}
                     value={endTime}
                     onChangeText={setEndTime}
                     keyboardType="numbers-and-punctuation"
@@ -210,9 +216,9 @@ export function DayShiftEditor({
             {/* Note */}
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Nota</Text>
             <TextInput
-              style={[styles.input, styles.noteInput]}
+              style={[styles.input, styles.noteInput, inputStyleLight]}
               placeholder="Adicionar nota..."
-              placeholderTextColor="#4B5563"
+              placeholderTextColor={placeholderLight}
               value={note}
               onChangeText={setNote}
               multiline
@@ -221,9 +227,9 @@ export function DayShiftEditor({
             {/* Location (UI only) */}
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Localização</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputStyleLight]}
               placeholder="Ex: Esquadra Norte..."
-              placeholderTextColor="#4B5563"
+              placeholderTextColor={placeholderLight}
               value={location}
               onChangeText={setLocation}
             />

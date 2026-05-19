@@ -422,9 +422,10 @@ export default function ProfileScreen() {
         <Section title="Aparência" icon="color-wand-outline">
           <GlassCard style={{ marginTop: 8, padding: 6 }}>
             {([
-              { key: 'grid' as const, label: 'Grelha', desc: 'Cartões legíveis, número colorido e nota do turno' },
-              { key: 'classic' as const, label: 'Clássico', desc: 'Célula preenchida com a cor do turno' },
-            ]).map((opt, i) => {
+              { key: 'grid' as const, label: 'Grelha (escuro)', desc: 'Cartões legíveis, número colorido e nota do turno' },
+              { key: 'classic' as const, label: 'Clássico (escuro)', desc: 'Célula preenchida com a cor do turno' },
+              { key: 'light' as const, label: 'Claro', desc: 'Toda a app em modo claro, com a grelha legível' },
+            ]).map((opt, i, arr) => {
               const active = calendarTheme === opt.key;
               return (
                 <TouchableOpacity
@@ -433,7 +434,7 @@ export default function ProfileScreen() {
                   onPress={() => setCalendarTheme(opt.key)}
                   style={[
                     styles.themeOption,
-                    i === 0 && { marginBottom: 6 },
+                    i < arr.length - 1 && { marginBottom: 6 },
                     active && styles.themeOptionActive,
                   ]}
                 >

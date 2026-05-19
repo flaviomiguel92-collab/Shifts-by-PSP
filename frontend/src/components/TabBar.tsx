@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/themes';
 
 const TAB_CONFIG: Record<string, { icon: string; iconActive: string; label: string }> = {
   index:        { icon: 'calendar-outline',       iconActive: 'calendar',       label: 'Turnos' },
@@ -74,6 +75,8 @@ function TabItem({
 export function CustomTabBar({ state, navigation }: any) {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const t = useTheme();
+  const isLight = !t.isDark;
 
   return (
     <View
@@ -83,7 +86,16 @@ export function CustomTabBar({ state, navigation }: any) {
       ]}
       pointerEvents="box-none"
     >
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          isLight && {
+            backgroundColor: 'rgba(255,255,255,0.98)',
+            borderColor: t.borderStrong,
+            shadowOpacity: 0.12,
+          },
+        ]}
+      >
         {state.routes.map((route: any, index: number) => (
           <TabItem
             key={route.key}

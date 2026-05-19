@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '../../utils/helpers';
+import { useTheme } from '../../theme/themes';
 
 export type DayItemKind = 'shift' | 'event' | 'grat';
 
@@ -44,6 +45,8 @@ export function DayPopover({
   onAddGrat,
   onOpenItem,
 }: DayPopoverProps) {
+  const t = useTheme();
+  const isLight = !t.isDark;
   if (!visible) return null;
   const weekday = day ? formatDate(day, 'EEEE') : '';
   const dayMain = day ? formatDate(day, "d 'de' MMMM") : '';
@@ -51,18 +54,24 @@ export function DayPopover({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.card} onPress={() => {}}>
+        <Pressable
+          style={[
+            styles.card,
+            isLight && { backgroundColor: t.surfaceAlt, borderColor: t.borderStrong, shadowOpacity: 0.18 },
+          ]}
+          onPress={() => {}}
+        >
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.weekday}>{weekday}</Text>
-              <Text style={styles.dayMain}>{dayMain}</Text>
+              <Text style={[styles.weekday, isLight && { color: t.textMuted }]}>{weekday}</Text>
+              <Text style={[styles.dayMain, isLight && { color: t.textPrimary }]}>{dayMain}</Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
-              style={styles.closeBtn}
+              style={[styles.closeBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)' }]}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={20} color="rgba(255,255,255,0.8)" />
+              <Ionicons name="close" size={20} color={isLight ? t.textSecondary : 'rgba(255,255,255,0.8)'} />
             </TouchableOpacity>
           </View>
 
@@ -71,7 +80,7 @@ export function DayPopover({
               {items.map((item) => (
                 <TouchableOpacity
                   key={`${item.kind}-${item.id}`}
-                  style={styles.itemRow}
+                  style={[styles.itemRow, isLight && { borderBottomColor: t.border }]}
                   onPress={() => onOpenItem(item)}
                   activeOpacity={0.7}
                 >
@@ -79,23 +88,23 @@ export function DayPopover({
                     <Ionicons name={item.iconName} size={18} color="#FFFFFF" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
-                    {!!item.time && <Text style={styles.itemTime}>{item.time}</Text>}
+                    <Text style={[styles.itemTitle, isLight && { color: t.textPrimary }]} numberOfLines={1}>{item.title}</Text>
+                    {!!item.time && <Text style={[styles.itemTime, isLight && { color: t.textMuted }]}>{item.time}</Text>}
                   </View>
-                  <Text style={styles.itemTrailing}>{item.trailing || '›'}</Text>
+                  <Text style={[styles.itemTrailing, isLight && { color: t.textMuted }]}>{item.trailing || '›'}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.empty}>Sem registos neste dia</Text>
+            <Text style={[styles.empty, isLight && { color: t.textMuted }]}>Sem registos neste dia</Text>
           )}
 
-          <View style={styles.actions}>
-            <ActionBtn icon="calendar-outline" label="Turno" color="#60A5FA" onPress={onAddShift} />
-            <View style={styles.sep} />
-            <ActionBtn icon="reader-outline" label="Evento" color="#A78BFA" onPress={onAddEvent} />
-            <View style={styles.sep} />
-            <ActionBtn icon="cash-outline" label="Grat." color="#34D399" onPress={onAddGrat} />
+          <View style={[styles.actions, isLight && { borderTopColor: t.border }]}>
+            <ActionBtn icon="calendar-outline" label="Turno" color="#60A5FA" onPress={onAddShift} labelColor={isLight ? t.textSecondary : '#94A3B8'} />
+            <View style={[styles.sep, isLight && { backgroundColor: t.border }]} />
+            <ActionBtn icon="reader-outline" label="Evento" color="#A78BFA" onPress={onAddEvent} labelColor={isLight ? t.textSecondary : '#94A3B8'} />
+            <View style={[styles.sep, isLight && { backgroundColor: t.border }]} />
+            <ActionBtn icon="cash-outline" label="Grat." color="#34D399" onPress={onAddGrat} labelColor={isLight ? t.textSecondary : '#94A3B8'} />
           </View>
         </Pressable>
       </Pressable>
@@ -104,12 +113,12 @@ export function DayPopover({
 }
 
 function ActionBtn({
-  icon, label, color, onPress,
-}: { icon: keyof typeof Ionicons.glyphMap; label: string; color: string; onPress: () => void }) {
+  icon, label, color, onPress, labelColor,
+}: { icon: keyof typeof Ionicons.glyphMap; label: string; color: string; onPress: () => void; labelColor?: string }) {
   return (
     <TouchableOpacity style={styles.actionBtn} onPress={onPress} activeOpacity={0.75}>
       <Ionicons name={icon} size={20} color={color} />
-      <Text style={styles.actionLabel}>{label}</Text>
+      <Text style={[styles.actionLabel, labelColor && { color: labelColor }]}>{label}</Text>
     </TouchableOpacity>
   );
 }

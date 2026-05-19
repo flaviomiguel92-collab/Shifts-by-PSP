@@ -46,6 +46,7 @@ import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
 import { DayShiftEditor } from '../../src/components/calendar/DayShiftEditor';
 import { usePaintStore } from '../../src/store/paintStore';
 import { usePreferencesStore } from '../../src/store/preferencesStore';
+import { getThemeColors } from '../../src/theme/themes';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
@@ -105,7 +106,9 @@ export default function CalendarScreen() {
   const [detailItem, setDetailItem] = useState<DayItem | null>(null);
 
   const calendarTheme = usePreferencesStore((s) => s.calendarTheme);
-  const isGridTheme = calendarTheme === 'grid';
+  const isGridTheme = calendarTheme !== 'classic';
+  const isLight = calendarTheme === 'light';
+  const t = getThemeColors(isLight);
 
   // Paint mode (state lives in paintStore so PaintModeBar can be rendered above the tab bar in _layout)
   const paintMode = usePaintStore((s) => s.active);
@@ -669,23 +672,23 @@ export default function CalendarScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isLight && { backgroundColor: t.bg }]}>
       {/* Header */}
-      <View style={styles.customHeader}>
+      <View style={[styles.customHeader, isLight && { backgroundColor: t.bgAlt, borderBottomColor: t.border }]}>
         <View>
-          <Text style={styles.customHeaderTitle}>Turnos</Text>
+          <Text style={[styles.customHeaderTitle, isLight && { color: t.textPrimary }]}>Turnos</Text>
           <Text style={styles.customHeaderSubtitle}>{formatMonth(currentMonth)}</Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.searchBtn}
+            style={[styles.searchBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.04)', borderColor: t.border }]}
             onPress={() => search.open()}
             activeOpacity={0.85}
           >
-            <Ionicons name="search-outline" size={20} color="#94A3B8" />
+            <Ionicons name="search-outline" size={20} color={isLight ? t.textMuted : '#94A3B8'} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.searchBtn, paintMode && styles.paintBtnActive]}
+            style={[styles.searchBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.04)', borderColor: t.border }, paintMode && styles.paintBtnActive]}
             onPress={() => {
               if (paintMode) {
                 cancelEditMode();
@@ -700,7 +703,7 @@ export default function CalendarScreen() {
             }}
             activeOpacity={0.85}
           >
-            <Ionicons name="brush-outline" size={20} color={paintMode ? '#3B82F6' : '#94A3B8'} />
+            <Ionicons name="brush-outline" size={20} color={paintMode ? '#3B82F6' : (isLight ? t.textMuted : '#94A3B8')} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.toggleOptionsBtn}
@@ -741,7 +744,7 @@ export default function CalendarScreen() {
         )}
 
         <View style={styles.summaryContainer}>
-          <Text style={styles.sectionEyebrow}>Resumo mensal</Text>
+          <Text style={[styles.sectionEyebrow, isLight && { color: t.textMuted }]}>Resumo mensal</Text>
           {isGridTheme ? (
             <GridSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
           ) : (
@@ -749,27 +752,27 @@ export default function CalendarScreen() {
           )}
         </View>
 
-        <View style={styles.calendarCard}>
+        <View style={[styles.calendarCard, isLight && { backgroundColor: t.surface, borderColor: t.border }]}>
           <View style={styles.calendarHeader}>
             <TouchableOpacity
-              style={styles.navButton}
+              style={[styles.navButton, isLight && { backgroundColor: 'rgba(15,23,42,0.04)' }]}
               onPress={() => setCurrentMonth(getPrevMonth(currentMonth))}
             >
-              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={24} color={isLight ? t.textSecondary : '#FFFFFF'} />
             </TouchableOpacity>
-            <Text style={styles.monthTitle}>{formatMonth(currentMonth)}</Text>
+            <Text style={[styles.monthTitle, isLight && { color: t.textPrimary }]}>{formatMonth(currentMonth)}</Text>
             <TouchableOpacity
-              style={styles.navButton}
+              style={[styles.navButton, isLight && { backgroundColor: 'rgba(15,23,42,0.04)' }]}
               onPress={() => setCurrentMonth(getNextMonth(currentMonth))}
             >
-              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={24} color={isLight ? t.textSecondary : '#FFFFFF'} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.weekdays}>
             {WEEKDAYS.map((day) => (
               <View key={day} style={styles.weekdayCell}>
-                <Text style={styles.weekdayText}>{day}</Text>
+                <Text style={[styles.weekdayText, isLight && { color: t.textMuted }]}>{day}</Text>
               </View>
             ))}
           </View>
@@ -810,15 +813,16 @@ export default function CalendarScreen() {
                   if (isGridTheme) {
                     const shiftColor = shift ? getShiftDisplayColor(shift.shift_type) : null;
                     const numColor = shiftColor
-                      || (isToday ? '#3B82F6' : holiday ? '#EF4444' : '#E2E8F0');
+                      || (isToday ? '#3B82F6' : holiday ? '#EF4444' : (isLight ? t.textPrimary : '#E2E8F0'));
                     return (
                       <TouchableOpacity
                         key={dateStr}
                         style={[
                           styles.gridDayCell,
+                          isLight && { backgroundColor: t.bgAlt, borderColor: t.border },
                           shiftColor && !isMultiSelected && {
                             borderColor: shiftColor + '66',
-                            backgroundColor: shiftColor + '14',
+                            backgroundColor: shiftColor + (isLight ? '1F' : '14'),
                           },
                           isToday && styles.gridTodayCell,
                           isMultiSelected && styles.multiSelectedCell,
@@ -853,7 +857,7 @@ export default function CalendarScreen() {
                             {shift ? (
                               <View style={styles.gridBody}>
                                 <Text
-                                  style={[styles.gridShiftLabel, { color: shiftColor || '#E2E8F0' }]}
+                                  style={[styles.gridShiftLabel, { color: shiftColor || (isLight ? t.textPrimary : '#E2E8F0') }]}
                                   numberOfLines={1}
                                 >
                                   {getShiftDisplayName(shift.shift_type).toUpperCase()}

@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../theme/themes';
 
 export interface DetailRow {
   label: string;
@@ -46,6 +47,8 @@ export function DetailSheet({
   onEdit,
   onRemove,
 }: DetailSheetProps) {
+  const t = useTheme();
+  const isLight = !t.isDark;
   const handleRemove = () => {
     // RN Web's Alert.alert does not invoke button onPress callbacks.
     if (Platform.OS === 'web') {
@@ -60,7 +63,7 @@ export function DetailSheet({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, isLight && { backgroundColor: t.surfaceAlt }]} onPress={() => {}}>
           <View style={[styles.header, { backgroundColor: accentColor }]}>
             <View style={styles.headerLeft}>
               <View style={styles.iconWrap}>
@@ -80,9 +83,9 @@ export function DetailSheet({
           {rows.length > 0 && (
             <View style={styles.body}>
               {rows.map((r, i) => (
-                <View key={i} style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>{r.label}</Text>
-                  <Text style={styles.infoValue}>{r.value}</Text>
+                <View key={i} style={[styles.infoRow, isLight && { backgroundColor: t.bg, borderColor: t.borderStrong }]}>
+                  <Text style={[styles.infoLabel, isLight && { color: t.textMuted }]}>{r.label}</Text>
+                  <Text style={[styles.infoValue, isLight && { color: t.textPrimary }]}>{r.value}</Text>
                 </View>
               ))}
             </View>
@@ -90,8 +93,8 @@ export function DetailSheet({
 
           <View style={styles.actions}>
             {onEdit && (
-              <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.8}>
-                <Text style={styles.editText}>Editar</Text>
+              <TouchableOpacity style={[styles.editBtn, isLight && { backgroundColor: t.borderStrong }]} onPress={onEdit} activeOpacity={0.8}>
+                <Text style={[styles.editText, isLight && { color: t.textPrimary }]}>Editar</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity

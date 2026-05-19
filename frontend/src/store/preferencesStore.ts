@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { storage } from '../utils/storage';
 
 export type Language = 'pt' | 'en';
-export type CalendarTheme = 'grid' | 'classic';
+export type CalendarTheme = 'grid' | 'classic' | 'light';
 
 interface PreferencesState {
   language: Language;
@@ -32,7 +32,7 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
       set({ language: lang });
     }
     const theme = await storage.getItem('pref_calendar_theme');
-    if (theme === 'grid' || theme === 'classic') {
+    if (theme === 'grid' || theme === 'classic' || theme === 'light') {
       set({ calendarTheme: theme });
     }
   },

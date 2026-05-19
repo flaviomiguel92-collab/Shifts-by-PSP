@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { CalendarEvent } from '../../types';
+import { useTheme } from '../../theme/themes';
 
 interface EventFormModalProps {
   visible: boolean;
@@ -27,6 +28,8 @@ interface EventFormModalProps {
 }
 
 export function EventFormModal({ visible, date, event, onClose, onSave }: EventFormModalProps) {
+  const t = useTheme();
+  const isLight = !t.isDark;
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -45,6 +48,10 @@ export function EventFormModal({ visible, date, event, onClose, onSave }: EventF
   }, [visible, event]);
 
   const canSave = title.trim().length > 0 && !saving;
+  const inputStyle = isLight
+    ? { color: t.textPrimary, borderColor: t.borderStrong, backgroundColor: t.bg }
+    : null;
+  const placeholderColor = isLight ? t.textMuted : '#6B7280';
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -67,13 +74,13 @@ export function EventFormModal({ visible, date, event, onClose, onSave }: EventF
       <View style={styles.overlay}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.container}
+          style={[styles.container, isLight && { backgroundColor: t.surfaceAlt }]}
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.cancel}>Cancelar</Text>
+              <Text style={[styles.cancel, isLight && { color: t.textMuted }]}>Cancelar</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{event ? 'Editar evento' : 'Novo evento'}</Text>
+            <Text style={[styles.headerTitle, isLight && { color: t.textPrimary }]}>{event ? 'Editar evento' : 'Novo evento'}</Text>
             <TouchableOpacity
               onPress={handleSave}
               disabled={!canSave}
@@ -83,50 +90,50 @@ export function EventFormModal({ visible, date, event, onClose, onSave }: EventF
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.subtitle}>Aniversário, Tribunal, Consulta…</Text>
+          <Text style={[styles.subtitle, isLight && { color: t.textMuted }]}>Aniversário, Tribunal, Consulta…</Text>
 
           <ScrollView keyboardShouldPersistTaps="handled">
-            <Field label="Título">
+            <Field label="Título" isLight={isLight} muted={t.textMuted}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputStyle]}
                 placeholder="Ex: Tribunal"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={placeholderColor}
                 value={title}
                 onChangeText={setTitle}
               />
             </Field>
             <View style={styles.row}>
-              <Field label="Início" flex>
+              <Field label="Início" flex isLight={isLight} muted={t.textMuted}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputStyle]}
                   placeholder="14:00"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={placeholderColor}
                   value={startTime}
                   onChangeText={setStartTime}
                 />
               </Field>
-              <Field label="Fim" flex>
+              <Field label="Fim" flex isLight={isLight} muted={t.textMuted}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputStyle]}
                   placeholder="15:30"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={placeholderColor}
                   value={endTime}
                   onChangeText={setEndTime}
                 />
               </Field>
             </View>
-            <Field label="Local">
+            <Field label="Local" isLight={isLight} muted={t.textMuted}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputStyle]}
                 placeholder="Opcional"
                 placeholderTextColor="#6B7280"
                 value={location}
                 onChangeText={setLocation}
               />
             </Field>
-            <Field label="Notas">
+            <Field label="Notas" isLight={isLight} muted={t.textMuted}>
               <TextInput
-                style={[styles.input, styles.multiline]}
+                style={[styles.input, styles.multiline, inputStyle]}
                 placeholder="Opcional"
                 placeholderTextColor="#6B7280"
                 value={note}
@@ -141,10 +148,10 @@ export function EventFormModal({ visible, date, event, onClose, onSave }: EventF
   );
 }
 
-function Field({ label, children, flex }: { label: string; children: React.ReactNode; flex?: boolean }) {
+function Field({ label, children, flex, isLight, muted }: { label: string; children: React.ReactNode; flex?: boolean; isLight?: boolean; muted?: string }) {
   return (
     <View style={[styles.field, flex && { flex: 1 }]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, isLight && muted && { color: muted }]}>{label}</Text>
       {children}
     </View>
   );

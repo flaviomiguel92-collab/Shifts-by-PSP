@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ShiftTypeConfig } from '../../types';
+import { useTheme } from '../../theme/themes';
 
 interface PaintModeBarProps {
   visible: boolean;
@@ -34,6 +35,8 @@ export function PaintModeBar({
   // Mantém o componente montado durante a animação de saída e desmonta-o
   // por completo no fim — assim, quando inativo, não existe nada no ecrã
   // que se possa sobrepor à tab bar nem interceptar toques.
+  const t = useTheme();
+  const isLight = !t.isDark;
   const [mounted, setMounted] = useState(visible);
   const slideAnim = useRef(new Animated.Value(ENTER_OFFSET)).current;
 
@@ -63,11 +66,15 @@ export function PaintModeBar({
       style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      <View style={styles.inner}>
+      <View style={[styles.inner, isLight && { backgroundColor: t.surface, borderColor: t.borderStrong }]}>
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.exitBtn} onPress={onExit} activeOpacity={0.8}>
-            <Ionicons name="close" size={14} color="#F1F5F9" />
-            <Text style={styles.exitBtnText}>Sair</Text>
+          <TouchableOpacity
+            style={[styles.exitBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)', borderColor: t.border }]}
+            onPress={onExit}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={14} color={isLight ? t.textPrimary : '#F1F5F9'} />
+            <Text style={[styles.exitBtnText, isLight && { color: t.textPrimary }]}>Sair</Text>
           </TouchableOpacity>
           <View style={styles.paintLabel}>
             <Ionicons name="brush-outline" size={14} color="#60A5FA" />
@@ -88,6 +95,7 @@ export function PaintModeBar({
                 key={st.id}
                 style={[
                   styles.chip,
+                  isLight && { backgroundColor: 'rgba(15,23,42,0.04)' },
                   active
                     ? { backgroundColor: st.color, borderColor: st.color }
                     : { borderColor: st.color + '55' },
@@ -96,7 +104,7 @@ export function PaintModeBar({
                 activeOpacity={0.75}
               >
                 {!active && <View style={[styles.chipDot, { backgroundColor: st.color }]} />}
-                <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]}>
+                <Text style={[styles.chipText, isLight && !active && { color: t.textSecondary }, active && { color: '#fff', fontWeight: '700' }]}>
                   {st.name}
                 </Text>
               </TouchableOpacity>

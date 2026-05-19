@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Shift } from '../../types';
 import { resolveShiftColor } from '../../utils/helpers';
+import { useTheme } from '../../theme/themes';
 
 interface GridSummaryProps {
   shifts: Shift[];
@@ -17,6 +18,8 @@ interface GridSummaryProps {
 export const GridSummary: React.FC<GridSummaryProps> = ({ shifts, shiftTypes, month }) => {
   const { width } = useWindowDimensions();
   const compact = width < 420;
+  const t = useTheme();
+  const isLight = !t.isDark;
 
   const shiftItems = useMemo(() => {
     const configured = (shiftTypes || [])
@@ -61,13 +64,13 @@ export const GridSummary: React.FC<GridSummaryProps> = ({ shifts, shiftTypes, mo
               key={item.id}
               style={[
                 styles.card,
-                { borderColor: item.color + '66', backgroundColor: item.color + '14' },
+                { borderColor: item.color + '66', backgroundColor: item.color + (isLight ? '1F' : '14') },
               ]}
             >
               <Text style={[styles.cardValue, { color: item.color }]}>
                 {countsByType.get(item.name) || 0}
               </Text>
-              <Text style={styles.cardLabel} numberOfLines={1}>
+              <Text style={[styles.cardLabel, { color: t.textMuted }]} numberOfLines={1}>
                 {item.name.toUpperCase()}
               </Text>
             </View>
@@ -75,22 +78,22 @@ export const GridSummary: React.FC<GridSummaryProps> = ({ shifts, shiftTypes, mo
         )}
       </View>
 
-      <View style={styles.legend}>
+      <View style={[styles.legend, { borderTopColor: t.border }]}>
         {shiftItems.map((item) => (
           <View key={item.id} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-            <Text style={styles.legendLabel}>{item.name}</Text>
+            <Text style={[styles.legendLabel, { color: t.textSecondary }]}>{item.name}</Text>
           </View>
         ))}
         <View style={styles.legendItem}>
           <View style={styles.euroChip}>
             <Text style={styles.euroChipText}>€</Text>
           </View>
-          <Text style={styles.legendLabel}>Gratificado</Text>
+          <Text style={[styles.legendLabel, { color: t.textSecondary }]}>Gratificado</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#34D399' }]} />
-          <Text style={styles.legendLabel}>Evento</Text>
+          <Text style={[styles.legendLabel, { color: t.textSecondary }]}>Evento</Text>
         </View>
       </View>
     </View>
