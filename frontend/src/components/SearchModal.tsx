@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useDataStore } from '../store/dataStore';
 import { useSearchStore } from '../utils/search';
 import { formatCurrency } from '../utils/helpers';
+import { useTheme } from '../theme/themes';
 
 type ResultType = 'shift' | 'gratificado' | 'ocorrencia';
 
@@ -28,6 +29,8 @@ const TYPE_CONFIG: Record<ResultType, { icon: string; color: string; label: stri
 
 
 export function SearchModal() {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const router = useRouter();
   const { isOpen, close } = useSearchStore();
   const store = useDataStore() as any;
@@ -132,18 +135,18 @@ export function SearchModal() {
     <Modal transparent animationType="none" visible={isOpen} onRequestClose={close}>
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={close} />
-        <Animated.View style={[styles.panel, { transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[styles.panel, { transform: [{ translateY: slideAnim }] }, isLight && { backgroundColor: th.surfaceAlt, borderColor: th.borderStrong }]}>
 
           {/* Search input */}
-          <View style={styles.inputRow}>
-            <Ionicons name="search-outline" size={18} color="#475569" />
+          <View style={[styles.inputRow, isLight && { borderBottomColor: th.border }]}>
+            <Ionicons name="search-outline" size={18} color={isLight ? th.textMuted : '#475569'} />
             <TextInput
               ref={inputRef}
-              style={styles.input}
+              style={[styles.input, isLight && { color: th.textPrimary }]}
               value={query}
               onChangeText={setQuery}
               placeholder="Pesquisar turnos, gratificados, ocorrências…"
-              placeholderTextColor="#334155"
+              placeholderTextColor={isLight ? th.textMuted : '#334155'}
               autoCorrect={false}
               autoCapitalize="none"
               returnKeyType="search"
@@ -167,13 +170,13 @@ export function SearchModal() {
           {query.length >= 2 && results.length === 0 && (
             <View style={styles.empty}>
               <Ionicons name="search-outline" size={32} color="#1E293B" />
-              <Text style={styles.emptyText}>Sem resultados para &quot;{query}&quot;</Text>
+              <Text style={[styles.emptyText, isLight && { color: th.textMuted }]}>Sem resultados para &quot;{query}&quot;</Text>
             </View>
           )}
 
           {query.length < 2 && (
             <View style={styles.hint}>
-              <Text style={styles.hintText}>Digite pelo menos 2 caracteres para pesquisar</Text>
+              <Text style={[styles.hintText, isLight && { color: th.textMuted }]}>Digite pelo menos 2 caracteres para pesquisar</Text>
               {Platform.OS === 'web' && (
                 <View style={styles.shortcutRow}>
                   <View style={styles.kbdHint}><Text style={styles.kbdText}>⌘K</Text></View>
@@ -194,7 +197,7 @@ export function SearchModal() {
               const cfg = TYPE_CONFIG[group.type];
               return (
                 <View>
-                  <View style={styles.groupHeader}>
+                  <View style={[styles.groupHeader, isLight && { borderBottomColor: th.border }]}>
                     <Ionicons name={cfg.icon as any} size={12} color={cfg.color} />
                     <Text style={[styles.groupLabel, { color: cfg.color }]}>{cfg.label}s</Text>
                     <Text style={styles.groupCount}>{group.items.length}</Text>
@@ -202,7 +205,7 @@ export function SearchModal() {
                   {group.items.map((item, i) => (
                     <TouchableOpacity
                       key={item.id}
-                      style={[styles.resultRow, i === group.items.length - 1 && { borderBottomWidth: 0, marginBottom: 4 }]}
+                      style={[styles.resultRow, isLight && { borderBottomColor: th.border }, i === group.items.length - 1 && { borderBottomWidth: 0, marginBottom: 4 }]}
                       onPress={() => handleSelect(item)}
                       activeOpacity={0.7}
                     >
@@ -210,8 +213,8 @@ export function SearchModal() {
                         <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
                       </View>
                       <View style={styles.resultText}>
-                        <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
-                        <Text style={styles.resultSub} numberOfLines={1}>{item.subtitle}</Text>
+                        <Text style={[styles.resultTitle, isLight && { color: th.textPrimary }]} numberOfLines={1}>{item.title}</Text>
+                        <Text style={[styles.resultSub, isLight && { color: th.textMuted }]} numberOfLines={1}>{item.subtitle}</Text>
                       </View>
                       {!!item.meta && (
                         <Text style={[styles.resultMeta, { color: cfg.color }]}>{item.meta}</Text>

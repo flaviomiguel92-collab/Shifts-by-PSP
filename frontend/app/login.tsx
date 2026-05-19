@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
 import { PSPLogo } from '../src/components/PSPLogo';
+import { useTheme } from '../src/theme/themes';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -25,6 +26,11 @@ export default function LoginScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passFocused, setPassFocused] = useState(false);
   const login = useAuthStore((s) => s.login);
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const gradientColors = (isLight ? ['#F8FAFC', '#F1F5F9', '#E2E8F0'] : ['#050816', '#0B1120', '#111827']) as [string, string, string];
+  const inputLight = isLight ? { color: th.textPrimary } : null;
+  const placeholderLight = isLight ? th.textMuted : '#334155';
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -45,7 +51,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#050816', '#0B1120', '#111827']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
       <View style={styles.blob1} />
       <View style={styles.blob2} />
 
@@ -56,8 +62,8 @@ export default function LoginScreen() {
               <PSPLogo size={68} variant="badge" />
               <View style={styles.badgeGlow} />
             </View>
-            <Text style={styles.appTitle}>PSP Turnos</Text>
-            <Text style={styles.appSubtitle}>GESTÃO DE TURNOS PROFISSIONAIS</Text>
+            <Text style={[styles.appTitle, isLight && { color: th.textPrimary }]}>PSP Turnos</Text>
+            <Text style={[styles.appSubtitle, isLight && { color: th.textMuted }]}>GESTÃO DE TURNOS PROFISSIONAIS</Text>
           </View>
 
           <View style={styles.card}>
@@ -66,9 +72,9 @@ export default function LoginScreen() {
               <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
                 <Ionicons name="mail-outline" size={17} color={emailFocused ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputLight]}
                   placeholder="seu@email.com"
-                  placeholderTextColor="#334155"
+                  placeholderTextColor={placeholderLight}
                   value={email}
                   onChangeText={setEmail}
                   editable={!isLoading}
@@ -85,9 +91,9 @@ export default function LoginScreen() {
               <View style={[styles.inputWrap, passFocused && styles.inputWrapFocused]}>
                 <Ionicons name="lock-closed-outline" size={17} color={passFocused ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, inputLight, { flex: 1 }]}
                   placeholder="••••••••"
-                  placeholderTextColor="#334155"
+                  placeholderTextColor={placeholderLight}
                   value={password}
                   onChangeText={setPassword}
                   editable={!isLoading}

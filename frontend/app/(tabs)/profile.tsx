@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { usePreferencesStore } from '../../src/store/preferencesStore';
+import { useTheme } from '../../src/theme/themes';
 import {
   exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV,
   exportFullBackup, pickAndReadJsonWeb, BackupPayload,
@@ -18,11 +19,13 @@ import { getSessions, revokeSession, getOccurrences, deleteOccurrence, SessionIn
 type ResetScope = 'calendar' | 'gratified' | 'occurrences' | 'all';
 
 function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  const th = useTheme();
+  const isLight = !th.isDark;
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={icon as any} size={15} color="#475569" />
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <Ionicons name={icon as any} size={15} color={isLight ? th.textMuted : '#475569'} />
+        <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>{title}</Text>
       </View>
       {children}
     </View>
@@ -30,7 +33,9 @@ function Section({ title, icon, children }: { title: string; icon: string; child
 }
 
 function GlassCard({ children, style }: { children: React.ReactNode; style?: object }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  const th = useTheme();
+  const isLight = !th.isDark;
+  return <View style={[styles.card, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong, shadowOpacity: 0.08 }, style]}>{children}</View>;
 }
 
 function CollapseBtn({
@@ -62,6 +67,8 @@ export default function ProfileScreen() {
   const logout = useAuthStore((s) => s.logout);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const calendarTheme = usePreferencesStore((s) => s.calendarTheme);
+  const th = useTheme();
+  const isLight = !th.isDark;
   const setCalendarTheme = usePreferencesStore((s) => s.setCalendarTheme);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
@@ -348,7 +355,7 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -357,14 +364,14 @@ export default function ProfileScreen() {
         {/* User hero */}
         <LinearGradient
           colors={['#0B1120', '#111827']}
-          style={styles.userHero}
+          style={[styles.userHero, isLight && { borderBottomColor: th.border }]}
         >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'Utilizador'}</Text>
-            <Text style={styles.userEmail}>{user?.email || ''}</Text>
+            <Text style={[styles.userName, isLight && { color: th.textPrimary }]}>{user?.name || 'Utilizador'}</Text>
+            <Text style={[styles.userEmail, isLight && { color: th.textMuted }]}>{user?.email || ''}</Text>
           </View>
         </LinearGradient>
 
@@ -471,7 +478,7 @@ export default function ProfileScreen() {
                 shiftTypes.map((item: any, i: number) => (
                   <View key={item.id} style={[styles.listRow, i === shiftTypes.length - 1 && { borderBottomWidth: 0 }]}>
                     <View style={[styles.colorDot, { backgroundColor: item.color || '#475569' }]} />
-                    <Text style={styles.listRowText}>{item.name}</Text>
+                    <Text style={[styles.listRowText, isLight && { color: th.textPrimary }]}>{item.name}</Text>
                     <TouchableOpacity onPress={() => deleteShiftType(item.id)} style={styles.deleteBtn}>
                       <Ionicons name="trash-outline" size={15} color="#EF4444" />
                     </TouchableOpacity>
@@ -498,7 +505,7 @@ export default function ProfileScreen() {
               ) : (
                 gratifiedTemplates.map((tmpl: any, i: number) => (
                   <View key={tmpl.name} style={[styles.listRow, i === gratifiedTemplates.length - 1 && { borderBottomWidth: 0 }]}>
-                    <Text style={[styles.listRowText, { flex: 1 }]}>{tmpl.name}</Text>
+                    <Text style={[styles.listRowText, isLight && { color: th.textPrimary }, { flex: 1 }]}>{tmpl.name}</Text>
                     <TouchableOpacity onPress={() => deleteGratifiedTemplate(tmpl.name)} style={styles.deleteBtn}>
                       <Ionicons name="trash-outline" size={15} color="#EF4444" />
                     </TouchableOpacity>

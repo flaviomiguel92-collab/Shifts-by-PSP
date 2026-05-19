@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ShiftTypeConfig } from '../../types';
+import { useTheme } from '../../theme/themes';
 
 const PRESET_COLORS = [
   '#3B82F6',
@@ -68,6 +69,10 @@ export function ShiftTypePicker({
   onCreateAndApply,
   onUpdateType,
 }: ShiftTypePickerProps) {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
+  const placeholderLight = isLight ? th.textMuted : '#4B5563';
   const [pickerView, setPickerView] = useState<PickerView>('list');
   const [selectedType, setSelectedType] = useState<ShiftTypeConfig | null>(null);
   const [form, setForm] = useState<FormData>({ ...DEFAULT_FORM });
@@ -169,8 +174,8 @@ export function ShiftTypePicker({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={styles.dragHandle} />
+        <View style={[styles.sheet, isLight && { backgroundColor: th.surfaceAlt }]}>
+          <View style={[styles.dragHandle, isLight && { backgroundColor: th.borderStrong }]} />
 
           <View style={styles.sheetHeader}>
             {showBack && (
@@ -181,9 +186,9 @@ export function ShiftTypePicker({
             {pickerView === 'selected' && selectedType && (
               <View style={[styles.typeColorDot, { backgroundColor: selectedType.color }]} />
             )}
-            <Text style={styles.sheetTitle}>{getTitle()}</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color="#9CA3AF" />
+            <Text style={[styles.sheetTitle, isLight && { color: th.textPrimary }]}>{getTitle()}</Text>
+            <TouchableOpacity onPress={handleClose} style={[styles.closeBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)' }]}>
+              <Ionicons name="close" size={20} color={isLight ? th.textSecondary : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
 
@@ -299,9 +304,9 @@ export function ShiftTypePicker({
             >
               <Text style={styles.fieldLabel}>Nome</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputLight]}
                 placeholder="Ex: Manhã, Tarde, Folga..."
-                placeholderTextColor="#4B5563"
+                placeholderTextColor={placeholderLight}
                 value={form.name}
                 onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
                 autoFocus={pickerView === 'create'}
@@ -334,9 +339,9 @@ export function ShiftTypePicker({
                   <View style={{ flex: 1 }}>
                     <Text style={styles.fieldLabel}>Início</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, inputLight]}
                       placeholder="08:00"
-                      placeholderTextColor="#4B5563"
+                      placeholderTextColor={placeholderLight}
                       value={form.startTime}
                       onChangeText={(v) => setForm((f) => ({ ...f, startTime: v }))}
                       keyboardType="numbers-and-punctuation"
@@ -346,9 +351,9 @@ export function ShiftTypePicker({
                   <View style={{ flex: 1 }}>
                     <Text style={styles.fieldLabel}>Fim</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, inputLight]}
                       placeholder="16:00"
-                      placeholderTextColor="#4B5563"
+                      placeholderTextColor={placeholderLight}
                       value={form.endTime}
                       onChangeText={(v) => setForm((f) => ({ ...f, endTime: v }))}
                       keyboardType="numbers-and-punctuation"

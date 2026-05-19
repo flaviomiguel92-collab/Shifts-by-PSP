@@ -11,9 +11,12 @@ import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { FAB } from '../../src/components/ui/FAB';
 import { exportGratifiedToXLSX } from '../../src/utils/exportUtils';
 import { toast } from '../../src/utils/toast';
+import { useTheme } from '../../src/theme/themes';
 
 function GlassCard({ children, style }: any) {
-  return <View style={[cardStyle.card, style]}>{children}</View>;
+  const th = useTheme();
+  const isLight = !th.isDark;
+  return <View style={[cardStyle.card, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong, shadowOpacity: 0.08 }, style]}>{children}</View>;
 }
 
 const cardStyle = StyleSheet.create({
@@ -32,6 +35,8 @@ const cardStyle = StyleSheet.create({
 });
 
 export default function GratificadosScreen() {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const store = useDataStore() as any;
   const { gratifiedEntries, currentMonth, setCurrentMonth, currentYear } = store;
 
@@ -89,7 +94,7 @@ export default function GratificadosScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
       <View style={styles.pageHeader}>
         <View>
           <Text style={styles.pageTitle}>Gratificados</Text>
@@ -105,7 +110,7 @@ export default function GratificadosScreen() {
 
         {/* Month summary */}
         <GlassCard>
-          <Text style={styles.cardTitle}>Resumo do mês</Text>
+          <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Resumo do mês</Text>
           <View style={styles.monthNav}>
             <TouchableOpacity style={styles.navBtn} onPress={goPrevMonth}>
               <Ionicons name="chevron-back" size={18} color="#60A5FA" />
@@ -133,7 +138,7 @@ export default function GratificadosScreen() {
         {/* Month entries */}
         <GlassCard>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Gratificados do mês</Text>
+            <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Gratificados do mês</Text>
             <TouchableOpacity
               style={styles.xlsxBtn}
               onPress={async () => {
@@ -181,7 +186,7 @@ export default function GratificadosScreen() {
               return (
                 <View style={styles.emptyState}>
                   <Ionicons name="cash-outline" size={28} color="#1E293B" />
-                  <Text style={styles.emptyText}>
+                  <Text style={[styles.emptyText, isLight && { color: th.textMuted }]}>
                     {q ? 'Nenhum resultado para esta pesquisa.' : 'Sem gratificados no mês selecionado.'}
                   </Text>
                 </View>
@@ -213,7 +218,7 @@ export default function GratificadosScreen() {
 
         {/* Annual summary */}
         <GlassCard>
-          <Text style={styles.cardTitle}>Resumo anual</Text>
+          <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Resumo anual</Text>
           <View style={styles.kpiRow}>
             <View style={styles.kpiBox}>
               <Ionicons name="list-outline" size={18} color="#94A3B8" style={{ marginBottom: 6 }} />
@@ -232,7 +237,7 @@ export default function GratificadosScreen() {
             {byMonth.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="bar-chart-outline" size={24} color="#1E293B" />
-                <Text style={styles.emptyText}>Sem gratificados no ano atual.</Text>
+                <Text style={[styles.emptyText, isLight && { color: th.textMuted }]}>Sem gratificados no ano atual.</Text>
               </View>
             ) : (
               byMonth.map((m, i) => {

@@ -8,8 +8,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
+import { useTheme } from '../src/theme/themes';
 
 export default function RegisterScreen() {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const gradientColors = (isLight ? ['#F8FAFC', '#F1F5F9', '#E2E8F0'] : ['#050816', '#0B1120', '#111827']) as [string, string, string];
+  const inputLight = isLight ? { color: th.textPrimary } : null;
+  const placeholderLight = isLight ? th.textMuted : '#334155';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,7 +77,7 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#050816', '#0B1120', '#111827']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
       <View style={styles.blob1} />
       <View style={styles.blob2} />
 
@@ -82,8 +88,8 @@ export default function RegisterScreen() {
               <Ionicons name="arrow-back" size={20} color="#60A5FA" />
             </TouchableOpacity>
             <View>
-              <Text style={styles.title}>Criar Conta</Text>
-              <Text style={styles.subtitle}>PSP Turnos</Text>
+              <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Criar Conta</Text>
+              <Text style={[styles.subtitle, isLight && { color: th.textMuted }]}>PSP Turnos</Text>
             </View>
           </View>
 
@@ -94,9 +100,9 @@ export default function RegisterScreen() {
                 <View style={[styles.inputWrap, focused === f.key && styles.inputWrapFocused]}>
                   <Ionicons name={f.icon} size={17} color={focused === f.key ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.input, { flex: 1 }]}
+                    style={[styles.input, inputLight, { flex: 1 }]}
                     placeholder={f.placeholder}
-                    placeholderTextColor="#334155"
+                    placeholderTextColor={placeholderLight}
                     value={f.value}
                     onChangeText={f.onChange}
                     editable={!isLoading}

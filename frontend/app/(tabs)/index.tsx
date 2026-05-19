@@ -973,6 +973,7 @@ export default function CalendarScreen() {
           <Animated.View
             style={[
               styles.optionsPanelFloating,
+              isLight && { backgroundColor: t.surfaceAlt, borderColor: t.borderStrong },
               {
                 opacity: optionsPanelAnim,
                 transform: [
@@ -1000,8 +1001,8 @@ export default function CalendarScreen() {
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.optionsPanelSection}>
-                <Text style={styles.optionsSectionTitle}>Ciclos</Text>
-                <Text style={styles.quickBarTitle}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
+                <Text style={[styles.optionsSectionTitle, isLight && { color: t.textPrimary }]}>Ciclos</Text>
+                <Text style={[styles.quickBarTitle, isLight && { color: t.textMuted }]}>Seleciona um ciclo, depois toca no dia inicial e no final</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.cycleButtons}>
                     <TouchableOpacity
@@ -1073,10 +1074,10 @@ export default function CalendarScreen() {
       {/* Multi-select action bar */}
       <Modal visible={editMode === 'multi_select'} transparent animationType="none" onRequestClose={cancelEditMode}>
         <View style={{ flex: 1 }} pointerEvents="box-none">
-          <View style={styles.multiSelectBar} pointerEvents="auto">
+          <View style={[styles.multiSelectBar, isLight && { backgroundColor: t.surfaceAlt, borderColor: t.borderStrong }]} pointerEvents="auto">
             <View style={styles.multiSelectInfo}>
               <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
-              <Text style={styles.multiSelectCount}>
+              <Text style={[styles.multiSelectCount, isLight && { color: t.textPrimary }]}>
                 {selectedDates.size} {selectedDates.size === 1 ? 'dia' : 'dias'} selecionado{selectedDates.size !== 1 ? 's' : ''}
               </Text>
             </View>

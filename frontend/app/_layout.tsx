@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
 import { usePreferencesStore } from '../src/store/preferencesStore';
+import { getThemeColors } from '../src/theme/themes';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Animated, StyleSheet, Image } from 'react-native';
 import { COLORS } from '../src/theme/colors';
@@ -15,6 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 const logoImage = require('../assets/images/icon.png');
 
 function SplashScreen() {
+  const calendarTheme = usePreferencesStore((s) => s.calendarTheme);
+  const isLight = calendarTheme === 'light';
+  const themeBg = isLight ? getThemeColors(true).bg : COLORS.background;
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.85)).current;
   const pulse = useRef(new Animated.Value(1)).current;
@@ -34,7 +38,7 @@ function SplashScreen() {
   }, [opacity, scale, pulse]);
 
   return (
-    <View style={splashStyles.container}>
+    <View style={[splashStyles.container, { backgroundColor: themeBg }]}>
       <Animated.View style={[splashStyles.logoWrap, { opacity, transform: [{ scale }] }]}>
         <Animated.View style={[splashStyles.logoGlow, { transform: [{ scale: pulse }] }]} />
         <Image source={logoImage} style={splashStyles.logoImage} resizeMode="contain" />

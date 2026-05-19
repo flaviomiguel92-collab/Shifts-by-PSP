@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '../utils/helpers';
 import { useDataStore } from '../store/dataStore';
+import { useTheme } from '../theme/themes';
 
 interface ShiftModalProps {
   visible: boolean;
@@ -27,6 +28,10 @@ const PRESET_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#
 export const ShiftModal: React.FC<ShiftModalProps> = ({
   visible, onClose, onSave, onDelete, date, existingShift,
 }) => {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputLight = isLight ? { color: th.textPrimary } : null;
+  const placeholderLight = isLight ? th.textMuted : '#334155';
   const { shiftTypes, createShiftType } = useDataStore() as any;
 
   const [selectedType, setSelectedType] = useState('');
@@ -77,20 +82,20 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent statusBarTranslucent>
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, isLight && { backgroundColor: th.surfaceAlt }]}>
           {/* Drag handle */}
-          <View style={styles.handle} />
+          <View style={[styles.handle, isLight && { backgroundColor: th.borderStrong }]} />
 
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>{existingShift ? 'Editar Turno' : 'Novo Turno'}</Text>
+              <Text style={[styles.title, isLight && { color: th.textPrimary }]}>{existingShift ? 'Editar Turno' : 'Novo Turno'}</Text>
               {!!date && (
-                <Text style={styles.dateText}>{formatDate(date, 'EEEE, d MMMM yyyy')}</Text>
+                <Text style={[styles.dateText, isLight && { color: th.textMuted }]}>{formatDate(date, 'EEEE, d MMMM yyyy')}</Text>
               )}
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={18} color="#94A3B8" />
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)' }]}>
+              <Ionicons name="close" size={18} color={isLight ? th.textSecondary : '#94A3B8'} />
             </TouchableOpacity>
           </View>
 
@@ -98,7 +103,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             {/* Existing types */}
             {shiftTypes.length > 0 && (
               <>
-                <Text style={styles.sectionLabel}>TURNOS EXISTENTES</Text>
+                <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>TURNOS EXISTENTES</Text>
                 <View style={styles.typeGrid}>
                   {shiftTypes.map((shift: any) => {
                     const isSelected = selectedType === shift.name;
@@ -129,13 +134,13 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             )}
 
             {/* Create new */}
-            <Text style={styles.sectionLabel}>CRIAR NOVO TURNO</Text>
+            <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>CRIAR NOVO TURNO</Text>
             <View style={[styles.inputWrap, nameFocused && styles.inputWrapFocused]}>
               <Ionicons name="add-circle-outline" size={16} color={nameFocused ? '#60A5FA' : '#475569'} style={{ marginRight: 8 }} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputLight]}
                 placeholder="Nome do turno"
-                placeholderTextColor="#334155"
+                placeholderTextColor={placeholderLight}
                 value={newShiftName}
                 onChangeText={(text) => { setNewShiftName(text); if (text) setSelectedType(''); }}
                 onFocus={() => setNameFocused(true)}
@@ -162,16 +167,16 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             </View>
 
             {/* Time */}
-            <Text style={styles.sectionLabel}>HORÁRIO</Text>
+            <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>HORÁRIO</Text>
             <View style={styles.timeRow}>
               <View style={[styles.inputWrap, { flex: 1 }, startFocused && styles.inputWrapFocused]}>
                 <Ionicons name="time-outline" size={15} color={startFocused ? '#60A5FA' : '#475569'} style={{ marginRight: 8 }} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputLight]}
                   value={startTime}
                   onChangeText={setStartTime}
                   placeholder="08:00"
-                  placeholderTextColor="#334155"
+                  placeholderTextColor={placeholderLight}
                   onFocus={() => setStartFocused(true)}
                   onBlur={() => setStartFocused(false)}
                 />
@@ -182,11 +187,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               <View style={[styles.inputWrap, { flex: 1 }, endFocused && styles.inputWrapFocused]}>
                 <Ionicons name="time-outline" size={15} color={endFocused ? '#60A5FA' : '#475569'} style={{ marginRight: 8 }} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputLight]}
                   value={endTime}
                   onChangeText={setEndTime}
                   placeholder="16:00"
-                  placeholderTextColor="#334155"
+                  placeholderTextColor={placeholderLight}
                   onFocus={() => setEndFocused(true)}
                   onBlur={() => setEndFocused(false)}
                 />
@@ -194,14 +199,14 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             </View>
 
             {/* Note */}
-            <Text style={styles.sectionLabel}>NOTA</Text>
+            <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>NOTA</Text>
             <View style={[styles.inputWrap, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
               <TextInput
-                style={[styles.input, { flex: 1, textAlignVertical: 'top' }]}
+                style={[styles.input, inputLight, { flex: 1, textAlignVertical: 'top' }]}
                 value={note}
                 onChangeText={setNote}
                 placeholder="Opcional..."
-                placeholderTextColor="#334155"
+                placeholderTextColor={placeholderLight}
                 multiline
               />
             </View>

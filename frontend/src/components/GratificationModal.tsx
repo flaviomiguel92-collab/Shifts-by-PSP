@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GratificationType, GRATIFICATION_LABELS, GRATIFICATION_COLORS, Gratification } from '../types';
 import { dateToString } from '../utils/helpers';
 import { COLORS } from '../theme/colors';
+import { useTheme } from '../theme/themes';
 
 interface GratificationModalProps {
   visible: boolean;
@@ -33,6 +34,10 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
   existingGratification,
   initialDate,
 }) => {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
+  const placeholderLight = isLight ? th.textMuted : '#6B7280';
   const [selectedType, setSelectedType] = useState<GratificationType>('hora_extra');
   const [value, setValue] = useState('');
   const [note, setNote] = useState('');
@@ -74,27 +79,27 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.container}>
+        <View style={[styles.container, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>
+            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>
               {existingGratification ? 'Editar Extra' : 'Novo Extra'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#9CA3AF" />
+              <Ionicons name="close" size={24} color={isLight ? th.textSecondary : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionTitle}>Data</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Data</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={date}
               onChangeText={setDate}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
-            <Text style={styles.sectionTitle}>Tipo</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Tipo</Text>
             <View style={styles.typeGrid}>
               {gratTypes.map((type) => (
                 <TouchableOpacity
@@ -120,26 +125,26 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>Valor (EUR)</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Valor (EUR)</Text>
             <View style={styles.valueContainer}>
-              <Text style={styles.currencySymbol}>€</Text>
+              <Text style={[styles.currencySymbol, isLight && { color: th.textPrimary }]}>€</Text>
               <TextInput
-                style={[styles.input, styles.valueInput]}
+                style={[styles.input, styles.valueInput, inputLight]}
                 value={value}
                 onChangeText={setValue}
                 placeholder="0.00"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={placeholderLight}
                 keyboardType="decimal-pad"
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Nota (opcional)</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Nota (opcional)</Text>
             <TextInput
-              style={[styles.input, styles.noteInput]}
+              style={[styles.input, styles.noteInput, inputLight]}
               value={note}
               onChangeText={setNote}
               placeholder="Adicionar nota..."
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               multiline
             />
           </ScrollView>

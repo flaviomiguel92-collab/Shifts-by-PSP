@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../store/dataStore';
 import { calcGratifiedValue } from '../utils/gratifiedCalc';
+import { useTheme } from '../theme/themes';
 
 interface GratifiedModalProps {
   visible: boolean;
@@ -26,6 +27,10 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
   date,
   isHolidayOrWeekend,
 }) => {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
+  const placeholderLight = isLight ? th.textMuted : '#6B7280';
   const {
     gratifiedConfig,
     gratifiedTemplates,
@@ -94,27 +99,27 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <View style={[styles.container, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Adicionar Gratificado</Text>
+            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Adicionar Gratificado</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#9CA3AF" />
+              <Ionicons name="close" size={24} color={isLight ? th.textSecondary : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
 
           <ScrollView>
-            <Text style={styles.sectionTitle}>Nome</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Nome</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               placeholder="Ex: Gratificado Operação X"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               value={name}
               onChangeText={setName}
             />
 
             {gratifiedTemplates?.length > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Escolher da lista</Text>
+                <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Escolher da lista</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.templateRow}>
                     {gratifiedTemplates.map((t) => (
@@ -141,27 +146,27 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
               </>
             )}
 
-            <Text style={styles.sectionTitle}>Hora</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Hora</Text>
             <View style={styles.row}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputLight]}
                 placeholder="Início (HH:MM)"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={placeholderLight}
                 value={startTime}
                 onChangeText={setStartTime}
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputLight]}
                 placeholder="Fim (HH:MM)"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={placeholderLight}
                 value={endTime}
                 onChangeText={setEndTime}
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Valor</Text>
-            <View style={styles.valueCard}>
-              <Text style={styles.valueBig}>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Valor</Text>
+            <View style={[styles.valueCard, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}>
+              <Text style={[styles.valueBig, isLight && { color: th.textPrimary }]}>
                 {calc ? `${calc.total.toFixed(2)} €` : '—'}
               </Text>
               {calc && (

@@ -11,6 +11,7 @@ import { formatCurrency, formatMonth, resolveShiftColor } from '../../src/utils/
 import { StatCard, StatCardRow } from '../../src/components/ui/StatCard';
 import { SectionHeader } from '../../src/components/ui/SectionHeader';
 import { COLORS } from '../../src/theme/colors';
+import { useTheme } from '../../src/theme/themes';
 
 const MONTHS_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const CHART_W = Math.min(Dimensions.get('window').width - 64, 740);
@@ -28,10 +29,14 @@ function shiftDurationMins(st: any): number {
 }
 
 function GlassCard({ children, style }: any) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  const th = useTheme();
+  const isLight = !th.isDark;
+  return <View style={[styles.card, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong, shadowOpacity: 0.08 }, style]}>{children}</View>;
 }
 
 export default function StatsScreen() {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const { gratifiedEntries, shifts, shiftTypes, currentYear, currentMonth, setCurrentMonth } = useDataStore() as any;
 
   // ── Gratificados ─────────────────────────────────────────────
@@ -247,7 +252,7 @@ export default function StatsScreen() {
   const lineSpacing = Math.floor(CHART_W / 13);
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
       <View style={styles.pageHeader}>
         <View>
           <Text style={styles.pageTitle}>Painel</Text>
@@ -301,7 +306,7 @@ export default function StatsScreen() {
         {/* Donut chart — shift type distribution */}
         {donutData.length > 0 && (
           <GlassCard>
-            <Text style={styles.cardTitle}>Distribuição · {formatMonth(currentMonth)}</Text>
+            <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Distribuição · {formatMonth(currentMonth)}</Text>
             <View style={styles.donutRow}>
               <PieChart
                 donut
@@ -360,7 +365,7 @@ export default function StatsScreen() {
         {/* Area chart — monthly gratificados evolution */}
         {hasAreaData && (
           <GlassCard>
-            <Text style={styles.cardTitle}>Evolução mensal · {currentYear}</Text>
+            <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Evolução mensal · {currentYear}</Text>
             {hasPrevData && (
               <View style={styles.chartLegendRow}>
                 <View style={[styles.chartLegendDot, { backgroundColor: '#3B82F6' }]} />
@@ -402,7 +407,7 @@ export default function StatsScreen() {
         {/* Yearly comparison — two-line chart */}
         {hasAreaData && hasPrevData && (
           <GlassCard>
-            <Text style={styles.cardTitle}>Comparação anual</Text>
+            <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Comparação anual</Text>
             <View style={styles.chartLegendRow}>
               <View style={[styles.chartLegendDot, { backgroundColor: '#3B82F6' }]} />
               <Text style={styles.chartLegendText}>{currentYear}</Text>
@@ -436,7 +441,7 @@ export default function StatsScreen() {
 
         {/* Yearly heatmap */}
         <GlassCard>
-          <Text style={styles.cardTitle}>Calendário anual de turnos · {currentYear}</Text>
+          <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Calendário anual de turnos · {currentYear}</Text>
           <View style={styles.heatmapGrid}>
             {heatmapData.map((month) => (
               <View key={month.monthStr} style={styles.heatmapMonth}>
@@ -464,7 +469,7 @@ export default function StatsScreen() {
         {/* Bar chart — gratificados by month */}
         {chartData.length > 0 && (
           <GlassCard>
-            <Text style={styles.cardTitle}>Gratificados por mês</Text>
+            <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Gratificados por mês</Text>
             <BarChart
               data={chartData}
               barWidth={26}
@@ -490,7 +495,7 @@ export default function StatsScreen() {
 
         {/* Monthly breakdown table */}
         <GlassCard>
-          <Text style={styles.cardTitle}>Breakdown mensal</Text>
+          <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Breakdown mensal</Text>
           {Object.entries(monthlyMap).length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="bar-chart-outline" size={28} color="#1E293B" />
@@ -517,7 +522,7 @@ export default function StatsScreen() {
 
         {/* Month detail */}
         <GlassCard>
-          <Text style={styles.cardTitle}>Detalhe do mês</Text>
+          <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Detalhe do mês</Text>
           <View style={styles.monthNav}>
             <TouchableOpacity
               style={styles.navBtn}

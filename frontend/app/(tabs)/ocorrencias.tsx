@@ -23,6 +23,7 @@ import { formatDate } from '../../src/utils/helpers';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
 import { PersonFormModal } from '../../src/components/occurrence/PersonFormModal';
 import { CreateOccurrenceModal } from '../../src/components/occurrence/CreateOccurrenceModal';
+import { useTheme } from '../../src/theme/themes';
 import {
   Occurrence,
   Person,
@@ -37,6 +38,8 @@ const MAX_IMAGE_WIDTH = 800;  // Max width for compressed images
 const IMAGE_QUALITY = 0.6;    // Compression quality (0-1)
 
 export default function OcorrenciasScreen() {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -381,10 +384,10 @@ export default function OcorrenciasScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isLight && { backgroundColor: th.bg }]}>
       <HeaderWithBack title="Ocorrências" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Ocorrências</Text>
+      <View style={[styles.header, isLight && { backgroundColor: th.bgAlt, borderBottomColor: th.border }]}>
+        <Text style={[styles.headerTitle, isLight && { color: th.textPrimary }]}>Ocorrências</Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setShowCreateModal(true)}
@@ -404,27 +407,27 @@ export default function OcorrenciasScreen() {
         {occurrences.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={50} color="#374151" />
-            <Text style={styles.emptyText}>Sem ocorrências registadas</Text>
-            <Text style={styles.emptySubtext}>Toca no + para criar uma nova</Text>
+            <Text style={[styles.emptyText, isLight && { color: th.textSecondary }]}>Sem ocorrências registadas</Text>
+            <Text style={[styles.emptySubtext, isLight && { color: th.textMuted }]}>Toca no + para criar uma nova</Text>
           </View>
         ) : (
           occurrences.map((occ) => (
             <TouchableOpacity
               key={occ.id}
-              style={styles.occCard}
+              style={[styles.occCard, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}
               onPress={() => openOccurrence(occ)}
             >
               <View style={styles.occHeader}>
                 <View style={[styles.statusBadge, { backgroundColor: OCCURRENCE_STATUS_COLORS[occ.status] }]}>
                   <Text style={styles.statusText}>{OCCURRENCE_STATUS_LABELS[occ.status]}</Text>
                 </View>
-                <Text style={styles.occDate}>{formatDate(occ.date)}</Text>
+                <Text style={[styles.occDate, isLight && { color: th.textMuted }]}>{formatDate(occ.date)}</Text>
               </View>
-              <Text style={styles.occClassification}>{occ.classification}</Text>
-              <Text style={styles.occLocation} numberOfLines={1}>
-                <Ionicons name="location" size={12} color="#6B7280" /> {occ.location}
+              <Text style={[styles.occClassification, isLight && { color: th.textPrimary }]}>{occ.classification}</Text>
+              <Text style={[styles.occLocation, isLight && { color: th.textSecondary }]} numberOfLines={1}>
+                <Ionicons name="location" size={12} color={isLight ? th.textMuted : '#6B7280'} /> {occ.location}
               </Text>
-              <Text style={styles.occDescription} numberOfLines={2}>{occ.description}</Text>
+              <Text style={[styles.occDescription, isLight && { color: th.textSecondary }]} numberOfLines={2}>{occ.description}</Text>
               <View style={styles.occFooter}>
                 <View style={styles.occStat}>
                   <Ionicons name="people" size={14} color="#6B7280" />
