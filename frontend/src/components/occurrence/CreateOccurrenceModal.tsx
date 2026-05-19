@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { storage } from '../../utils/storage';
 import { Occurrence, OCCURRENCE_CLASSIFICATIONS } from '../../types/occurrence';
+import { useTheme } from '../../theme/themes';
 
 interface Props {
   visible: boolean;
@@ -21,6 +22,10 @@ interface Props {
 }
 
 export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: Props) {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
+  const placeholderLight = isLight ? th.textMuted : '#6B7280';
   const today = new Date();
   const [date, setDate] = useState(today.toISOString().slice(0, 10));
   const [time, setTime] = useState(today.toTimeString().slice(0, 5));
@@ -68,51 +73,51 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.content}>
+        <View style={[styles.content, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Nova Ocorrência</Text>
+            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Nova Ocorrência</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.body}>
-            <Text style={styles.label}>Data *</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Data *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={date}
               onChangeText={setDate}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
-            <Text style={styles.label}>Hora</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Hora</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={time}
               onChangeText={setTime}
               placeholder="HH:MM"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
-            <Text style={styles.label}>Local *</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Local *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={location}
               onChangeText={setLocation}
               placeholder="Endereço ou descrição do local"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
-            <Text style={styles.label}>Tipificação *</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Tipificação *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.classificationGrid}>
                 {OCCURRENCE_CLASSIFICATIONS.map((c) => (
                   <TouchableOpacity
                     key={c}
-                    style={[styles.classificationBtn, classification === c && styles.classificationBtnActive]}
+                    style={[styles.classificationBtn, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }, classification === c && styles.classificationBtnActive]}
                     onPress={() => setClassification(c)}
                   >
-                    <Text style={[styles.classificationBtnText, classification === c && styles.classificationBtnTextActive]}>
+                    <Text style={[styles.classificationBtnText, isLight && classification !== c && { color: th.textSecondary }, classification === c && styles.classificationBtnTextActive]}>
                       {c}
                     </Text>
                   </TouchableOpacity>
@@ -120,13 +125,13 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
               </View>
             </ScrollView>
 
-            <Text style={styles.label}>Descrição *</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Descrição *</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, inputLight]}
               value={description}
               onChangeText={setDescription}
               placeholder="Descreva a ocorrência..."
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               multiline
               numberOfLines={4}
             />

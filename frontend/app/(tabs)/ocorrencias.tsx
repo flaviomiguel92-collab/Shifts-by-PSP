@@ -454,15 +454,15 @@ export default function OcorrenciasScreen() {
 
       {/* Detail Modal */}
       <Modal visible={showDetailModal} animationType="slide">
-        <SafeAreaView style={styles.detailContainer}>
-          <View style={styles.detailHeader}>
+        <SafeAreaView style={[styles.detailContainer, isLight && { backgroundColor: th.bg }]}>
+          <View style={[styles.detailHeader, isLight && { backgroundColor: th.bgAlt, borderBottomColor: th.border }]}>
             <TouchableOpacity onPress={() => {
               setShowDetailModal(false);
               setLocalPhotos([]);
             }}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <Ionicons name="arrow-back" size={24} color={isLight ? th.textPrimary : '#FFFFFF'} />
             </TouchableOpacity>
-            <Text style={styles.detailTitle}>Boletim</Text>
+            <Text style={[styles.detailTitle, isLight && { color: th.textPrimary }]}>Boletim</Text>
             <View style={styles.headerActions}>
               <TouchableOpacity onPress={generatePDF} style={styles.pdfBtn}>
                 <Ionicons name="document" size={20} color="#FFFFFF" />
@@ -482,20 +482,22 @@ export default function OcorrenciasScreen() {
               </TouchableOpacity>
 
               {/* Status */}
-              <View style={styles.detailSection}>
-                <Text style={styles.detailSectionTitle}>Estado</Text>
+              <View style={[styles.detailSection, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
+                <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Estado</Text>
                 <View style={styles.statusRow}>
                   {['rascunho', 'em_analise', 'concluido', 'arquivado'].map((s) => (
                     <TouchableOpacity
                       key={s}
                       style={[
                         styles.statusOption,
+                        isLight && { backgroundColor: th.bg, borderColor: th.borderStrong, borderWidth: 1 },
                         selectedOccurrence.status === s && { backgroundColor: OCCURRENCE_STATUS_COLORS[s] },
                       ]}
                       onPress={() => handleUpdateStatus(s)}
                     >
                       <Text style={[
                         styles.statusOptionText,
+                        isLight && selectedOccurrence.status !== s && { color: th.textSecondary },
                         selectedOccurrence.status === s && { color: '#FFF' },
                       ]}>{OCCURRENCE_STATUS_LABELS[s]}</Text>
                     </TouchableOpacity>
@@ -504,26 +506,26 @@ export default function OcorrenciasScreen() {
               </View>
 
               {/* Info */}
-              <View style={styles.detailSection}>
-                <Text style={styles.detailSectionTitle}>Informação</Text>
+              <View style={[styles.detailSection, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
+                <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Informação</Text>
                 <View style={styles.infoRow}>
                   <Ionicons name="calendar" size={16} color="#9CA3AF" />
-                  <Text style={styles.infoText}>{formatDate(selectedOccurrence.date)} {selectedOccurrence.time || ''}</Text>
+                  <Text style={[styles.infoText, isLight && { color: th.textPrimary }]}>{formatDate(selectedOccurrence.date)} {selectedOccurrence.time || ''}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Ionicons name="location" size={16} color="#9CA3AF" />
-                  <Text style={styles.infoText}>{selectedOccurrence.location}</Text>
+                  <Text style={[styles.infoText, isLight && { color: th.textPrimary }]}>{selectedOccurrence.location}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Ionicons name="pricetag" size={16} color="#9CA3AF" />
-                  <Text style={styles.infoText}>{selectedOccurrence.classification}</Text>
+                  <Text style={[styles.infoText, isLight && { color: th.textPrimary }]}>{selectedOccurrence.classification}</Text>
                 </View>
               </View>
 
               {/* Description */}
-              <View style={styles.detailSection}>
-                <Text style={styles.detailSectionTitle}>Descrição</Text>
-                <Text style={styles.descriptionText}>{selectedOccurrence.description}</Text>
+              <View style={[styles.detailSection, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
+                <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Descrição</Text>
+                <Text style={[styles.descriptionText, isLight && { color: th.textSecondary }]}>{selectedOccurrence.description}</Text>
               </View>
 
               {/* Photos */}
@@ -590,7 +592,7 @@ export default function OcorrenciasScreen() {
                 </View>
                 {getAllPersons(selectedOccurrence).length > 0 ? (
                   getAllPersons(selectedOccurrence).map((person, i) => (
-                    <View key={i} style={styles.personCard}>
+                    <View key={i} style={[styles.personCard, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}>
                       <View style={styles.personHeader}>
                         <View style={[styles.roleBadge, {
                           backgroundColor: person.role === 'suspeito' ? '#EF4444' :
@@ -598,29 +600,29 @@ export default function OcorrenciasScreen() {
                         }]}>
                           <Text style={styles.roleBadgeText}>{person.roleLabel}</Text>
                         </View>
-                        <Text style={styles.personName}>{person.full_name}</Text>
+                        <Text style={[styles.personName, isLight && { color: th.textPrimary }]}>{person.full_name}</Text>
                       </View>
                       {person.document_number && (
-                        <Text style={styles.personDoc}>
+                        <Text style={[styles.personDoc, isLight && { color: th.textSecondary }]}>
                           {DOCUMENT_TYPE_LABELS[person.document_type as DocumentType]}: {person.document_number}
                         </Text>
                       )}
                       {person.tax_id && (
-                        <Text style={styles.personContact}>NIF: {person.tax_id}</Text>
+                        <Text style={[styles.personContact, isLight && { color: th.textMuted }]}>NIF: {person.tax_id}</Text>
                       )}
                       {person.address && (
-                        <Text style={styles.personContact}>Morada: {person.address}</Text>
+                        <Text style={[styles.personContact, isLight && { color: th.textMuted }]}>Morada: {person.address}</Text>
                       )}
                       {person.phone && (
-                        <Text style={styles.personContact}>Tel: {person.phone}</Text>
+                        <Text style={[styles.personContact, isLight && { color: th.textMuted }]}>Tel: {person.phone}</Text>
                       )}
                       {person.email && (
-                        <Text style={styles.personContact}>Email: {person.email}</Text>
+                        <Text style={[styles.personContact, isLight && { color: th.textMuted }]}>Email: {person.email}</Text>
                       )}
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.emptySubtext}>Nenhuma pessoa adicionada</Text>
+                  <Text style={[styles.emptySubtext, isLight && { color: th.textMuted }]}>Nenhuma pessoa adicionada</Text>
                 )}
               </View>
             </ScrollView>

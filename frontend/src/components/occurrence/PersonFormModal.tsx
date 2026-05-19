@@ -23,6 +23,7 @@ import {
   DOCUMENT_TYPE_LABELS,
   PERSON_ROLE_LABELS,
 } from '../../types/occurrence';
+import { useTheme } from '../../theme/themes';
 
 const MAX_IMAGE_WIDTH = 800;
 const IMAGE_QUALITY = 0.6;
@@ -39,6 +40,10 @@ interface Props {
 }
 
 export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPersonAdded }: Props) {
+  const th = useTheme();
+  const isLight = !th.isDark;
+  const inputLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
+  const placeholderLight = isLight ? th.textMuted : '#6B7280';
   const [role, setRole] = useState<PersonRole>('testemunha');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -150,15 +155,15 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={[styles.content, { maxHeight: '90%' }]}>
+        <View style={[styles.content, { maxHeight: '90%' }, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Adicionar Pessoa</Text>
+            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Adicionar Pessoa</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.body}>
-            <Text style={styles.label}>Tipo *</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Tipo *</Text>
             <View style={styles.roleButtons}>
               {ROLES.map((r) => (
                 <TouchableOpacity
@@ -173,16 +178,16 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
               ))}
             </View>
 
-            <Text style={styles.label}>Nome Completo *</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Nome Completo *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={name}
               onChangeText={setName}
               placeholder="Nome completo"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
-            <Text style={styles.label}>Documento de Identificação</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Documento de Identificação</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.docTypeButtons}>
                 {DOC_TYPES.map((d) => (
@@ -199,90 +204,90 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
               </View>
             </ScrollView>
 
-            <Text style={styles.label}>Nº Documento</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Nº Documento</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={docNumber}
               onChangeText={setDocNumber}
               placeholder="Número do documento"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
             <View style={styles.row}>
               <View style={styles.half}>
-                <Text style={styles.label}>Data Emissão</Text>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Data Emissão</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputLight]}
                   value={docIssue}
                   onChangeText={setDocIssue}
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={placeholderLight}
                 />
               </View>
               <View style={styles.half}>
-                <Text style={styles.label}>Data Validade</Text>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Data Validade</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputLight]}
                   value={docExpiry}
                   onChangeText={setDocExpiry}
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={placeholderLight}
                 />
               </View>
             </View>
 
-            <Text style={styles.label}>NIF</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>NIF</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={nif}
               onChangeText={setNif}
               placeholder="Número de Identificação Fiscal"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               keyboardType="numeric"
             />
 
-            <Text style={styles.label}>Morada</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Morada</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={address}
               onChangeText={setAddress}
               placeholder="Endereço completo"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
             />
 
-            <Text style={styles.label}>Telemóvel</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Telemóvel</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={phone}
               onChangeText={setPhone}
               placeholder="Contacto telefónico"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               keyboardType="phone-pad"
             />
 
-            <Text style={styles.label}>E-mail</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>E-mail</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, inputLight]}
               value={email}
               onChangeText={setEmail}
               placeholder="Endereço de e-mail"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               keyboardType="email-address"
             />
 
-            <Text style={styles.label}>Notas</Text>
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Notas</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, inputLight]}
               value={notes}
               onChangeText={setNotes}
               placeholder="Observações adicionais"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor={placeholderLight}
               multiline
             />
 
             <View style={styles.photoSection}>
               <View style={styles.sectionRow}>
-                <Text style={styles.label}>Fotos de Identificação</Text>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Fotos de Identificação</Text>
                 <TouchableOpacity style={styles.addPhotoBtn} onPress={handleAddPhoto} disabled={uploading}>
                   {uploading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
