@@ -2,6 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
+import { usePreferencesStore } from '../src/store/preferencesStore';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Animated, StyleSheet, Image } from 'react-native';
 import { COLORS } from '../src/theme/colors';
@@ -77,6 +78,11 @@ export default function RootLayout() {
       try {
         const { checkAuth } = useAuthStore.getState();
         const { loadData } = useDataStore.getState();
+        try {
+          await usePreferencesStore.getState().loadPreferences();
+        } catch (err) {
+          console.warn('[init] loadPreferences error:', err);
+        }
         const authenticated = await checkAuth();
         if (authenticated) {
           useDataStore.getState().clearSyncedCollections();

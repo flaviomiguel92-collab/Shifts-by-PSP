@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore } from '../../src/store/dataStore';
 import { useAuthStore } from '../../src/store/authStore';
+import { usePreferencesStore } from '../../src/store/preferencesStore';
 import {
   exportMonthlyPDF, exportShiftsToCSV, exportGratifiedToCSV, shareCSV,
   exportFullBackup, pickAndReadJsonWeb, BackupPayload,
@@ -60,6 +61,8 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const calendarTheme = usePreferencesStore((s) => s.calendarTheme);
+  const setCalendarTheme = usePreferencesStore((s) => s.setCalendarTheme);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const {
@@ -416,6 +419,41 @@ export default function ProfileScreen() {
         </Section>
 
         {/* Shift types */}
+        <Section title="Aparência" icon="color-wand-outline">
+          <GlassCard style={{ marginTop: 8, padding: 6 }}>
+            {([
+              { key: 'grid' as const, label: 'Grelha', desc: 'Cartões legíveis, número colorido e nota do turno' },
+              { key: 'classic' as const, label: 'Clássico', desc: 'Célula preenchida com a cor do turno' },
+            ]).map((opt, i) => {
+              const active = calendarTheme === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  activeOpacity={0.8}
+                  onPress={() => setCalendarTheme(opt.key)}
+                  style={[
+                    styles.themeOption,
+                    i === 0 && { marginBottom: 6 },
+                    active && styles.themeOptionActive,
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.themeOptionLabel, active && { color: '#60A5FA' }]}>
+                      {opt.label}
+                    </Text>
+                    <Text style={styles.themeOptionDesc}>{opt.desc}</Text>
+                  </View>
+                  <Ionicons
+                    name={active ? 'radio-button-on' : 'radio-button-off'}
+                    size={22}
+                    color={active ? '#3B82F6' : '#475569'}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </GlassCard>
+        </Section>
+
         <Section title="Tipos de turno" icon="color-palette-outline">
           <CollapseBtn
             label={isShiftTypesExpanded ? 'Ocultar tipos' : 'Ver tipos de turno'}
@@ -752,6 +790,22 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.04)',
     gap: 10,
   },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  themeOptionActive: {
+    borderColor: 'rgba(59,130,246,0.55)',
+    backgroundColor: 'rgba(59,130,246,0.10)',
+  },
+  themeOptionLabel: { color: '#F1F5F9', fontSize: 15, fontWeight: '700' },
+  themeOptionDesc: { color: '#94A3B8', fontSize: 12, marginTop: 2 },
   colorDot: { width: 10, height: 10, borderRadius: 5 },
   listRowText: { color: '#CBD5E1', fontSize: 14, flex: 1 },
   deleteBtn: {

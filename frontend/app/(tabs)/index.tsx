@@ -35,6 +35,7 @@ import { ShiftModal } from '../../src/components/ShiftModal';
 import { CycleModal } from '../../src/components/CycleModal';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { ShiftsSummary } from '../../src/components/ShiftsSummary';
+import { GridSummary } from '../../src/components/calendar/GridSummary';
 import { SkeletonCalendarRow } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/utils/toast';
 import { search } from '../../src/utils/search';
@@ -44,6 +45,7 @@ import { EventFormModal } from '../../src/components/calendar/EventFormModal';
 import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
 import { DayShiftEditor } from '../../src/components/calendar/DayShiftEditor';
 import { usePaintStore } from '../../src/store/paintStore';
+import { usePreferencesStore } from '../../src/store/preferencesStore';
 
 type EditMode = 'none' | 'quick' | 'cycle_start' | 'cycle_end' | 'multi_select';
 
@@ -101,6 +103,9 @@ export default function CalendarScreen() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [detailItem, setDetailItem] = useState<DayItem | null>(null);
+
+  const calendarTheme = usePreferencesStore((s) => s.calendarTheme);
+  const isGridTheme = calendarTheme === 'grid';
 
   // Paint mode (state lives in paintStore so PaintModeBar can be rendered above the tab bar in _layout)
   const paintMode = usePaintStore((s) => s.active);
@@ -737,7 +742,11 @@ export default function CalendarScreen() {
 
         <View style={styles.summaryContainer}>
           <Text style={styles.sectionEyebrow}>Resumo mensal</Text>
-          <ShiftsSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
+          {isGridTheme ? (
+            <GridSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
+          ) : (
+            <ShiftsSummary shifts={shifts} shiftTypes={shiftTypes} month={currentMonth} />
+          )}
         </View>
 
         <View style={styles.calendarCard}>
@@ -778,7 +787,12 @@ export default function CalendarScreen() {
               <View key={wi} style={styles.weekRow}>
                 {week.map((day, di) => {
                   if (!day) {
-                    return <View key={`empty-${wi}-${di}`} style={styles.dayCell} />;
+                    return (
+                      <View
+                        key={`empty-${wi}-${di}`}
+                        style={isGridTheme ? styles.gridDayCellEmpty : styles.dayCell}
+                      />
+                    );
                   }
 
                   const dateStr = dateToString(day);
@@ -792,6 +806,77 @@ export default function CalendarScreen() {
                   const isCycleStart = cycleStartDate === dateStr;
                   const inCycleRange = isInCycleRange(dateStr);
                   const isMultiSelected = editMode === 'multi_select' && selectedDates.has(dateStr);
+
+                  if (isGridTheme) {
+                    const shiftColor = shift ? getShiftDisplayColor(shift.shift_type) : null;
+                    const numColor = shiftColor
+                      || (isToday ? '#3B82F6' : holiday ? '#EF4444' : '#E2E8F0');
+                    return (
+                      <TouchableOpacity
+                        key={dateStr}
+                        style={[
+                          styles.gridDayCell,
+                          shiftColor && !isMultiSelected && {
+                            borderColor: shiftColor + '66',
+                            backgroundColor: shiftColor + '14',
+                          },
+                          isToday && styles.gridTodayCell,
+                          isMultiSelected && styles.multiSelectedCell,
+                          isCycleStart && styles.cycleStartCell,
+                          inCycleRange && styles.inCycleRangeCell,
+                          editMode !== 'none' && styles.selectableCell,
+                        ]}
+                        onPress={(e) => {
+                          const { pageX, pageY } = e.nativeEvent;
+                          handleDayPress(dateStr, pageX, pageY);
+                        }}
+                        onLongPress={() => handleDayLongPress(dateStr)}
+                        delayLongPress={350}
+                      >
+                        <Text style={[styles.gridDayNum, { color: numColor }]}>
+                          {format(day, 'd')}
+                        </Text>
+
+                        {isMultiSelected ? (
+                          <View style={styles.multiCheckWrap}>
+                            <Ionicons name="checkmark-circle" size={16} color="#3B82F6" />
+                          </View>
+                        ) : (
+                          <>
+                            {hasGratification && (
+                              <View style={styles.gratifiedChip}>
+                                <Text style={styles.gratifiedChipText}>
+                                  {gratifiedCount > 1 ? `€${gratifiedCount}` : '€'}
+                                </Text>
+                              </View>
+                            )}
+                            {shift ? (
+                              <View style={styles.gridBody}>
+                                <Text
+                                  style={[styles.gridShiftLabel, { color: shiftColor || '#E2E8F0' }]}
+                                  numberOfLines={1}
+                                >
+                                  {getShiftDisplayName(shift.shift_type).toUpperCase()}
+                                </Text>
+                                {!!shift.note && (
+                                  <Text style={styles.gridNoteText} numberOfLines={1}>
+                                    {shift.note.toUpperCase()}
+                                  </Text>
+                                )}
+                              </View>
+                            ) : holiday ? (
+                              <View style={styles.gridBody}>
+                                <Text style={styles.gridHolidayText} numberOfLines={1}>
+                                  FERIADO
+                                </Text>
+                              </View>
+                            ) : null}
+                            {hasEvent && <View style={styles.gridEventDot} />}
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }
 
                   return (
                     <TouchableOpacity
@@ -1475,6 +1560,60 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     lineHeight: 11,
+  },
+  gridDayCell: {
+    flex: 1,
+    margin: 2,
+    minHeight: 64,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    padding: 6,
+    position: 'relative',
+  },
+  gridDayCellEmpty: {
+    flex: 1,
+    margin: 2,
+    minHeight: 64,
+  },
+  gridTodayCell: {
+    borderColor: '#3B82F6',
+    borderWidth: 1.5,
+  },
+  gridDayNum: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  gridBody: {
+    marginTop: 6,
+  },
+  gridShiftLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  gridNoteText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.4,
+    marginTop: 2,
+  },
+  gridHolidayText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#EF4444',
+    letterSpacing: 0.4,
+  },
+  gridEventDot: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#34D399',
   },
   cycleStartCell: {
     backgroundColor: 'rgba(245, 158, 11, 0.3)',

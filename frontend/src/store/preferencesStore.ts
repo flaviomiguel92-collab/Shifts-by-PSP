@@ -2,25 +2,38 @@ import { create } from 'zustand';
 import { storage } from '../utils/storage';
 
 export type Language = 'pt' | 'en';
+export type CalendarTheme = 'grid' | 'classic';
 
 interface PreferencesState {
   language: Language;
+  calendarTheme: CalendarTheme;
   setLanguage: (lang: Language) => Promise<void>;
+  setCalendarTheme: (theme: CalendarTheme) => Promise<void>;
   loadPreferences: () => Promise<void>;
 }
 
 export const usePreferencesStore = create<PreferencesState>((set) => ({
   language: 'pt',
+  calendarTheme: 'grid',
 
   setLanguage: async (lang) => {
     set({ language: lang });
     await storage.setItem('pref_language', lang);
   },
 
+  setCalendarTheme: async (theme) => {
+    set({ calendarTheme: theme });
+    await storage.setItem('pref_calendar_theme', theme);
+  },
+
   loadPreferences: async () => {
     const lang = await storage.getItem('pref_language');
     if (lang === 'pt' || lang === 'en') {
       set({ language: lang });
+    }
+    const theme = await storage.getItem('pref_calendar_theme');
+    if (theme === 'grid' || theme === 'classic') {
+      set({ calendarTheme: theme });
     }
   },
 }));
