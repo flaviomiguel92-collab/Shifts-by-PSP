@@ -833,11 +833,10 @@ export default function CalendarScreen() {
                       )}
 
                       {hasGratification && !isMultiSelected && (
-                        <View style={styles.gratifiedDotWrap}>
-                          <Ionicons name="star-sharp" size={12} color="#F59E0B" />
-                          {gratifiedCount > 1 && (
-                            <Text style={styles.gratifiedCountText}>{gratifiedCount}</Text>
-                          )}
+                        <View style={styles.gratifiedChip}>
+                          <Text style={styles.gratifiedChipText}>
+                            {gratifiedCount > 1 ? `€${gratifiedCount}` : '€'}
+                          </Text>
                         </View>
                       )}
 
@@ -1457,19 +1456,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
-  gratifiedDotWrap: {
+  gratifiedChip: {
     position: 'absolute',
     top: 3,
     right: 3,
-    flexDirection: 'row',
+    minWidth: 16,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center',
-    gap: 2,
+    justifyContent: 'center',
   },
-  gratifiedCountText: {
+  gratifiedChipText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#10B981',
-    lineHeight: 10,
+    color: '#FFFFFF',
+    lineHeight: 11,
   },
   cycleStartCell: {
     backgroundColor: 'rgba(245, 158, 11, 0.3)',
