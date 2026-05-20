@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(148,163,184,0.22)',
   },
   input: {
     flex: 1,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: { padding: 2 },
   kbdHint: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(148,163,184,0.22)',
     borderRadius: 5,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
   },
   resultIcon: {
     width: 30,

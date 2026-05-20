@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: 'rgba(148,163,184,0.18)',
   },
   shiftDot: {
     width: 10,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: 'rgba(148,163,184,0.18)',
     paddingVertical: 2,
   },
   actionBtn: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   sep: {
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(148,163,184,0.18)',
     marginVertical: 8,
   },
 });

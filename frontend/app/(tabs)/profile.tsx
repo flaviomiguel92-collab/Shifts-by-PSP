@@ -441,15 +441,17 @@ export default function ProfileScreen() {
                   onPress={() => setCalendarTheme(opt.key)}
                   style={[
                     styles.themeOption,
+                    isLight && { backgroundColor: th.bg, borderColor: th.border },
                     i < arr.length - 1 && { marginBottom: 6 },
                     active && styles.themeOptionActive,
+                    active && isLight && { backgroundColor: th.accentSoft, borderColor: th.accent },
                   ]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.themeOptionLabel, active && { color: '#60A5FA' }]}>
+                    <Text style={[styles.themeOptionLabel, isLight && { color: th.textPrimary }, active && { color: th.accent }]}>
                       {opt.label}
                     </Text>
-                    <Text style={styles.themeOptionDesc}>{opt.desc}</Text>
+                    <Text style={[styles.themeOptionDesc, isLight && { color: th.textMuted }]}>{opt.desc}</Text>
                   </View>
                   <Ionicons
                     name={active ? 'radio-button-on' : 'radio-button-off'}
@@ -746,7 +748,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 48 : 20,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
     marginHorizontal: -14,
   },
   avatar: {
@@ -795,7 +797,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
     gap: 10,
   },
   themeOption: {
@@ -805,7 +807,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(148,163,184,0.22)',
     backgroundColor: 'rgba(255,255,255,0.02)',
   },
   themeOptionActive: {
@@ -835,7 +837,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   collapseBtnText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
-  cfgField: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+  cfgField: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(148,163,184,0.18)' },
   cfgLabel: { color: '#475569', fontSize: 11, fontWeight: '600', marginBottom: 6, letterSpacing: 0.3 },
   cfgInput: {
     backgroundColor: 'rgba(5, 8, 22, 0.5)',
@@ -844,7 +846,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(148,163,184,0.22)',
     fontSize: 14,
   },
   saveConfigBtn: {
@@ -915,7 +917,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
     marginBottom: 4,
   },
   exportBtn: {
@@ -926,7 +928,7 @@ const styles = StyleSheet.create({
   },
   exportBtnBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
   },
   exportIcon: {
     width: 36,
@@ -950,7 +952,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
     gap: 10,
   },
   sessionBadgeRow: {

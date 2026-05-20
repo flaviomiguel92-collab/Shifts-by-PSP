@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: 'rgba(148,163,184,0.22)',
   },
   itemIcon: {
     width: 40,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: 'rgba(148,163,184,0.26)',
     marginTop: 8,
     paddingTop: 6,
     marginHorizontal: 12,
@@ -211,5 +211,5 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionLabel: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
-  sep: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 10 },
+  sep: { width: 1, backgroundColor: 'rgba(148,163,184,0.26)', marginVertical: 10 },
 });

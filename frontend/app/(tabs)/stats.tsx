@@ -456,7 +456,7 @@ export default function StatsScreen() {
                           ? { backgroundColor: 'transparent' }
                           : color
                           ? { backgroundColor: color, opacity: 0.85 }
-                          : { backgroundColor: 'rgba(255,255,255,0.05)' },
+                          : { backgroundColor: 'rgba(148,163,184,0.18)' },
                       ]}
                     />
                   ))}
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 40 : 14,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
   },
   pageTitle: { fontSize: 24, fontWeight: '800', color: '#F1F5F9', letterSpacing: -0.3 },
   pageSubtitle: { fontSize: 12, color: '#475569', marginTop: 2 },
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(148,163,184,0.18)',
     right: -60,
     top: -60,
   },
@@ -685,14 +685,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
     gap: 10,
   },
   tableMonth: { color: '#94A3B8', fontSize: 12, width: 88 },
   tableBarWrap: {
     flex: 1,
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(148,163,184,0.18)',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(148,163,184,0.22)',
   },
   monthTotalLabel: { color: '#94A3B8', fontSize: 13, flex: 1 },
   monthTotalValue: { color: '#10B981', fontWeight: '800', fontSize: 16 },

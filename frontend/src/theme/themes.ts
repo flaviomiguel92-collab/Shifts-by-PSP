@@ -62,27 +62,30 @@ const dark: ThemeColors = {
 };
 
 const light: ThemeColors = {
-  bg: '#F1F5F9',
+  // Page sits a hair off-white so white cards/modals read as elevated.
+  bg: '#F8FAFC',           // slate-50
   bgAlt: '#FFFFFF',
   surface: '#FFFFFF',
   surfaceAlt: '#FFFFFF',
-  surfaceInput: '#FFFFFF',
-  border: 'rgba(15,23,42,0.10)',
-  borderStrong: '#E2E8F0',
+  surfaceInput: '#F8FAFC', // slate-50 — input chips contrast with white card
+  // Borders: visible, follow Tailwind slate scale.
+  border: '#E2E8F0',         // slate-200
+  borderStrong: '#CBD5E1',   // slate-300
+  // Text hierarchy: slate-900 → 700 → 500 → 400
   textPrimary: '#0F172A',
   textSecondary: '#334155',
   textMuted: '#64748B',
   textFaint: '#94A3B8',
   textInverse: '#FFFFFF',
-  overlay: 'rgba(15,23,42,0.45)',
-  accent: '#3B82F6',
-  accentLight: '#2563EB',
-  accentSoft: 'rgba(59,130,246,0.10)',
+  overlay: 'rgba(15,23,42,0.50)',
+  accent: '#2563EB',
+  accentLight: '#3B82F6',
+  accentSoft: 'rgba(37,99,235,0.10)',
   success: '#059669',
   warning: '#D97706',
   danger: '#DC2626',
   purple: '#7C3AED',
-  skeleton: 'rgba(15,23,42,0.06)',
+  skeleton: '#E2E8F0',
   isDark: false,
 };
 

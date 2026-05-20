@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 40 : 10,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
   },
   headerTitle: {
     fontSize: 28,
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(148,163,184,0.18)',
   },
   headerActions: {
     flexDirection: 'row',
@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(148,163,184,0.22)',
   },
   statusOptionText: {
     fontSize: 12,
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 8, 22, 0.5)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(148,163,184,0.22)',
     padding: 12,
     marginBottom: 8,
   },

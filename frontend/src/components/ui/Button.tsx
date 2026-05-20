@@ -43,7 +43,7 @@ const VARIANT_STYLES = {
   },
   ghost: {
     container: {
-      backgroundColor: 'rgba(255,255,255,0.05)',
+      backgroundColor: 'rgba(148,163,184,0.18)',
       borderWidth: 1,
       borderColor: COLORS.borderLight,
     },
