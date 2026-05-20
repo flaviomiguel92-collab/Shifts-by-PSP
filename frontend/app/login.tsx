@@ -9,13 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
-const turnosLogo = require('../assets/images/icon.png');
+import { TurnosLogo } from '../src/components/TurnosLogo';
 import { useTheme } from '../src/theme/themes';
 
 export default function LoginScreen() {
@@ -29,9 +28,6 @@ export default function LoginScreen() {
   const login = useAuthStore((s) => s.login);
   const th = useTheme();
   const isLight = !th.isDark;
-  const gradientColors = (isLight ? ['#F8FAFC', '#F1F5F9', '#E2E8F0'] : ['#050816', '#0B1120', '#111827']) as [string, string, string];
-  const inputLight = isLight ? { color: th.textPrimary } : null;
-  const placeholderLight = isLight ? th.textMuted : '#334155';
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -42,7 +38,6 @@ export default function LoginScreen() {
     setError('');
     try {
       await login(email, password);
-      // Navigation handled by _layout.tsx watching isAuthenticated
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {
@@ -50,89 +45,141 @@ export default function LoginScreen() {
     }
   };
 
+  const C = isLight ? lightTokens : darkTokens;
+
   return (
-    <View style={styles.root}>
-      <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
-      <View style={styles.blob1} />
-      <View style={styles.blob2} />
+    <View style={[styles.root, { backgroundColor: C.pageBg }]}>
+      <View style={[styles.blob1, { backgroundColor: C.blob1 }]} />
+      <View style={[styles.blob2, { backgroundColor: C.blob2 }]} />
 
-      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.logoSection}>
-            <View style={styles.logoBadge}>
-              <View style={styles.badgeGlow} />
-              <Image source={turnosLogo} style={styles.logoImage} resizeMode="contain" />
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.wrapper}>
+            <View style={styles.logoFloat} pointerEvents="none">
+              <View style={styles.logoGlow} />
+              <TurnosLogo size={300} />
             </View>
-            <Text style={[styles.appTitle, isLight && { color: th.textPrimary }]}>Turnos</Text>
-            <Text style={[styles.appSubtitle, isLight && { color: th.textMuted }]}>Gestão de Turnos Profissionais</Text>
-          </View>
 
-          <View style={styles.card}>
-            <View style={styles.field}>
-              <Text style={styles.label}>EMAIL</Text>
-              <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
-                <Ionicons name="mail-outline" size={17} color={emailFocused ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, inputLight]}
-                  placeholder="seu@email.com"
-                  placeholderTextColor={placeholderLight}
-                  value={email}
-                  onChangeText={setEmail}
-                  editable={!isLoading}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                />
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: C.cardBg,
+                  borderColor: C.cardBorder,
+                  shadowOpacity: C.cardShadow,
+                },
+              ]}
+            >
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: C.label }]}>EMAIL</Text>
+                <View
+                  style={[
+                    styles.fieldWrap,
+                    { backgroundColor: C.inputBg, borderColor: C.inputBorder },
+                    emailFocused && {
+                      borderColor: 'rgba(59,130,246,0.6)',
+                      shadowColor: '#3B82F6',
+                      shadowOpacity: 0.18,
+                      shadowRadius: 6,
+                    },
+                  ]}
+                >
+                  <Ionicons name="mail-outline" size={16} color={C.icon} style={styles.fieldIcon} />
+                  <TextInput
+                    style={[styles.fieldInput, { color: C.inputText }]}
+                    placeholder="seu@email.com"
+                    placeholderTextColor={C.placeholder}
+                    value={email}
+                    onChangeText={setEmail}
+                    editable={!isLoading}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                  />
+                </View>
               </View>
-            </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>PALAVRA-PASSE</Text>
-              <View style={[styles.inputWrap, passFocused && styles.inputWrapFocused]}>
-                <Ionicons name="lock-closed-outline" size={17} color={passFocused ? '#60A5FA' : '#475569'} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, inputLight, { flex: 1 }]}
-                  placeholder="••••••••"
-                  placeholderTextColor={placeholderLight}
-                  value={password}
-                  onChangeText={setPassword}
-                  editable={!isLoading}
-                  secureTextEntry={!showPassword}
-                  onFocus={() => setPassFocused(true)}
-                  onBlur={() => setPassFocused(false)}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={17} color="#475569" />
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: C.label }]}>PALAVRA-PASSE</Text>
+                <View
+                  style={[
+                    styles.fieldWrap,
+                    { backgroundColor: C.inputBg, borderColor: C.inputBorder },
+                    passFocused && {
+                      borderColor: 'rgba(59,130,246,0.6)',
+                      shadowColor: '#3B82F6',
+                      shadowOpacity: 0.18,
+                      shadowRadius: 6,
+                    },
+                  ]}
+                >
+                  <Ionicons name="lock-closed-outline" size={16} color={C.icon} style={styles.fieldIcon} />
+                  <TextInput
+                    style={[styles.fieldInput, { color: C.inputText, flex: 1 }]}
+                    placeholder="••••••••"
+                    placeholderTextColor={C.placeholder}
+                    value={password}
+                    onChangeText={setPassword}
+                    editable={!isLoading}
+                    secureTextEntry={!showPassword}
+                    onFocus={() => setPassFocused(true)}
+                    onBlur={() => setPassFocused(false)}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                    <Ionicons
+                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={16}
+                      color={C.icon}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {!!error && (
+                <View style={styles.errorBox}>
+                  <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[styles.btn, isLoading && styles.btnDisabled]}
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={['#3b82f6', '#2563eb', '#1d4ed8']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.btnGradient}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <Text style={styles.btnText}>Aceder</Text>
+                      <Ionicons name="arrow-forward" size={16} color="#fff" />
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <View style={styles.footerRow}>
+                <Text style={[styles.footerText, { color: C.footerText }]}>Não tem conta? </Text>
+                <TouchableOpacity onPress={() => router.push('/register')} disabled={isLoading}>
+                  <Text style={styles.footerLink}>Criar conta</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-
-            {!!error && (
-              <View style={styles.errorBox}>
-                <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            <TouchableOpacity style={[styles.btn, isLoading && styles.btnDisabled]} onPress={handleLogin} disabled={isLoading} activeOpacity={0.85}>
-              <LinearGradient colors={['#3B82F6', '#1D4ED8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.btnGradient}>
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.btnText}>Aceder</Text>
-                    <Ionicons name="arrow-forward" size={17} color="#fff" />
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <View style={styles.registerRow}>
-              <Text style={styles.registerText}>Não tem conta? </Text>
-              <TouchableOpacity onPress={() => router.push('/register')} disabled={isLoading}>
-                <Text style={styles.registerLink}>Criar conta</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -141,159 +188,165 @@ export default function LoginScreen() {
   );
 }
 
+const darkTokens = {
+  pageBg: '#070b12',
+  blob1: 'rgba(37,99,235,0.20)',
+  blob2: 'rgba(99,102,241,0.13)',
+  cardBg: 'rgba(255,255,255,0.045)',
+  cardBorder: 'rgba(255,255,255,0.09)',
+  cardShadow: 0.55,
+  label: '#64748b',
+  inputBg: 'rgba(255,255,255,0.055)',
+  inputBorder: 'rgba(255,255,255,0.10)',
+  inputText: '#f1f5f9',
+  placeholder: '#2d3f55',
+  icon: '#475569',
+  footerText: '#475569',
+};
+
+const lightTokens = {
+  pageBg: '#eef2fb',
+  blob1: 'rgba(37,99,235,0.10)',
+  blob2: 'rgba(99,102,241,0.08)',
+  cardBg: '#ffffff',
+  cardBorder: 'rgba(15,23,42,0.06)',
+  cardShadow: 0.10,
+  label: '#94a3b8',
+  inputBg: '#f8fafc',
+  inputBorder: '#e2e8f0',
+  inputText: '#0f172a',
+  placeholder: '#cbd5e1',
+  icon: '#94a3b8',
+  footerText: '#94a3b8',
+};
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#050816' },
+  root: { flex: 1 },
   kav: { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 48,
+    paddingVertical: 40,
   },
   blob1: {
     position: 'absolute',
-    width: 340,
-    height: 340,
-    borderRadius: 170,
-    backgroundColor: 'rgba(59, 130, 246, 0.07)',
-    top: -100,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    top: -140,
     left: -100,
+    opacity: 0.9,
   },
   blob2: {
     position: 'absolute',
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: 'rgba(139, 92, 246, 0.06)',
-    bottom: 40,
-    right: -60,
+    bottom: -40,
+    right: -80,
+    opacity: 0.9,
   },
-  logoSection: {
+  wrapper: {
+    width: '100%',
+    maxWidth: 400,
     alignItems: 'center',
-    marginBottom: 36,
   },
-  logoBadge: {
-    position: 'relative',
-    marginBottom: 14,
+  logoFloat: {
+    width: 300,
+    height: 345,
+    marginBottom: -130,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 120,
-    height: 120,
+    zIndex: 2,
   },
-  badgeGlow: {
+  logoGlow: {
     position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(59, 130, 246, 0.18)',
-  },
-  logoImage: {
-    width: 120,
-    height: 120,
-  },
-  appTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  appSubtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    letterSpacing: 0.4,
-    fontWeight: '600',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(59,130,246,0.18)',
+    top: 30,
   },
   card: {
     width: '100%',
-    maxWidth: 420,
-    backgroundColor: 'rgba(11, 17, 32, 0.85)',
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.12)',
-    padding: 24,
+    paddingTop: 148,
+    paddingHorizontal: 26,
+    paddingBottom: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
-    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 24 },
+    shadowRadius: 60,
     elevation: 16,
+    zIndex: 1,
   },
-  field: { marginBottom: 18 },
+  field: { marginBottom: 16 },
   label: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#475569',
+    fontWeight: '600',
     letterSpacing: 1.2,
     marginBottom: 8,
   },
-  inputWrap: {
+  fieldWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(5, 8, 22, 0.6)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 14,
-    height: 52,
+    height: 50,
   },
-  inputWrapFocused: {
-    borderColor: 'rgba(59, 130, 246, 0.45)',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  inputIcon: { marginRight: 10 },
-  input: {
+  fieldIcon: { marginRight: 10 },
+  fieldInput: {
     flex: 1,
-    color: '#F1F5F9',
-    fontSize: 15,
+    fontSize: 14,
     backgroundColor: 'transparent',
   },
-  eyeBtn: { padding: 4, marginLeft: 6 },
+  eyeBtn: { padding: 4, marginLeft: 6, opacity: 0.6 },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    backgroundColor: 'rgba(239,68,68,0.08)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.18)',
+    borderColor: 'rgba(239,68,68,0.18)',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  errorText: { color: '#FCA5A5', fontSize: 13, flex: 1 },
+  errorText: { color: '#EF4444', fontSize: 13, flex: 1 },
   btn: {
     borderRadius: 14,
     overflow: 'hidden',
+    marginTop: 4,
     marginBottom: 20,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.45,
-    shadowRadius: 14,
+    shadowRadius: 24,
     elevation: 8,
   },
-  btnDisabled: { opacity: 0.6, shadowOpacity: 0 },
+  btnDisabled: { opacity: 0.6 },
   btnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 16,
+    paddingVertical: 15,
   },
   btnText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
-  registerRow: {
+  footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  registerText: { color: '#334155', fontSize: 13 },
-  registerLink: { color: '#60A5FA', fontSize: 13, fontWeight: '600' },
+  footerText: { fontSize: 13 },
+  footerLink: { color: '#3b82f6', fontSize: 13, fontWeight: '600' },
 });

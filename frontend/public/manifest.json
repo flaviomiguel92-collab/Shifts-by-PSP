@@ -1,7 +1,7 @@
 {
-  "name": "PSP Turnos - Gestão de Turnos Profissionais",
-  "short_name": "PSP Turnos",
-  "description": "Sistema profissional de gestão de turnos, gratificações e relatórios para Polícia de Segurança Pública",
+  "name": "Turnos — Gestão de Turnos Profissionais",
+  "short_name": "Turnos",
+  "description": "Gestão de turnos, gratificações e relatórios profissionais",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
