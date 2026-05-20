@@ -10,7 +10,6 @@ from slowapi.util import get_remote_address
 # ── Rate limiting ──────────────────────────────────────────────────────────────
 _TESTING = os.environ.get('TESTING', '') == 'true'
 _AUTH_RATE = "9999/minute" if _TESTING else "5/minute"
-_REPORT_RATE = "9999/minute" if _TESTING else "3/minute"
 
 # Behind Render's reverse proxy, request.client.host is the proxy IP for every user, not the real client.
 def _client_ip_key(request) -> str:

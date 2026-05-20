@@ -10,7 +10,7 @@ const STORAGE_KEY = 'app_data';
 //
 // LOCAL-ONLY (persisted to AsyncStorage, no server counterpart):
 //   • gratifiedConfig   — user-defined calculation parameters
-//   • gratifiedTemplates — saved report header presets
+//   • gratifiedTemplates — saved gratificado templates (name presets)
 //
 // SERVER-BACKED (fetched fresh on login; never persisted locally):
 //   • shifts, gratifications, occurrences, cycles, gratifiedEntries

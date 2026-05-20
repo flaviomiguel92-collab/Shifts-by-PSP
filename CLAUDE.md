@@ -32,7 +32,6 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 - `get_current_user` e `logout`: Authorization header tem prioridade sobre cookie (fix de segurança — cookie do cliente partilhado não deve silenciar o token explícito)
 - Cookies auth unificados: `_cookie_flags()` deteta `ENVIRONMENT=production` → `secure=True, samesite=none`; dev → `secure=False, samesite=lax`
 - **Testes automatizados** (17/17 passam): `backend/tests/test_auth.py` (11 testes) + `backend/tests/test_user_isolation.py` (6 testes); MongoDB real via `pytest.ini asyncio_mode=auto`
-- **Relatório de Serviço** (`POST /api/reports/generate`): `backend/reporting/generator.py` corrige XML do template Word (`relatorio_servico_remunerado.docx`), usa `docxtpl` para preencher e devolve `.docx` (ou `.pdf` se LibreOffice disponível); modal no perfil com campos do cabeçalho; `downloadDocx()` em `exportUtils.ts` para web e mobile
 - **Índices MongoDB** corrigidos no startup: `users.email` (unique), `user_sessions.session_token` (unique), `shifts(user_id+date)`, `occurrences.user_id`, `gratifications(user_id+date)`, etc. (anteriores apontavam para coleção errada `db.sessions`)
 - **Persistência de `cycles` e `gratifiedEntries`**: `fetchCycles`/`fetchGratifiedEntries` agora chamados após login/register/session exchange em `authStore.ts`; `clearSyncedCollections` limpa também `cycles` e `gratifiedEntries`; novos endpoints `POST /cycles/reset`, `POST /gratified-entries/reset`, `POST /occurrences/reset` para apagar dados do utilizador; reset actions em `dataStore.ts` agora chamam a API em vez de só limpar localmente
 
@@ -55,11 +54,6 @@ Este ficheiro resume o estado atual do projeto para que qualquer assistente cons
 - Workflow `.github/workflows/deploy.yml` usa `npm ci`, lint, `npx tsc --noEmit`, build web como checks bloqueantes
 - Deploy Vercel via `npx vercel@latest` a partir da raiz do repo (não da pasta `frontend/`)
 - Secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` configurados no GitHub
-
-## Pendentes / próximos passos recomendados
-
-### Baixa prioridade
-- **Relatório de serviço — expediente/contactados**: o modal atual permite preencher os campos do cabeçalho do boletim mas não as listas de expediente efetuado, pessoas contactadas e demais efetivo (campos existem no backend). Adicionar UI de lista com add/remove no modal.
 
 ## Notas importantes
 
