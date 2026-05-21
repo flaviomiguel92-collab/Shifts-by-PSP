@@ -97,7 +97,7 @@ export default function GratificadosScreen() {
     <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
       <View style={styles.pageHeader}>
         <View>
-          <Text style={styles.pageTitle}>Gratificados</Text>
+          <Text style={[styles.pageTitle, isLight && { color: th.textPrimary }]}>Gratificados</Text>
           <Text style={styles.pageSubtitle}>{currentYear}</Text>
         </View>
         <View style={styles.totalPill}>
@@ -111,11 +111,11 @@ export default function GratificadosScreen() {
         {/* Month summary */}
         <GlassCard>
           <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Resumo do mês</Text>
-          <View style={styles.monthNav}>
+          <View style={[styles.monthNav, isLight && { backgroundColor: th.bg }]}>
             <TouchableOpacity style={styles.navBtn} onPress={goPrevMonth}>
               <Ionicons name="chevron-back" size={18} color="#60A5FA" />
             </TouchableOpacity>
-            <Text style={styles.monthLabel}>{formatMonth(currentMonth)}</Text>
+            <Text style={[styles.monthLabel, isLight && { color: th.textPrimary }]}>{formatMonth(currentMonth)}</Text>
             <TouchableOpacity style={styles.navBtn} onPress={goNextMonth}>
               <Ionicons name="chevron-forward" size={18} color="#60A5FA" />
             </TouchableOpacity>
@@ -124,7 +124,7 @@ export default function GratificadosScreen() {
             <View style={styles.kpiBox}>
               <Ionicons name="list-outline" size={18} color="#94A3B8" style={{ marginBottom: 6 }} />
               <Text style={styles.kpiLabel}>Qtd. gratificados</Text>
-              <Text style={styles.kpiValue}>{monthEntries.length}</Text>
+              <Text style={[styles.kpiValue, isLight && { color: th.textPrimary }]}>{monthEntries.length}</Text>
             </View>
             <View style={styles.kpiDivider} />
             <View style={styles.kpiBox}>
@@ -161,14 +161,14 @@ export default function GratificadosScreen() {
           </View>
 
           {/* Search bar */}
-          <View style={styles.searchRow}>
+          <View style={[styles.searchRow, isLight && { backgroundColor: th.bg }]}>
             <Ionicons name="search-outline" size={15} color="#475569" style={{ marginRight: 8 }} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, isLight && { color: th.textPrimary }]}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Pesquisar por nome…"
-              placeholderTextColor="#334155"
+              placeholderTextColor={isLight ? th.textMuted : '#334155'}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -195,7 +195,7 @@ export default function GratificadosScreen() {
             return filtered.map((g: any, i: number) => (
               <View key={g.id} style={[styles.entryRow, i === filtered.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.entryLeft}>
-                  <Text style={styles.entryName}>{g.name || 'Gratificado'}</Text>
+                  <Text style={[styles.entryName, isLight && { color: th.textPrimary }]}>{g.name || 'Gratificado'}</Text>
                   <View style={styles.entryMeta}>
                     <Ionicons name="calendar-outline" size={11} color="#475569" />
                     <Text style={styles.entryMetaText}>{g.date}</Text>
@@ -223,7 +223,7 @@ export default function GratificadosScreen() {
             <View style={styles.kpiBox}>
               <Ionicons name="list-outline" size={18} color="#94A3B8" style={{ marginBottom: 6 }} />
               <Text style={styles.kpiLabel}>Qtd. anual</Text>
-              <Text style={styles.kpiValue}>{yearEntries.length}</Text>
+              <Text style={[styles.kpiValue, isLight && { color: th.textPrimary }]}>{yearEntries.length}</Text>
             </View>
             <View style={styles.kpiDivider} />
             <View style={styles.kpiBox}>

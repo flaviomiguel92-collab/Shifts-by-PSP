@@ -1023,6 +1023,7 @@ export default function CalendarScreen() {
                         activeOpacity={0.8}
                         style={[
                           styles.cycleBtn,
+                          isLight && { backgroundColor: t.bg, borderWidth: 1, borderColor: t.border },
                           selectedCycle?.id === cycle.id && styles.cycleBtnActive,
                         ]}
                         onPress={() => {
@@ -1046,6 +1047,7 @@ export default function CalendarScreen() {
                       >
                         <Text style={[
                           styles.cycleBtnText,
+                          isLight && selectedCycle?.id !== cycle.id && { color: t.textSecondary },
                           selectedCycle?.id === cycle.id && styles.cycleBtnTextActive,
                         ]}>
                           {cycle.name}
@@ -1100,15 +1102,18 @@ export default function CalendarScreen() {
       {/* Multi-select shift picker */}
       <Modal visible={multiSelectShiftPicker} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.dayDetailModal}>
-            <View style={styles.modalDragHandle} />
+          <View style={[styles.dayDetailModal, isLight && { backgroundColor: t.surfaceAlt }]}>
+            <View style={[styles.modalDragHandle, isLight && { backgroundColor: t.borderStrong }]} />
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>Aplicar a {selectedDates.size} dias</Text>
-                <Text style={styles.modalDateWeekday}>Escolhe o tipo de turno</Text>
+                <Text style={[styles.modalTitle, isLight && { color: t.textPrimary }]}>Aplicar a {selectedDates.size} dias</Text>
+                <Text style={[styles.modalDateWeekday, isLight && { color: t.textMuted }]}>Escolhe o tipo de turno</Text>
               </View>
-              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setMultiSelectShiftPicker(false)}>
-                <Ionicons name="close" size={20} color="#9CA3AF" />
+              <TouchableOpacity
+                style={[styles.modalCloseBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)' }]}
+                onPress={() => setMultiSelectShiftPicker(false)}
+              >
+                <Ionicons name="close" size={20} color={isLight ? t.textSecondary : '#9CA3AF'} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -1116,20 +1121,20 @@ export default function CalendarScreen() {
                 {shiftTypes.map((shift) => (
                   <TouchableOpacity
                     key={shift.name}
-                    style={[styles.multiPickerChip, { borderColor: shift.color || '#3B82F6' }]}
+                    style={[styles.multiPickerChip, isLight && { backgroundColor: t.bg }, { borderColor: shift.color || '#3B82F6' }]}
                     onPress={() => handleApplyToSelected(shift.name)}
                     activeOpacity={0.8}
                   >
                     <View style={[styles.multiPickerDot, { backgroundColor: shift.color || '#3B82F6' }]} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.multiPickerName}>{shift.name}</Text>
+                      <Text style={[styles.multiPickerName, isLight && { color: t.textPrimary }]}>{shift.name}</Text>
                       {(shift.start_time || shift.startTime) && (
-                        <Text style={styles.multiPickerTime}>
+                        <Text style={[styles.multiPickerTime, isLight && { color: t.textMuted }]}>
                           {shift.start_time || shift.startTime} – {shift.end_time || shift.endTime}
                         </Text>
                       )}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#475569" />
+                    <Ionicons name="chevron-forward" size={16} color={isLight ? t.textMuted : '#475569'} />
                   </TouchableOpacity>
                 ))}
               </View>

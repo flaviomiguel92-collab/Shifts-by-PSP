@@ -41,13 +41,19 @@ function GlassCard({ children, style }: { children: React.ReactNode; style?: obj
 function CollapseBtn({
   label, expanded, onPress, danger,
 }: { label: string; expanded: boolean; onPress: () => void; danger?: boolean }) {
+  const th = useTheme();
+  const isLight = !th.isDark;
   return (
-    <TouchableOpacity style={styles.collapseBtn} onPress={onPress} activeOpacity={0.7}>
-      <Text style={[styles.collapseBtnText, danger && { color: '#FCA5A5' }]}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.collapseBtn, isLight && { backgroundColor: th.bg, borderColor: th.border }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.collapseBtnText, isLight && { color: th.textSecondary }, danger && { color: '#FCA5A5' }]}>{label}</Text>
       <Ionicons
         name={expanded ? 'chevron-up' : 'chevron-down'}
         size={16}
-        color={danger ? '#EF4444' : '#475569'}
+        color={danger ? '#EF4444' : (isLight ? th.textMuted : '#475569')}
       />
     </TouchableOpacity>
   );
@@ -415,7 +421,7 @@ export default function ProfileScreen() {
                       : <Ionicons name={item.icon} size={16} color={item.color} />}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.exportLabel}>{item.label}</Text>
+                    <Text style={[styles.exportLabel, isLight && { color: th.textPrimary }]}>{item.label}</Text>
                     <Text style={styles.exportDesc}>{item.desc}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={14} color="#334155" />
@@ -548,7 +554,7 @@ export default function ProfileScreen() {
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.exportLabel}>{item.label}</Text>
+                    <Text style={[styles.exportLabel, isLight && { color: th.textPrimary }]}>{item.label}</Text>
                     <Text style={styles.exportDesc}>{item.desc}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={14} color="#334155" />
@@ -627,12 +633,12 @@ export default function ProfileScreen() {
             <GlassCard style={{ marginTop: 8 }}>
               {cfgFields.map((f) => (
                 <View key={f.key} style={styles.cfgField}>
-                  <Text style={styles.cfgLabel}>{f.label}</Text>
+                  <Text style={[styles.cfgLabel, isLight && { color: th.textMuted }]}>{f.label}</Text>
                   <TextInput
-                    placeholderTextColor="#334155"
+                    placeholderTextColor={isLight ? th.textMuted : '#334155'}
                     value={cfg[f.key as keyof typeof cfg]}
                     onChangeText={(v) => setCfg((prev) => ({ ...prev, [f.key]: v }))}
-                    style={styles.cfgInput}
+                    style={[styles.cfgInput, isLight && { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong }]}
                     keyboardType={f.key.includes('Start') || f.key.includes('End') ? 'default' : 'numeric'}
                   />
                 </View>
@@ -678,7 +684,7 @@ export default function ProfileScreen() {
                     <View style={styles.resetRow}>
                       <Ionicons name={opt.icon as any} size={18} color="#EF4444" />
                       <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.resetTitle}>{opt.title}</Text>
+                        <Text style={[styles.resetTitle, isLight && { color: th.textPrimary }]}>{opt.title}</Text>
                         <Text style={styles.resetDesc}>{opt.desc}</Text>
                       </View>
                     </View>
