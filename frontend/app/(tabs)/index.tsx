@@ -139,6 +139,7 @@ export default function CalendarScreen() {
   }, [storePaintShiftType, paintMode]);
 
   const optionsPanelAnim = React.useRef(new Animated.Value(0)).current;
+  const paintFlushTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shiftTypesMap = useMemo(() => {
     const map = new Map<string, any>();
@@ -266,7 +267,14 @@ export default function CalendarScreen() {
       return;
     }
 
-    // Paint mode: apply selected shift directly, no popup
+    // Paint mode: apply selected shift directly, no popup.
+    // Debounce the reconciliation fetch — each mutation already updates local state,
+    // so we skip per-tap fetchShifts and fire one batch reconcile after 600ms idle.
+    const schedulePaintFlush = () => {
+      if (paintFlushTimer.current) clearTimeout(paintFlushTimer.current);
+      paintFlushTimer.current = setTimeout(() => fetchShifts(currentMonth), 600);
+    };
+
     if (paintMode && selectedShiftType) {
       const existing = getShiftForDay(dateStr);
       if (existing) {
@@ -278,7 +286,7 @@ export default function CalendarScreen() {
       } else {
         await createShift({ date: dateStr, shift_type: selectedShiftType });
       }
-      await fetchShifts(currentMonth);
+      schedulePaintFlush();
       return;
     }
 
@@ -293,7 +301,7 @@ export default function CalendarScreen() {
       } else {
         await createShift({ date: dateStr, shift_type: selectedShiftType });
       }
-      await fetchShifts(currentMonth);
+      schedulePaintFlush();
       return;
     }
 
