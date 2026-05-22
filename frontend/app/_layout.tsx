@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
 import { usePreferencesStore } from '../src/store/preferencesStore';
-import { getThemeColors } from '../src/theme/themes';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Animated, StyleSheet, Image } from 'react-native';
 import { COLORS } from '../src/theme/colors';
@@ -16,32 +15,30 @@ import { Ionicons } from '@expo/vector-icons';
 const logoImage = require('../assets/images/icon.png');
 
 function SplashScreen() {
-  const calendarTheme = usePreferencesStore((s) => s.calendarTheme);
-  const isLight = calendarTheme === 'light';
-  const themeBg = isLight ? getThemeColors(true).bg : COLORS.background;
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.85)).current;
+  const scale = useRef(new Animated.Value(0.82)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(opacity, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8 }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8 }),
+      Animated.spring(opacity, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
     ]).start(() => {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.08, duration: 900, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1.06, duration: 1000, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
         ])
       ).start();
     });
   }, [opacity, scale, pulse]);
 
   return (
-    <View style={[splashStyles.container, { backgroundColor: themeBg }]}>
+    <View style={splashStyles.container}>
       <Animated.View style={[splashStyles.logoWrap, { opacity, transform: [{ scale }] }]}>
         <Animated.View style={[splashStyles.logoGlow, { transform: [{ scale: pulse }] }]} />
         <Image source={logoImage} style={splashStyles.logoImage} resizeMode="contain" />
+        <Text style={splashStyles.tagline}>Gestão de turnos profissional</Text>
       </Animated.View>
     </View>
   );
@@ -52,21 +49,28 @@ const splashStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: '#050816',
   },
   logoWrap: {
     alignItems: 'center',
   },
   logoGlow: {
     position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: 'rgba(107, 91, 217, 0.14)',
   },
   logoImage: {
-    width: 200,
-    height: 200,
+    width: 300,
+    height: 300,
+  },
+  tagline: {
+    marginTop: 16,
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#64748B',
+    letterSpacing: 0.4,
   },
 });
 
