@@ -24,9 +24,6 @@ import {
   formatMonth,
   getCalendarDays,
   dateToString,
-  WEEKDAYS,
-  getNextMonth,
-  getPrevMonth,
   formatDate,
   resolveShiftColor,
 } from '../../src/utils/helpers';
@@ -44,6 +41,8 @@ import { DetailSheet } from '../../src/components/calendar/DetailSheet';
 import { EventFormModal } from '../../src/components/calendar/EventFormModal';
 import { ShiftTypePicker } from '../../src/components/calendar/ShiftTypePicker';
 import { DayShiftEditor } from '../../src/components/calendar/DayShiftEditor';
+import { CalendarHeader } from '../../src/components/calendar/CalendarHeader';
+import { MultiSelectBar } from '../../src/components/calendar/MultiSelectBar';
 import { usePaintStore } from '../../src/store/paintStore';
 import { usePreferencesStore } from '../../src/store/preferencesStore';
 import { getThemeColors } from '../../src/theme/themes';
@@ -766,29 +765,12 @@ export default function CalendarScreen() {
         </View>
 
         <View style={[styles.calendarCard, isLight && { backgroundColor: t.surface, borderColor: t.border }]}>
-          <View style={styles.calendarHeader}>
-            <TouchableOpacity
-              style={[styles.navButton, isLight && { backgroundColor: 'rgba(15,23,42,0.04)' }]}
-              onPress={() => setCurrentMonth(getPrevMonth(currentMonth))}
-            >
-              <Ionicons name="chevron-back" size={24} color={isLight ? t.textSecondary : '#FFFFFF'} />
-            </TouchableOpacity>
-            <Text style={[styles.monthTitle, isLight && { color: t.textPrimary }]}>{formatMonth(currentMonth)}</Text>
-            <TouchableOpacity
-              style={[styles.navButton, isLight && { backgroundColor: 'rgba(15,23,42,0.04)' }]}
-              onPress={() => setCurrentMonth(getNextMonth(currentMonth))}
-            >
-              <Ionicons name="chevron-forward" size={24} color={isLight ? t.textSecondary : '#FFFFFF'} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.weekdays}>
-            {WEEKDAYS.map((day) => (
-              <View key={day} style={styles.weekdayCell}>
-                <Text style={[styles.weekdayText, isLight && { color: t.textMuted }]}>{day}</Text>
-              </View>
-            ))}
-          </View>
+          <CalendarHeader
+            currentMonth={currentMonth}
+            setCurrentMonth={setCurrentMonth}
+            isLight={isLight}
+            t={t}
+          />
 
           {isLoadingShifts && !refreshing ? (
             <View style={styles.skeletonGrid}>
@@ -1086,31 +1068,14 @@ export default function CalendarScreen() {
         </Pressable>
       </Modal>
 
-      {/* Multi-select action bar */}
-      <Modal visible={editMode === 'multi_select'} transparent animationType="none" onRequestClose={cancelEditMode}>
-        <View style={{ flex: 1 }} pointerEvents="box-none">
-          <View style={[styles.multiSelectBar, isLight && { backgroundColor: t.surfaceAlt, borderColor: t.borderStrong }]} pointerEvents="auto">
-            <View style={styles.multiSelectInfo}>
-              <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
-              <Text style={[styles.multiSelectCount, isLight && { color: t.textPrimary }]}>
-                {selectedDates.size} {selectedDates.size === 1 ? 'dia' : 'dias'} selecionado{selectedDates.size !== 1 ? 's' : ''}
-              </Text>
-            </View>
-            <View style={styles.multiSelectActions}>
-              <TouchableOpacity style={styles.multiSelectClearBtn} onPress={cancelEditMode}>
-                <Text style={styles.multiSelectClearText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.multiSelectApplyBtn, selectedDates.size === 0 && { opacity: 0.4 }]}
-                onPress={() => selectedDates.size > 0 && setMultiSelectShiftPicker(true)}
-              >
-                <Ionicons name="color-wand-outline" size={14} color="#fff" />
-                <Text style={styles.multiSelectApplyText}>Aplicar Turno</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <MultiSelectBar
+        visible={editMode === 'multi_select'}
+        selectedCount={selectedDates.size}
+        isLight={isLight}
+        t={t}
+        onApply={() => setMultiSelectShiftPicker(true)}
+        onCancel={cancelEditMode}
+      />
 
       {/* Multi-select shift picker */}
       <Modal visible={multiSelectShiftPicker} animationType="slide" transparent>
@@ -1515,35 +1480,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
     marginVertical: 12,
   },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  navButton: {
-    padding: 8,
-  },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    textTransform: 'capitalize',
-  },
-  weekdays: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  weekdayCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  weekdayText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
   daysGrid: {},
   weekRow: {
     flexDirection: 'row',
@@ -1828,68 +1764,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 2,
     right: 2,
-  },
-  multiSelectBar: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 100 : 86,
-    left: 12,
-    right: 12,
-    backgroundColor: '#0B1120',
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: 'rgba(59, 130, 246, 0.35)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 12,
-    zIndex: 50,
-  },
-  multiSelectInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  multiSelectCount: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#F1F5F9',
-  },
-  multiSelectActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  multiSelectClearBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: 'rgba(148,163,184,0.18)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(148,163,184,0.26)',
-  },
-  multiSelectClearText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#94A3B8',
-  },
-  multiSelectApplyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: '#3B82F6',
-  },
-  multiSelectApplyText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#fff',
   },
   multiSelectHint: {
     flexDirection: 'row',
