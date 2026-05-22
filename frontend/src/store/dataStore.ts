@@ -58,11 +58,17 @@ export interface GratifiedTemplate {
 export interface GratifiedEntry {
   id: string;
   date?: string;
+  name?: string;
+  start_time?: string;
+  end_time?: string;
   startTime?: string;
   endTime?: string;
   hours?: number;
   type?: string;
   value?: number;
+  subtotal?: number;
+  discount_percent?: number;
+  is_holiday_or_weekend?: boolean;
   note?: string;
   [key: string]: unknown;
 }

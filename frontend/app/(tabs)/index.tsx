@@ -18,8 +18,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
-import { useDataStore } from '../../src/store/dataStore';
-import { Shift, CalendarEvent } from '../../src/types';
+import { useDataStore, Cycle, GratifiedEntry } from '../../src/store/dataStore';
+import { Shift, CalendarEvent, ShiftTypeConfig } from '../../src/types';
 import {
   formatMonth,
   getCalendarDays,
@@ -87,7 +87,7 @@ export default function CalendarScreen() {
   // Modal states
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
-  const [editingCycle, setEditingCycle] = useState<import('../../src/store/dataStore').Cycle | null>(null);
+  const [editingCycle, setEditingCycle] = useState<Cycle | null>(null);
   const [showGratifiedModal, setShowGratifiedModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -141,13 +141,13 @@ export default function CalendarScreen() {
   const paintFlushTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shiftTypesMap = useMemo(() => {
-    const map = new Map<string, any>();
-    (shiftTypes || []).forEach((shiftType: any) => {
+    const map = new Map<string, ShiftTypeConfig>();
+    (shiftTypes || []).forEach((shiftType: ShiftTypeConfig) => {
       const name = String(shiftType?.name || '').trim();
       if (!name) return;
       map.set(name, shiftType);
     });
-    (shifts || []).forEach((s: any) => {
+    (shifts || []).forEach((s: Shift) => {
       const n = String(s?.shift_type || '').trim();
       if (!n || map.has(n)) return;
       map.set(n, {
@@ -173,8 +173,8 @@ export default function CalendarScreen() {
   }, [days]);
 
   const gratifiedByDateMap = useMemo(() => {
-    const map = new Map<string, any[]>();
-    (gratifiedEntries || []).forEach((entry: any) => {
+    const map = new Map<string, GratifiedEntry[]>();
+    (gratifiedEntries || []).forEach((entry: GratifiedEntry) => {
       const date = String(entry?.date || '');
       if (!date) return;
       if (!map.has(date)) map.set(date, []);
@@ -196,7 +196,7 @@ export default function CalendarScreen() {
 
   const shiftsMap = useMemo(() => {
     const map = new Map<string, Shift>();
-    shifts.forEach((s: any) => map.set(s.date, s));
+    shifts.forEach((s: Shift) => map.set(s.date, s));
     return map;
   }, [shifts]);
 
@@ -611,7 +611,7 @@ export default function CalendarScreen() {
         time: [ev.start_time, ev.end_time].filter(Boolean).join(' – ') || undefined,
       });
     });
-    (gratifiedByDateMap.get(popupDay) || []).forEach((g: any) => {
+    (gratifiedByDateMap.get(popupDay) || []).forEach((g: GratifiedEntry) => {
       out.push({
         id: g.id,
         kind: 'grat',
@@ -1012,7 +1012,7 @@ export default function CalendarScreen() {
                       <Text style={[styles.cycleBtnText, { color: '#FFFFFF' }]}>+ Novo</Text>
                     </TouchableOpacity>
 
-                    {cycles.map((cycle: any) => (
+                    {cycles.map((cycle: Cycle) => (
                       <TouchableOpacity
                         key={cycle.id}
                         activeOpacity={0.8}

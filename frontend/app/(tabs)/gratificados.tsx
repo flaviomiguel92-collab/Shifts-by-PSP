@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, ReactNode } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TouchableOpacity, Platform, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useDataStore } from '../../src/store/dataStore';
+import { useDataStore, GratifiedEntry } from '../../src/store/dataStore';
 import { formatCurrency, formatMonth } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
@@ -12,7 +12,7 @@ import { FAB } from '../../src/components/ui/FAB';
 import { toast } from '../../src/utils/toast';
 import { useTheme } from '../../src/theme/themes';
 
-function GlassCard({ children, style }: any) {
+function GlassCard({ children, style }: { children: ReactNode; style?: object }) {
   const th = useTheme();
   const isLight = !th.isDark;
   return <View style={[cardStyle.card, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong, shadowOpacity: 0.08 }, style]}>{children}</View>;
@@ -36,8 +36,7 @@ const cardStyle = StyleSheet.create({
 export default function GratificadosScreen() {
   const th = useTheme();
   const isLight = !th.isDark;
-  const store = useDataStore() as any;
-  const { gratifiedEntries, currentMonth, setCurrentMonth, currentYear } = store;
+  const { gratifiedEntries, currentMonth, setCurrentMonth, currentYear } = useDataStore();
 
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,25 +51,25 @@ export default function GratificadosScreen() {
 
   const monthEntries = useMemo(() =>
     (gratifiedEntries || [])
-      .filter((g: any) => String(g?.date || '').startsWith(currentMonth))
-      .sort((a: any, b: any) => String(b?.date || '').localeCompare(String(a?.date || ''))),
+      .filter((g: GratifiedEntry) => String(g?.date || '').startsWith(currentMonth))
+      .sort((a: GratifiedEntry, b: GratifiedEntry) => String(b?.date || '').localeCompare(String(a?.date || ''))),
     [gratifiedEntries, currentMonth]);
 
   const monthTotal = useMemo(() =>
-    monthEntries.reduce((sum: number, g: any) => sum + Number(g?.value || 0), 0),
+    monthEntries.reduce((sum: number, g: GratifiedEntry) => sum + Number(g?.value || 0), 0),
     [monthEntries]);
 
   const yearEntries = useMemo(() =>
-    (gratifiedEntries || []).filter((g: any) => String(g?.date || '').startsWith(currentYear)),
+    (gratifiedEntries || []).filter((g: GratifiedEntry) => String(g?.date || '').startsWith(currentYear)),
     [gratifiedEntries, currentYear]);
 
   const yearTotal = useMemo(() =>
-    yearEntries.reduce((sum: number, g: any) => sum + Number(g?.value || 0), 0),
+    yearEntries.reduce((sum: number, g: GratifiedEntry) => sum + Number(g?.value || 0), 0),
     [yearEntries]);
 
   const byMonth = useMemo(() => {
     const map = new Map<string, { total: number; count: number }>();
-    yearEntries.forEach((g: any) => {
+    yearEntries.forEach((g: GratifiedEntry) => {
       const month = String(g?.date || '').slice(0, 7);
       if (!month) return;
       const prev = map.get(month) || { total: 0, count: 0 };
@@ -180,7 +179,7 @@ export default function GratificadosScreen() {
           {(() => {
             const q = searchQuery.trim().toLowerCase();
             const filtered = q
-              ? monthEntries.filter((g: any) => String(g?.name || '').toLowerCase().includes(q))
+              ? monthEntries.filter((g: GratifiedEntry) => String(g?.name || '').toLowerCase().includes(q))
               : monthEntries;
             if (filtered.length === 0) {
               return (
@@ -192,7 +191,7 @@ export default function GratificadosScreen() {
                 </View>
               );
             }
-            return filtered.map((g: any, i: number) => (
+            return filtered.map((g: GratifiedEntry, i: number) => (
               <View key={g.id} style={[styles.entryRow, i === filtered.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.entryLeft}>
                   <Text style={[styles.entryName, isLight && { color: th.textPrimary }]}>{g.name || 'Gratificado'}</Text>
