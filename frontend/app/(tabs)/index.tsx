@@ -67,6 +67,7 @@ export default function CalendarScreen() {
     fetchShiftTypes,
     updateShiftType,
     fetchEvents,
+    fetchGratifiedEntries,
     createEvent,
     updateEvent,
     deleteEvent,
@@ -201,8 +202,12 @@ export default function CalendarScreen() {
 
   useEffect(() => {
     setIsLoadingShifts(true);
-    fetchShifts(currentMonth).finally(() => setIsLoadingShifts(false));
-  }, [currentMonth, fetchShifts]);
+    Promise.all([
+      fetchShifts(currentMonth),
+      fetchGratifiedEntries(currentMonth),
+      fetchEvents(currentMonth),
+    ]).finally(() => setIsLoadingShifts(false));
+  }, [currentMonth, fetchShifts, fetchGratifiedEntries, fetchEvents]);
 
   // Close popup when navigating months
   useEffect(() => {

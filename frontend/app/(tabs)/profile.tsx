@@ -211,6 +211,21 @@ export default function ProfileScreen() {
   useEffect(() => { loadSessions(); }, [loadSessions]);
   useEffect(() => { if (activeModal === 'sessions') loadSessions(); }, [activeModal, loadSessions]);
 
+  useEffect(() => {
+    if (!gratifiedConfig) return;
+    setCfg({
+      baseSmall4h: String(gratifiedConfig.baseSmall4h ?? ''),
+      baseLarge4h: String(gratifiedConfig.baseLarge4h ?? ''),
+      fractionSmallPerHour: String(gratifiedConfig.fractionSmallPerHour ?? ''),
+      fractionLargePerHour: String(gratifiedConfig.fractionLargePerHour ?? ''),
+      discountPercent: String(gratifiedConfig.discountPercent ?? ''),
+      smallStart: String(gratifiedConfig.smallStart ?? ''),
+      smallEnd: String(gratifiedConfig.smallEnd ?? ''),
+      largeStart: String(gratifiedConfig.largeStart ?? ''),
+      largeEnd: String(gratifiedConfig.largeEnd ?? ''),
+    });
+  }, [gratifiedConfig]);
+
   const initials = user?.name
     ? user.name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
     : '??';

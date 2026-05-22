@@ -9,7 +9,6 @@ import { formatCurrency, formatMonth } from '../../src/utils/helpers';
 import { getHolidaysMap } from '../../src/utils/holidays';
 import { GratifiedModal } from '../../src/components/GratifiedModal';
 import { FAB } from '../../src/components/ui/FAB';
-import { exportGratifiedToXLSX } from '../../src/utils/exportUtils';
 import { toast } from '../../src/utils/toast';
 import { useTheme } from '../../src/theme/themes';
 
@@ -144,6 +143,7 @@ export default function GratificadosScreen() {
               onPress={async () => {
                 setIsExporting(true);
                 try {
+                  const { exportGratifiedToXLSX } = await import('../../src/utils/exportUtils');
                   await exportGratifiedToXLSX(gratifiedEntries || [], currentYear);
                   toast.success('Excel exportado');
                 } catch {

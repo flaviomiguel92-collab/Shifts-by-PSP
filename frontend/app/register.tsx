@@ -7,7 +7,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../src/store/authStore';
+import { useAuthStore, validatePassword } from '../src/store/authStore';
 import { useTheme } from '../src/theme/themes';
 import { TurnosLogo } from '../src/components/TurnosLogo';
 
@@ -34,8 +34,9 @@ export default function RegisterScreen() {
       setError('As senhas não coincidem');
       return;
     }
-    if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres');
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     setIsLoading(true);
