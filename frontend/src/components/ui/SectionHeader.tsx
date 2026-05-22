@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
+import { useTheme } from '../../theme/themes';
 
 interface SectionHeaderProps {
   title: string;
@@ -13,11 +14,13 @@ interface SectionHeaderProps {
 }
 
 export function SectionHeader({ title, subtitle, rightLabel, rightIcon, onRightPress, style }: SectionHeaderProps) {
+  const th = useTheme();
+  const isLight = !th.isDark;
   return (
     <View style={[styles.container, style]}>
       <View style={styles.left}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <Text style={[styles.title, isLight && { color: th.textMuted }]}>{title}</Text>
+        {subtitle && <Text style={[styles.subtitle, isLight && { color: th.textMuted }]}>{subtitle}</Text>}
       </View>
       {(rightLabel || rightIcon) && (
         <TouchableOpacity onPress={onRightPress} style={styles.right} activeOpacity={0.7}>

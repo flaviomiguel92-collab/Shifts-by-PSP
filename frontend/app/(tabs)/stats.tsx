@@ -253,7 +253,7 @@ export default function StatsScreen() {
 
   return (
     <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
-      <View style={styles.pageHeader}>
+      <View style={[styles.pageHeader, isLight && { borderBottomColor: th.border }]}>
         <View>
           <Text style={[styles.pageTitle, isLight && { color: th.textPrimary }]}>Painel</Text>
           <Text style={[styles.pageSubtitle, isLight && { color: th.textMuted }]}>Estatísticas · {currentYear}</Text>
@@ -316,7 +316,7 @@ export default function StatsScreen() {
                 centerLabelComponent={() => (
                   <View style={styles.donutCenter}>
                     <View style={{
-                      backgroundColor: 'rgba(5, 8, 22, 0.85)',
+                      backgroundColor: isLight ? th.border : 'rgba(5, 8, 22, 0.85)',
                       borderRadius: 30,
                       width: 60,
                       height: 60,
@@ -324,7 +324,7 @@ export default function StatsScreen() {
                       alignItems: 'center',
                     }}>
                       <Text style={[styles.donutCenterValue, { color: isLight ? th.textPrimary : '#FFFFFF', lineHeight: 22 }]}>{monthShifts.length}</Text>
-                      <Text style={[styles.donutCenterLabel, { color: '#94A3B8' }]}>turnos</Text>
+                      <Text style={[styles.donutCenterLabel, isLight && { color: th.textMuted }]}>turnos</Text>
                     </View>
                   </View>
                 )}
@@ -334,7 +334,7 @@ export default function StatsScreen() {
                   <View key={item.name} style={styles.donutLegendItem}>
                     <View style={[styles.legendDot, { backgroundColor: item.color }]} />
                     <Text style={[styles.legendName, isLight && { color: th.textPrimary }]} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.legendCount}>{item.count}×</Text>
+                    <Text style={[styles.legendCount, isLight && { color: th.textMuted }]}>{item.count}×</Text>
                   </View>
                 ))}
               </View>
@@ -349,10 +349,10 @@ export default function StatsScreen() {
             {shiftTypeBreakdown.map((item, i) => {
               const pct = monthShifts.length > 0 ? (item.count / monthShifts.length) * 100 : 0;
               return (
-                <View key={item.name} style={[styles.tableRow, i === shiftTypeBreakdown.length - 1 && { borderBottomWidth: 0 }]}>
+                <View key={item.name} style={[styles.tableRow, i === shiftTypeBreakdown.length - 1 && { borderBottomWidth: 0 }, isLight && { borderBottomColor: th.border }]}>
                   <View style={[styles.typeDot, { backgroundColor: item.color }]} />
                   <Text style={[styles.tableMonth, isLight && { color: th.textPrimary }]}>{item.name}</Text>
-                  <View style={styles.tableBarWrap}>
+                  <View style={[styles.tableBarWrap, isLight && { backgroundColor: th.border }]}>
                     <View style={[styles.tableBar, { width: `${Math.max(pct, 2)}%` as any, backgroundColor: item.color }]} />
                   </View>
                   <Text style={styles.tableValue}>{item.count}×</Text>
@@ -369,9 +369,9 @@ export default function StatsScreen() {
             {hasPrevData && (
               <View style={styles.chartLegendRow}>
                 <View style={[styles.chartLegendDot, { backgroundColor: '#3B82F6' }]} />
-                <Text style={styles.chartLegendText}>{currentYear}</Text>
+                <Text style={[styles.chartLegendText, isLight && { color: th.textMuted }]}>{currentYear}</Text>
                 <View style={[styles.chartLegendDot, { backgroundColor: '#8B5CF6' }]} />
-                <Text style={styles.chartLegendText}>{prevYear}</Text>
+                <Text style={[styles.chartLegendText, isLight && { color: th.textMuted }]}>{prevYear}</Text>
               </View>
             )}
             <LineChart
@@ -445,7 +445,7 @@ export default function StatsScreen() {
           <View style={styles.heatmapGrid}>
             {heatmapData.map((month) => (
               <View key={month.monthStr} style={styles.heatmapMonth}>
-                <Text style={styles.heatmapMonthLabel}>{MONTH_ABBR[month.monthStr.slice(5, 7)]}</Text>
+                <Text style={[styles.heatmapMonthLabel, isLight && { color: th.textMuted }]}>{MONTH_ABBR[month.monthStr.slice(5, 7)]}</Text>
                 <View style={styles.heatmapDayGrid}>
                   {month.cells.map((color, i) => (
                     <View
@@ -499,7 +499,7 @@ export default function StatsScreen() {
           {Object.entries(monthlyMap).length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="bar-chart-outline" size={28} color="#1E293B" />
-              <Text style={styles.emptyText}>Sem dados anuais.</Text>
+              <Text style={[styles.emptyText, isLight && { color: th.textSecondary }]}>Sem dados anuais.</Text>
             </View>
           ) : (
             Object.entries(monthlyMap)
@@ -508,9 +508,9 @@ export default function StatsScreen() {
                 const max = Math.max(...Object.values(monthlyMap) as number[]);
                 const pct = max > 0 ? Math.max(((total as number) / max) * 100, 2) : 2;
                 return (
-                  <View key={month} style={[styles.tableRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
+                  <View key={month} style={[styles.tableRow, i === arr.length - 1 && { borderBottomWidth: 0 }, isLight && { borderBottomColor: th.border }]}>
                     <Text style={[styles.tableMonth, isLight && { color: th.textPrimary }]}>{formatMonth(month)}</Text>
-                    <View style={styles.tableBarWrap}>
+                    <View style={[styles.tableBarWrap, isLight && { backgroundColor: th.border }]}>
                       <View style={[styles.tableBar, { width: `${pct}%` as any }]} />
                     </View>
                     <Text style={styles.tableValue}>{formatCurrency(total as number)}</Text>
@@ -523,7 +523,7 @@ export default function StatsScreen() {
         {/* Month detail */}
         <GlassCard>
           <Text style={[styles.cardTitle, isLight && { color: th.textPrimary }]}>Detalhe do mês</Text>
-          <View style={styles.monthNav}>
+          <View style={[styles.monthNav, isLight && { backgroundColor: th.bgAlt, borderWidth: 0.5, borderColor: th.border }]}>
             <TouchableOpacity
               style={styles.navBtn}
               onPress={() => {
@@ -547,7 +547,7 @@ export default function StatsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.monthTotalRow}>
+          <View style={[styles.monthTotalRow, isLight && { borderBottomColor: th.border }]}>
             <Ionicons name="cash-outline" size={16} color="#10B981" />
             <Text style={[styles.monthTotalLabel, isLight && { color: th.textSecondary }]}>Total</Text>
             <Text style={styles.monthTotalValue}>{formatCurrency(totalSelectedMonth)}</Text>
@@ -555,11 +555,11 @@ export default function StatsScreen() {
 
           {selectedMonthItems.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Sem gratificados neste mês.</Text>
+              <Text style={[styles.emptyText, isLight && { color: th.textSecondary }]}>Sem gratificados neste mês.</Text>
             </View>
           ) : (
             selectedMonthItems.map((g: any, i: number) => (
-              <View key={g.id} style={[styles.tableRow, i === selectedMonthItems.length - 1 && { borderBottomWidth: 0 }]}>
+              <View key={g.id} style={[styles.tableRow, i === selectedMonthItems.length - 1 && { borderBottomWidth: 0 }, isLight && { borderBottomColor: th.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.entryName, isLight && { color: th.textPrimary }]}>{g.name}</Text>
                   <Text style={[styles.entryMeta, isLight && { color: th.textMuted }]}>{g.date} · {g.start_time}–{g.end_time}</Text>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../theme/colors';
+import { useTheme } from '../../theme/themes';
 
 interface StatCardProps {
   label: string;
@@ -15,10 +16,12 @@ interface StatCardProps {
 }
 
 export function StatCard({ label, value, icon, color = COLORS.primary, subtitle, trend, style, size = 'md' }: StatCardProps) {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const isSmall = size === 'sm';
 
   return (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong, shadowOpacity: 0.08 }, style]}>
       <View style={styles.topRow}>
         <View style={[styles.iconWrap, { backgroundColor: `${color}18` }]}>
           <Ionicons name={icon} size={isSmall ? 14 : 16} color={color} />
@@ -39,8 +42,8 @@ export function StatCard({ label, value, icon, color = COLORS.primary, subtitle,
       <Text style={[styles.value, { color, fontSize: isSmall ? 20 : 26 }]} numberOfLines={1}>
         {value}
       </Text>
-      <Text style={[styles.label, { fontSize: isSmall ? 10 : 11 }]}>{label}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={[styles.label, isLight && { color: th.textMuted }, { fontSize: isSmall ? 10 : 11 }]}>{label}</Text>
+      {subtitle && <Text style={[styles.subtitle, isLight && { color: th.textMuted }]}>{subtitle}</Text>}
     </View>
   );
 }

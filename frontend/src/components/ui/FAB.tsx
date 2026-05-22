@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../theme/colors';
+import { useTheme } from '../../theme/themes';
 
 interface FABAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -20,6 +21,8 @@ interface FABProps {
 }
 
 export function FAB({ actions, style }: FABProps) {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const [open, setOpen] = useState(false);
   const rotation = useRef(new Animated.Value(0)).current;
   const actionsAnim = useRef(actions.map(() => new Animated.Value(0))).current;
@@ -61,7 +64,7 @@ export function FAB({ actions, style }: FABProps) {
             ]}
             pointerEvents={open ? 'auto' : 'none'}
           >
-            <Text style={styles.actionLabel}>{action.label}</Text>
+            <Text style={[styles.actionLabel, isLight && { backgroundColor: th.surface, color: th.textPrimary, borderColor: th.borderStrong }]}>{action.label}</Text>
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: action.color || COLORS.backgroundTertiary }]}
               onPress={() => { toggle(); action.onPress(); }}

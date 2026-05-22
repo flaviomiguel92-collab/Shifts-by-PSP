@@ -126,7 +126,7 @@ export function EventFormModal({ visible, date, event, onClose, onSave }: EventF
               <TextInput
                 style={[styles.input, inputStyle]}
                 placeholder="Opcional"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={placeholderColor}
                 value={location}
                 onChangeText={setLocation}
               />
@@ -135,7 +135,7 @@ export function EventFormModal({ visible, date, event, onClose, onSave }: EventF
               <TextInput
                 style={[styles.input, styles.multiline, inputStyle]}
                 placeholder="Opcional"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={placeholderColor}
                 value={note}
                 onChangeText={setNote}
                 multiline

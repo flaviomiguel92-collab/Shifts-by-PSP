@@ -405,8 +405,8 @@ export default function OcorrenciasScreen() {
         }
       >
         {occurrences.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={50} color="#374151" />
+          <View style={[styles.emptyState, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
+            <Ionicons name="document-text-outline" size={50} color={isLight ? th.textMuted : '#374151'} />
             <Text style={[styles.emptyText, isLight && { color: th.textSecondary }]}>Sem ocorrências registadas</Text>
             <Text style={[styles.emptySubtext, isLight && { color: th.textMuted }]}>Toca no + para criar uma nova</Text>
           </View>
@@ -431,13 +431,13 @@ export default function OcorrenciasScreen() {
               <View style={styles.occFooter}>
                 <View style={styles.occStat}>
                   <Ionicons name="people" size={14} color="#6B7280" />
-                  <Text style={styles.occStatText}>
+                  <Text style={[styles.occStatText, isLight && { color: th.textMuted }]}>
                     {(occ.suspects?.length || 0) + (occ.witnesses?.length || 0) + (occ.victims?.length || 0)} pessoas
                   </Text>
                 </View>
                 <View style={styles.occStat}>
                   <Ionicons name="camera" size={14} color="#6B7280" />
-                  <Text style={styles.occStatText}>{occ.photos?.length || 0} fotos</Text>
+                  <Text style={[styles.occStatText, isLight && { color: th.textMuted }]}>{occ.photos?.length || 0} fotos</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -529,9 +529,9 @@ export default function OcorrenciasScreen() {
               </View>
 
               {/* Photos */}
-              <View style={styles.detailSection}>
+              <View style={[styles.detailSection, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.detailSectionTitle}>Fotografias</Text>
+                  <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Fotografias</Text>
                   <TouchableOpacity 
                     style={[styles.addSmallBtn, isUploadingPhoto && styles.disabledBtn]} 
                     onPress={handleAddPhoto}
@@ -574,14 +574,14 @@ export default function OcorrenciasScreen() {
                     </View>
                   </ScrollView>
                 ) : (
-                  <Text style={styles.emptySubtext}>Sem fotografias (pressione longo para remover)</Text>
+                  <Text style={[styles.emptySubtext, isLight && { color: th.textMuted }]}>Sem fotografias (pressione longo para remover)</Text>
                 )}
               </View>
 
               {/* Persons */}
-              <View style={styles.detailSection}>
+              <View style={[styles.detailSection, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.detailSectionTitle}>Pessoas Envolvidas</Text>
+                  <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Pessoas Envolvidas</Text>
                   <TouchableOpacity
                     style={styles.addSmallBtn}
                     onPress={() => setShowPersonModal(true)}

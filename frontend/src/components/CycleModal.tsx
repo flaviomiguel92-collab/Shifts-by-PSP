@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useDataStore, Cycle } from '../store/dataStore';
 import { COLORS } from '../theme/colors';
+import { useTheme } from '../theme/themes';
 
 interface CycleModalProps {
   visible: boolean;
@@ -21,6 +22,8 @@ interface CycleModalProps {
 }
 
 export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editingCycle }) => {
+  const th = useTheme();
+  const isLight = !th.isDark;
   const { shiftTypes, createCycle, updateCycle, deleteCycle } = useDataStore();
   const isEditing = !!editingCycle;
 
@@ -87,9 +90,9 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editin
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <View style={[styles.container, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>{isEditing ? 'Editar Ciclo' : 'Novo Ciclo'}</Text>
+            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>{isEditing ? 'Editar Ciclo' : 'Novo Ciclo'}</Text>
             <View style={styles.headerActions}>
               {isEditing && (
                 <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn}>
@@ -97,30 +100,30 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editin
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={onClose}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+                <Ionicons name="close" size={24} color={isLight ? th.textSecondary : '#9CA3AF'} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Nome</Text>
+          <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Nome</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, isLight && { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong }]}
             placeholder="Ex: Ciclo 8 dias"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={isLight ? th.textMuted : '#6B7280'}
             value={name}
             onChangeText={setName}
           />
 
-          <Text style={styles.sectionTitle}>Padrão</Text>
-          <View style={styles.patternRow}>
+          <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Padrão</Text>
+          <View style={[styles.patternRow, isLight && { backgroundColor: th.bg }]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.patternChips}>
                 {pattern.length === 0 ? (
-                  <Text style={styles.emptyHint}>Ainda sem turnos no padrão</Text>
+                  <Text style={[styles.emptyHint, isLight && { color: th.textMuted }]}>Ainda sem turnos no padrão</Text>
                 ) : (
                   pattern.map((p, idx) => (
-                    <View key={`${p}-${idx}`} style={styles.chip}>
-                      <Text style={styles.chipText}>{p}</Text>
+                    <View key={`${p}-${idx}`} style={[styles.chip, isLight && { backgroundColor: th.border }]}>
+                      <Text style={[styles.chipText, isLight && { color: th.textPrimary }]}>{p}</Text>
                     </View>
                   ))
                 )}
@@ -129,28 +132,28 @@ export const CycleModal: React.FC<CycleModalProps> = ({ visible, onClose, editin
           </View>
 
           <View style={styles.patternActions}>
-            <TouchableOpacity style={styles.smallBtn} onPress={removeLast} disabled={pattern.length === 0}>
-              <Text style={[styles.smallBtnText, pattern.length === 0 && styles.disabledText]}>Remover último</Text>
+            <TouchableOpacity style={[styles.smallBtn, isLight && { backgroundColor: th.bg }]} onPress={removeLast} disabled={pattern.length === 0}>
+              <Text style={[styles.smallBtnText, isLight && { color: th.textSecondary }, pattern.length === 0 && styles.disabledText]}>Remover último</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.smallBtn} onPress={clearAll} disabled={pattern.length === 0}>
-              <Text style={[styles.smallBtnText, pattern.length === 0 && styles.disabledText]}>Limpar</Text>
+            <TouchableOpacity style={[styles.smallBtn, isLight && { backgroundColor: th.bg }]} onPress={clearAll} disabled={pattern.length === 0}>
+              <Text style={[styles.smallBtnText, isLight && { color: th.textSecondary }, pattern.length === 0 && styles.disabledText]}>Limpar</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionTitle}>Adicionar turnos ao padrão</Text>
+          <Text style={[styles.sectionTitle, isLight && { color: th.textMuted }]}>Adicionar turnos ao padrão</Text>
           <ScrollView style={{ maxHeight: 220 }}>
             <View style={styles.typeGrid}>
               {shiftTypes.map((shift) => (
                 <TouchableOpacity
                   key={shift.id}
-                  style={[styles.typeButton, { borderColor: shift.color || '#374151' }]}
+                  style={[styles.typeButton, isLight && { backgroundColor: th.bg }, { borderColor: shift.color || '#374151' }]}
                   onPress={() => appendToPattern(shift.name)}
                 >
                   <Text style={[styles.typeButtonText, { color: shift.color || '#9CA3AF' }]}>{shift.name}</Text>
                 </TouchableOpacity>
               ))}
               {shiftTypes.length === 0 && (
-                <Text style={styles.emptyHint}>
+                <Text style={[styles.emptyHint, isLight && { color: th.textMuted }]}>
                   Primeiro cria pelo menos 1 tipo de turno (no modal de criar/editar turno).
                 </Text>
               )}

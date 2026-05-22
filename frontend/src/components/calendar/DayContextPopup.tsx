@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Shift } from '../../types';
 import { formatDate } from '../../utils/helpers';
+import { useTheme } from '../../theme/themes';
 
 interface DayContextPopupProps {
   visible: boolean;
@@ -52,6 +53,9 @@ export function DayContextPopup({
   onAddEvent,
 }: DayContextPopupProps) {
   const { width: sw, height: sh } = useWindowDimensions();
+  const t = useTheme();
+  const isLight = !t.isDark;
+  const cardBg = isLight ? t.surface : CARD_BG;
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -93,6 +97,7 @@ export function DayContextPopup({
           style={[
             isAbove ? styles.arrowDown : styles.arrowUp,
             { position: 'absolute', top: arrowTop, left: arrowLeft },
+            isAbove ? { borderTopColor: cardBg } : { borderBottomColor: cardBg },
           ]}
         />
 
@@ -100,6 +105,7 @@ export function DayContextPopup({
         <Animated.View
           style={[
             styles.card,
+            isLight && { backgroundColor: t.surface, borderColor: t.borderStrong, shadowOpacity: 0.12 },
             {
               left: popupLeft,
               top: popupTop,
@@ -118,42 +124,42 @@ export function DayContextPopup({
           <Pressable onPress={() => {}}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.dateLabel}>{dateLabel}</Text>
+              <Text style={[styles.dateLabel, isLight && { color: t.textPrimary }]}>{dateLabel}</Text>
               <TouchableOpacity
                 onPress={onClose}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close" size={15} color="#475569" />
+                <Ionicons name="close" size={15} color={isLight ? t.textMuted : '#475569'} />
               </TouchableOpacity>
             </View>
 
             {/* Shift row — tapping edits existing or opens picker for new */}
             <TouchableOpacity
-              style={styles.shiftRow}
+              style={[styles.shiftRow, isLight && { borderTopColor: t.border }]}
               onPress={shift ? onEditShift : onAddShift}
               activeOpacity={0.7}
             >
               <View
                 style={[
                   styles.shiftDot,
-                  { backgroundColor: shift ? shiftColor : '#374151' },
+                  { backgroundColor: shift ? shiftColor : (isLight ? t.border : '#374151') },
                 ]}
               />
               <View style={{ flex: 1 }}>
                 {shift ? (
                   <>
-                    <Text style={styles.shiftName}>{shiftName}</Text>
+                    <Text style={[styles.shiftName, isLight && { color: t.textPrimary }]}>{shiftName}</Text>
                     {(shift.start_time || shift.end_time) && (
-                      <Text style={styles.shiftTime}>
+                      <Text style={[styles.shiftTime, isLight && { color: t.textMuted }]}>
                         {[shift.start_time, shift.end_time].filter(Boolean).join(' – ')}
                       </Text>
                     )}
                   </>
                 ) : (
-                  <Text style={styles.noShift}>Sem turno</Text>
+                  <Text style={[styles.noShift, isLight && { color: t.textMuted }]}>Sem turno</Text>
                 )}
               </View>
-              <Ionicons name="chevron-forward" size={13} color="#374151" />
+              <Ionicons name="chevron-forward" size={13} color={isLight ? t.textMuted : '#374151'} />
             </TouchableOpacity>
 
             {gratifiedCount > 0 && (
@@ -166,32 +172,32 @@ export function DayContextPopup({
             )}
 
             {/* Action buttons */}
-            <View style={styles.actions}>
+            <View style={[styles.actions, isLight && { borderTopColor: t.border }]}>
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={onAddShift}
                 activeOpacity={0.75}
               >
                 <Ionicons name="calendar-outline" size={14} color="#60A5FA" />
-                <Text style={styles.actionLabel}>Turno</Text>
+                <Text style={[styles.actionLabel, isLight && { color: t.textSecondary }]}>Turno</Text>
               </TouchableOpacity>
-              <View style={styles.sep} />
+              <View style={[styles.sep, isLight && { backgroundColor: t.border }]} />
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={onAddGratified}
                 activeOpacity={0.75}
               >
                 <Ionicons name="cash-outline" size={14} color="#34D399" />
-                <Text style={styles.actionLabel}>Grat.</Text>
+                <Text style={[styles.actionLabel, isLight && { color: t.textSecondary }]}>Grat.</Text>
               </TouchableOpacity>
-              <View style={styles.sep} />
+              <View style={[styles.sep, isLight && { backgroundColor: t.border }]} />
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={onAddEvent}
                 activeOpacity={0.75}
               >
                 <Ionicons name="shield-outline" size={14} color="#A78BFA" />
-                <Text style={styles.actionLabel}>Ocorr.</Text>
+                <Text style={[styles.actionLabel, isLight && { color: t.textSecondary }]}>Ocorr.</Text>
               </TouchableOpacity>
             </View>
           </Pressable>

@@ -127,6 +127,7 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
                         key={t.name}
                         style={[
                           styles.templateChip,
+                          isLight && { backgroundColor: th.bg, borderColor: th.border },
                           name === t.name && styles.templateChipActive,
                         ]}
                         onPress={() => setName(t.name)}
@@ -134,6 +135,7 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
                         <Text
                           style={[
                             styles.templateChipText,
+                            isLight && { color: th.textMuted },
                             name === t.name && styles.templateChipTextActive,
                           ]}
                         >
@@ -171,23 +173,23 @@ export const GratifiedModal: React.FC<GratifiedModalProps> = ({
               </Text>
               {calc && (
                 <>
-                  <Text style={styles.valueMeta}>
+                  <Text style={[styles.valueMeta, isLight && { color: th.textMuted }]}>
                     Subtotal: {calc.subtotal.toFixed(2)} € | Desconto: {calc.discountPercent}%
                   </Text>
                   <View style={styles.breakdown}>
                     {calc.lines.map((l, idx) => (
                       <View key={idx} style={styles.breakLine}>
-                        <Text style={styles.breakText}>
+                        <Text style={[styles.breakText, isLight && { color: th.textSecondary }]}>
                           {l.kind === 'base' ? 'Gratificado' : 'Fração'} {l.gratifiedKind} ({l.start}–{l.end})
                         </Text>
-                        <Text style={styles.breakValue}>{l.value.toFixed(2)} €</Text>
+                        <Text style={[styles.breakValue, isLight && { color: th.textPrimary }]}>{l.value.toFixed(2)} €</Text>
                       </View>
                     ))}
                   </View>
                 </>
               )}
               {!calc && (
-                <Text style={styles.valueHint}>Preenche início e fim para calcular automaticamente.</Text>
+                <Text style={[styles.valueHint, isLight && { color: th.textMuted }]}>Preenche início e fim para calcular automaticamente.</Text>
               )}
             </View>
           </ScrollView>

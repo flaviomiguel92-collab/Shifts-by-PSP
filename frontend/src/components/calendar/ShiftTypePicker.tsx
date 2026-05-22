@@ -177,7 +177,7 @@ export function ShiftTypePicker({
         <View style={[styles.sheet, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={[styles.dragHandle, isLight && { backgroundColor: th.borderStrong }]} />
 
-          <View style={styles.sheetHeader}>
+          <View style={[styles.sheetHeader, isLight && { borderBottomColor: th.border }]}>
             {showBack && (
               <TouchableOpacity onPress={goBack} style={styles.backBtn}>
                 <Ionicons name="chevron-back" size={18} color="#60A5FA" />
@@ -201,8 +201,8 @@ export function ShiftTypePicker({
             >
               {shiftTypes.length === 0 && (
                 <View style={styles.emptyState}>
-                  <Ionicons name="calendar-outline" size={32} color="#374151" />
-                  <Text style={styles.emptyStateText}>Sem tipos de turno configurados</Text>
+                  <Ionicons name="calendar-outline" size={32} color={isLight ? th.textMuted : '#374151'} />
+                  <Text style={[styles.emptyStateText, isLight && { color: th.textMuted }]}>Sem tipos de turno configurados</Text>
                 </View>
               )}
 
@@ -210,7 +210,7 @@ export function ShiftTypePicker({
                 {shiftTypes.map((st) => (
                   <TouchableOpacity
                     key={st.id}
-                    style={styles.typeItem}
+                    style={[styles.typeItem, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}
                     onPress={() => {
                       setSelectedType(st);
                       setPickerView('selected');
@@ -219,17 +219,17 @@ export function ShiftTypePicker({
                   >
                     <View style={[styles.typeDot, { backgroundColor: st.color }]} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.typeName}>{st.name}</Text>
+                      <Text style={[styles.typeName, isLight && { color: th.textPrimary }]}>{st.name}</Text>
                       {(st.start_time || st.startTime) ? (
-                        <Text style={styles.typeTime}>
+                        <Text style={[styles.typeTime, isLight && { color: th.textMuted }]}>
                           {st.start_time || st.startTime}
                           {(st.end_time || st.endTime) ? ` – ${st.end_time || st.endTime}` : ''}
                         </Text>
                       ) : (
-                        <Text style={styles.typeTime}>Dia inteiro</Text>
+                        <Text style={[styles.typeTime, isLight && { color: th.textMuted }]}>Dia inteiro</Text>
                       )}
                     </View>
-                    <Ionicons name="chevron-forward" size={15} color="#374151" />
+                    <Ionicons name="chevron-forward" size={15} color={isLight ? th.textMuted : '#374151'} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -245,13 +245,13 @@ export function ShiftTypePicker({
           {pickerView === 'selected' && selectedType && (
             <View style={styles.actionGroup}>
               {(selectedType.start_time || selectedType.startTime) && (
-                <Text style={styles.selectedTimeHint}>
+                <Text style={[styles.selectedTimeHint, isLight && { color: th.textMuted }]}>
                   {selectedType.start_time || selectedType.startTime} – {selectedType.end_time || selectedType.endTime}
                 </Text>
               )}
 
               <TouchableOpacity
-                style={styles.actionRow}
+                style={[styles.actionRow, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}
                 onPress={() => {
                   onApply(selectedType.name);
                   resetAll();
@@ -262,20 +262,20 @@ export function ShiftTypePicker({
                 <View style={[styles.actionIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
                   <Ionicons name="checkmark-circle-outline" size={20} color="#60A5FA" />
                 </View>
-                <Text style={styles.actionText}>Aplicar a este dia</Text>
-                <Ionicons name="chevron-forward" size={16} color="#374151" />
+                <Text style={[styles.actionText, isLight && { color: th.textPrimary }]}>Aplicar a este dia</Text>
+                <Ionicons name="chevron-forward" size={16} color={isLight ? th.textMuted : '#374151'} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionRow}
+                style={[styles.actionRow, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}
                 onPress={() => openEdit(selectedType)}
                 activeOpacity={0.75}
               >
                 <View style={[styles.actionIcon, { backgroundColor: 'rgba(139,92,246,0.12)' }]}>
                   <Ionicons name="pencil-outline" size={20} color="#A78BFA" />
                 </View>
-                <Text style={styles.actionText}>Editar tipo de turno</Text>
-                <Ionicons name="chevron-forward" size={16} color="#374151" />
+                <Text style={[styles.actionText, isLight && { color: th.textPrimary }]}>Editar tipo de turno</Text>
+                <Ionicons name="chevron-forward" size={16} color={isLight ? th.textMuted : '#374151'} />
               </TouchableOpacity>
 
               {hasExistingShift && onDeleteShift && (
@@ -288,7 +288,7 @@ export function ShiftTypePicker({
                     <Ionicons name="trash-outline" size={20} color="#EF4444" />
                   </View>
                   <Text style={[styles.actionText, { color: '#EF4444' }]}>Remover turno deste dia</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#374151" />
+                  <Ionicons name="chevron-forward" size={16} color={isLight ? th.textMuted : '#374151'} />
                 </TouchableOpacity>
               )}
             </View>
@@ -302,7 +302,7 @@ export function ShiftTypePicker({
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingBottom: 24 }}
             >
-              <Text style={styles.fieldLabel}>Nome</Text>
+              <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }]}>Nome</Text>
               <TextInput
                 style={[styles.input, inputLight]}
                 placeholder="Ex: Manhã, Tarde, Folga..."
@@ -312,7 +312,7 @@ export function ShiftTypePicker({
                 autoFocus={pickerView === 'create'}
               />
 
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Cor</Text>
+              <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }, { marginTop: 16 }]}>Cor</Text>
               <View style={styles.colorRow}>
                 {PRESET_COLORS.map((c) => (
                   <TouchableOpacity
@@ -325,7 +325,7 @@ export function ShiftTypePicker({
               </View>
 
               <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Dia inteiro (sem horário)</Text>
+                <Text style={[styles.toggleLabel, isLight && { color: th.textPrimary }]}>Dia inteiro (sem horário)</Text>
                 <Switch
                   value={form.allDay}
                   onValueChange={(v) => setForm((f) => ({ ...f, allDay: v }))}
@@ -337,7 +337,7 @@ export function ShiftTypePicker({
               {!form.allDay && (
                 <View style={styles.timeRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.fieldLabel}>Início</Text>
+                    <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }]}>Início</Text>
                     <TextInput
                       style={[styles.input, inputLight]}
                       placeholder="08:00"
@@ -349,7 +349,7 @@ export function ShiftTypePicker({
                   </View>
                   <View style={{ width: 10 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.fieldLabel}>Fim</Text>
+                    <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }]}>Fim</Text>
                     <TextInput
                       style={[styles.input, inputLight]}
                       placeholder="16:00"
@@ -363,7 +363,7 @@ export function ShiftTypePicker({
               )}
 
               <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Conta como dia de trabalho</Text>
+                <Text style={[styles.toggleLabel, isLight && { color: th.textPrimary }]}>Conta como dia de trabalho</Text>
                 <Switch
                   value={form.isWorking}
                   onValueChange={(v) => setForm((f) => ({ ...f, isWorking: v }))}
@@ -386,7 +386,7 @@ export function ShiftTypePicker({
                     onPress={handleSaveOnly}
                     disabled={!form.name.trim()}
                   >
-                    <Text style={styles.saveSecondaryText}>Guardar apenas</Text>
+                    <Text style={[styles.saveSecondaryText, isLight && { color: th.textSecondary }]}>Guardar apenas</Text>
                   </TouchableOpacity>
                 </>
               ) : (

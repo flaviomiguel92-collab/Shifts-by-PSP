@@ -93,10 +93,10 @@ export default function GratificadosScreen() {
 
   return (
     <SafeAreaView style={[styles.root, isLight && { backgroundColor: th.bg }]}>
-      <View style={styles.pageHeader}>
+      <View style={[styles.pageHeader, isLight && { borderBottomColor: th.border }]}>
         <View>
           <Text style={[styles.pageTitle, isLight && { color: th.textPrimary }]}>Gratificados</Text>
-          <Text style={styles.pageSubtitle}>{currentYear}</Text>
+          <Text style={[styles.pageSubtitle, isLight && { color: th.textMuted }]}>{currentYear}</Text>
         </View>
         <View style={styles.totalPill}>
           <Ionicons name="cash-outline" size={14} color="#10B981" />
@@ -121,13 +121,13 @@ export default function GratificadosScreen() {
           <View style={styles.kpiRow}>
             <View style={styles.kpiBox}>
               <Ionicons name="list-outline" size={18} color="#94A3B8" style={{ marginBottom: 6 }} />
-              <Text style={styles.kpiLabel}>Qtd. gratificados</Text>
+              <Text style={[styles.kpiLabel, isLight && { color: th.textMuted }]}>Qtd. gratificados</Text>
               <Text style={[styles.kpiValue, isLight && { color: th.textPrimary }]}>{monthEntries.length}</Text>
             </View>
-            <View style={styles.kpiDivider} />
+            <View style={[styles.kpiDivider, isLight && { backgroundColor: th.border }]} />
             <View style={styles.kpiBox}>
               <Ionicons name="cash-outline" size={18} color="#10B981" style={{ marginBottom: 6 }} />
-              <Text style={styles.kpiLabel}>Total ganho</Text>
+              <Text style={[styles.kpiLabel, isLight && { color: th.textMuted }]}>Total ganho</Text>
               <Text style={[styles.kpiValue, { color: '#10B981' }]}>{formatCurrency(monthTotal)}</Text>
             </View>
           </View>
@@ -160,7 +160,7 @@ export default function GratificadosScreen() {
           </View>
 
           {/* Search bar */}
-          <View style={[styles.searchRow, isLight && { backgroundColor: th.bg }]}>
+          <View style={[styles.searchRow, isLight && { backgroundColor: th.bg, borderColor: th.border }]}>
             <Ionicons name="search-outline" size={15} color="#475569" style={{ marginRight: 8 }} />
             <TextInput
               style={[styles.searchInput, isLight && { color: th.textPrimary }]}
@@ -192,20 +192,20 @@ export default function GratificadosScreen() {
               );
             }
             return filtered.map((g: GratifiedEntry, i: number) => (
-              <View key={g.id} style={[styles.entryRow, i === filtered.length - 1 && { borderBottomWidth: 0 }]}>
+              <View key={g.id} style={[styles.entryRow, isLight && { borderBottomColor: th.border }, i === filtered.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.entryLeft}>
                   <Text style={[styles.entryName, isLight && { color: th.textPrimary }]}>{g.name || 'Gratificado'}</Text>
                   <View style={styles.entryMeta}>
                     <Ionicons name="calendar-outline" size={11} color="#475569" />
-                    <Text style={styles.entryMetaText}>{g.date}</Text>
+                    <Text style={[styles.entryMetaText, isLight && { color: th.textMuted }]}>{g.date}</Text>
                     {g.start_time && (
                       <>
                         <Ionicons name="time-outline" size={11} color="#475569" />
-                        <Text style={styles.entryMetaText}>{g.start_time}–{g.end_time}</Text>
+                        <Text style={[styles.entryMetaText, isLight && { color: th.textMuted }]}>{g.start_time}–{g.end_time}</Text>
                       </>
                     )}
                   </View>
-                  {!!g.note && <Text style={styles.entryNote}>{g.note}</Text>}
+                  {!!g.note && <Text style={[styles.entryNote, isLight && { color: th.textMuted }]}>{g.note}</Text>}
                 </View>
                 <View style={styles.entryValueWrap}>
                   <Text style={styles.entryValue}>{formatCurrency(Number(g.value || 0))}</Text>
@@ -221,13 +221,13 @@ export default function GratificadosScreen() {
           <View style={styles.kpiRow}>
             <View style={styles.kpiBox}>
               <Ionicons name="list-outline" size={18} color="#94A3B8" style={{ marginBottom: 6 }} />
-              <Text style={styles.kpiLabel}>Qtd. anual</Text>
+              <Text style={[styles.kpiLabel, isLight && { color: th.textMuted }]}>Qtd. anual</Text>
               <Text style={[styles.kpiValue, isLight && { color: th.textPrimary }]}>{yearEntries.length}</Text>
             </View>
-            <View style={styles.kpiDivider} />
+            <View style={[styles.kpiDivider, isLight && { backgroundColor: th.border }]} />
             <View style={styles.kpiBox}>
               <Ionicons name="trending-up-outline" size={18} color="#10B981" style={{ marginBottom: 6 }} />
-              <Text style={styles.kpiLabel}>Total anual</Text>
+              <Text style={[styles.kpiLabel, isLight && { color: th.textMuted }]}>Total anual</Text>
               <Text style={[styles.kpiValue, { color: '#10B981' }]}>{formatCurrency(yearTotal)}</Text>
             </View>
           </View>
@@ -242,9 +242,9 @@ export default function GratificadosScreen() {
               byMonth.map((m, i) => {
                 const pct = yearTotal > 0 ? Math.max((m.total / yearTotal) * 100, 2) : 2;
                 return (
-                  <View key={m.month} style={[styles.monthRow, i === byMonth.length - 1 && { borderBottomWidth: 0 }]}>
-                    <Text style={styles.monthRowLabel}>{formatMonth(m.month)}</Text>
-                    <View style={styles.monthBarWrap}>
+                  <View key={m.month} style={[styles.monthRow, isLight && { borderBottomColor: th.border }, i === byMonth.length - 1 && { borderBottomWidth: 0 }]}>
+                    <Text style={[styles.monthRowLabel, isLight && { color: th.textMuted }]}>{formatMonth(m.month)}</Text>
+                    <View style={[styles.monthBarWrap, isLight && { backgroundColor: th.border }]}>
                       <View style={[styles.monthBar, { width: `${pct}%` as any }]} />
                     </View>
                     <Text style={styles.monthRowCount}>{m.count}×</Text>

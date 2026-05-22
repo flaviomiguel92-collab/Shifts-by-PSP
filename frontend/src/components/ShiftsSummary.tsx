@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Shift } from '../types';
 import { resolveShiftColor } from '../utils/helpers';
 import { COLORS } from '../theme/colors';
+import { useTheme } from '../theme/themes';
 
 interface ShiftsSummaryProps {
   shifts: Shift[];
@@ -12,6 +13,8 @@ interface ShiftsSummaryProps {
 
 export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes, month }) => {
   const { width } = useWindowDimensions();
+  const th = useTheme();
+  const isLight = !th.isDark;
   const isMobileSize = width < 480;
   const shiftItems = useMemo(() => {
     const normalizedConfigured = (shiftTypes || [])
@@ -53,25 +56,25 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
   });
 
   return (
-    <View style={[styles.container, { padding: isMobileSize ? 12 : 16 }]}>
+    <View style={[styles.container, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong, borderWidth: 0.5 }, { padding: isMobileSize ? 12 : 16 }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { fontSize: isMobileSize ? 20 : 24 }]}>Turnos</Text>
-        <Text style={styles.monthText}>{monthName.toUpperCase()}</Text>
+        <Text style={[styles.title, isLight && { color: th.textPrimary }, { fontSize: isMobileSize ? 20 : 24 }]}>Turnos</Text>
+        <Text style={[styles.monthText, isLight && { color: th.textMuted }]}>{monthName.toUpperCase()}</Text>
       </View>
 
-      <View style={[styles.counters, { columnGap: isMobileSize ? 8 : 12, rowGap: isMobileSize ? 8 : 10 }]}>
+      <View style={[styles.counters, isLight && { borderTopColor: th.border, borderBottomColor: th.border }, { columnGap: isMobileSize ? 8 : 12, rowGap: isMobileSize ? 8 : 10 }]}>
         {shiftItems.map((item) => (
           <View key={item.id} style={[styles.counterItem, { minWidth: isMobileSize ? 60 : 68 }]}>
             <Text style={[styles.counterValue, { color: item.color, fontSize: isMobileSize ? 18 : 20 }]}>
               {countsByType.get(item.name) || 0}
             </Text>
-            <Text style={[styles.counterLabel, { fontSize: isMobileSize ? 10 : 11 }]} numberOfLines={1}>
+            <Text style={[styles.counterLabel, isLight && { color: th.textSecondary }, { fontSize: isMobileSize ? 10 : 11 }]} numberOfLines={1}>
               {item.name}
             </Text>
           </View>
         ))}
         {shiftItems.length === 0 && (
-          <Text style={styles.emptyText}>Sem tipos de turno configurados</Text>
+          <Text style={[styles.emptyText, isLight && { color: th.textMuted }]}>Sem tipos de turno configurados</Text>
         )}
       </View>
 
@@ -85,7 +88,7 @@ export const ShiftsSummary: React.FC<ShiftsSummaryProps> = ({ shifts, shiftTypes
                 { backgroundColor: item.color },
               ]}
             />
-            <Text style={[styles.legendLabel, { fontSize: isMobileSize ? 10 : 11 }]}>{item.name}</Text>
+            <Text style={[styles.legendLabel, isLight && { color: th.textSecondary }, { fontSize: isMobileSize ? 10 : 11 }]}>{item.name}</Text>
           </View>
         ))}
       </View>

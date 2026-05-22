@@ -106,6 +106,7 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
                   key={type}
                   style={[
                     styles.typeButton,
+                    isLight && { backgroundColor: th.bg, borderColor: th.borderStrong },
                     selectedType === type && {
                       backgroundColor: GRATIFICATION_COLORS[type],
                       borderColor: GRATIFICATION_COLORS[type],
@@ -116,6 +117,7 @@ export const GratificationModal: React.FC<GratificationModalProps> = ({
                   <Text
                     style={[
                       styles.typeButtonText,
+                      isLight && { color: th.textMuted },
                       selectedType === type && styles.typeButtonTextSelected,
                     ]}
                   >

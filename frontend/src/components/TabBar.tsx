@@ -23,10 +23,14 @@ function TabItem({
   route,
   isFocused,
   onPress,
+  isLight,
+  inactiveColor,
 }: {
   route: any;
   isFocused: boolean;
   onPress: () => void;
+  isLight: boolean;
+  inactiveColor: string;
 }) {
   const config = TAB_CONFIG[route.name] ?? {
     icon: 'ellipse-outline',
@@ -62,9 +66,9 @@ function TabItem({
         <Ionicons
           name={(isFocused ? config.iconActive : config.icon) as any}
           size={22}
-          color={isFocused ? '#60A5FA' : '#475569'}
+          color={isFocused ? '#60A5FA' : inactiveColor}
         />
-        <Text style={[styles.label, isFocused && styles.labelActive]}>
+        <Text style={[styles.label, { color: inactiveColor }, isFocused && styles.labelActive]}>
           {config.label}
         </Text>
       </Animated.View>
@@ -102,6 +106,8 @@ export function CustomTabBar({ state, navigation }: any) {
             route={route}
             isFocused={state.index === index}
             onPress={() => navigation.navigate(route.name)}
+            isLight={isLight}
+            inactiveColor={isLight ? t.textMuted : '#475569'}
           />
         ))}
       </View>

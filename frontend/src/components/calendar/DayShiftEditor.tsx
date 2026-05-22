@@ -117,7 +117,7 @@ export function DayShiftEditor({
         <View style={[styles.sheet, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={[styles.dragHandle, isLight && { backgroundColor: th.borderStrong }]} />
 
-          <View style={styles.header}>
+          <View style={[styles.header, isLight && { borderBottomColor: th.border }]}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.headerLabel, isLight && { color: th.textMuted }]}>Turno de</Text>
               <Text style={[styles.headerDate, isLight && { color: th.textPrimary }]} numberOfLines={1}>{dateLabel}</Text>
@@ -160,7 +160,7 @@ export function DayShiftEditor({
                   );
                 })}
                 {shiftTypes.length === 0 && (
-                  <Text style={styles.noTypesHint}>Sem tipos configurados</Text>
+                  <Text style={[styles.noTypesHint, isLight && { color: th.textMuted }]}>Sem tipos configurados</Text>
                 )}
               </View>
             </ScrollView>
@@ -188,7 +188,7 @@ export function DayShiftEditor({
             {!allDay && (
               <View style={styles.timeRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Início</Text>
+                  <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }]}>Início</Text>
                   <TextInput
                     style={[styles.input, inputStyleLight]}
                     placeholder="08:00"
@@ -200,7 +200,7 @@ export function DayShiftEditor({
                 </View>
                 <View style={{ width: 12 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Fim</Text>
+                  <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }]}>Fim</Text>
                   <TextInput
                     style={[styles.input, inputStyleLight]}
                     placeholder="16:00"
@@ -214,7 +214,7 @@ export function DayShiftEditor({
             )}
 
             {/* Note */}
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Nota</Text>
+            <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }, { marginTop: 16 }]}>Nota</Text>
             <TextInput
               style={[styles.input, styles.noteInput, inputStyleLight]}
               placeholder="Adicionar nota..."
@@ -225,7 +225,7 @@ export function DayShiftEditor({
             />
 
             {/* Location (UI only) */}
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Localização</Text>
+            <Text style={[styles.fieldLabel, isLight && { color: th.textMuted }, { marginTop: 16 }]}>Localização</Text>
             <TextInput
               style={[styles.input, inputStyleLight]}
               placeholder="Ex: Esquadra Norte..."
