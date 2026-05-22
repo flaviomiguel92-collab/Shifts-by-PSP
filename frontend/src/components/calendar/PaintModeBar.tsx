@@ -104,7 +104,7 @@ export function PaintModeBar({
                 activeOpacity={0.75}
               >
                 {!active && <View style={[styles.chipDot, { backgroundColor: st.color }]} />}
-                <Text style={[styles.chipText, isLight && !active && { color: t.textSecondary }, active && { color: '#fff', fontWeight: '700' }]}>
+                <Text style={[styles.chipText, isLight && !active && { color: t.textSecondary }, active && { color: '#fff', fontWeight: '500' }]}>
                   {st.name}
                 </Text>
               </TouchableOpacity>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     backgroundColor: '#0B1120',
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59,130,246,0.3)',
     paddingHorizontal: 12,
     paddingTop: 10,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   paintLabelText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#60A5FA',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -168,12 +168,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: 'rgba(148,163,184,0.26)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.28)',
   },
   exitBtnText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   chipRow: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 0.5,
     backgroundColor: 'rgba(148,163,184,0.18)',
   },
   chipDot: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#94A3B8',
   },
   emptyText: {

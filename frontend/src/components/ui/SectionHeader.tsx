@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   left: { flex: 1 },
   title: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   },
   rightLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.primaryLight,
   },
 });

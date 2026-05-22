@@ -763,7 +763,7 @@ const m = StyleSheet.create({
   themeOptLabel: { fontSize: 14, fontWeight: '500' },
   themeOptDesc: { fontSize: 12, marginTop: 2 },
   radioFill: { width: 18, height: 18, borderRadius: 9 },
-  radioEmpty: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5 },
+  radioEmpty: { width: 18, height: 18, borderRadius: 9, borderWidth: 0.5 },
   empty: { textAlign: 'center', fontSize: 13, marginVertical: 20 },
   listRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, gap: 10 },
   colorDot: { width: 10, height: 10, borderRadius: 5 },

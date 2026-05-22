@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     borderRadius: 24,
-    borderWidth: 1,
+    borderWidth: 0.5,
     paddingTop: 148,
     paddingHorizontal: 26,
     paddingBottom: 28,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   label: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 1.2,
     marginBottom: 8,
   },
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     paddingHorizontal: 14,
     height: 50,
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: 'rgba(239,68,68,0.08)',
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(239,68,68,0.18)',
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   btnText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0.4,
   },
   footerRow: {
@@ -348,5 +348,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: { fontSize: 13 },
-  footerLink: { color: '#3b82f6', fontSize: 13, fontWeight: '600' },
+  footerLink: { color: '#3b82f6', fontSize: 13, fontWeight: '500' },
 });

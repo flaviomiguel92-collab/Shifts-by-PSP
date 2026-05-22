@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 20,
     backgroundColor: 'rgba(148,163,184,0.10)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: COLORS.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textMuted,
     textAlign: 'center',
   },

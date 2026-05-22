@@ -293,20 +293,20 @@ const styles = StyleSheet.create({
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   typeChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1,
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 0.5,
   },
   typeChipDot: { width: 8, height: 8, borderRadius: 4 },
   typeChipText: { fontSize: 13, fontWeight: '500' },
   typeChipTextSelected: { color: '#fff' },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 12, borderWidth: 1,
+    borderRadius: 12, borderWidth: 0.5,
     paddingHorizontal: 14, height: 48,
   },
   input: { flex: 1, fontSize: 14, backgroundColor: 'transparent' },
   colorRow: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 4, flexWrap: 'wrap' },
   colorSwatch: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  colorSwatchSelected: { borderWidth: 2, borderColor: '#fff' },
+  colorSwatchSelected: { borderWidth: 1, borderColor: '#fff' },
   timeRow: { flexDirection: 'row', alignItems: 'center' },
   timeSeparator: { width: 32, alignItems: 'center' },
   timeSepText: { fontSize: 18, fontWeight: '400' },
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     width: 48, height: 48, borderRadius: 14,
     backgroundColor: 'rgba(239,68,68,0.1)',
-    borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)',
+    borderWidth: 0.5, borderColor: 'rgba(239,68,68,0.2)',
     alignItems: 'center', justifyContent: 'center',
   },
   saveBtn: {

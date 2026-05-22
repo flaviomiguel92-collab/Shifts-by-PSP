@@ -108,12 +108,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
   },
   monthText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#9CA3AF',
   },
   counters: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   },
   counterValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
     marginBottom: 4,
   },

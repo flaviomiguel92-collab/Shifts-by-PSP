@@ -1028,7 +1028,7 @@ export default function CalendarScreen() {
                         activeOpacity={0.8}
                         style={[
                           styles.cycleBtn,
-                          isLight && { backgroundColor: t.bg, borderWidth: 1, borderColor: t.border },
+                          isLight && { backgroundColor: t.bg, borderWidth: 0.5, borderColor: t.border },
                           selectedCycle?.id === cycle.id && styles.cycleBtnActive,
                         ]}
                         onPress={() => {
@@ -1297,13 +1297,13 @@ const styles = StyleSheet.create({
   },
   customHeaderTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
   },
   customHeaderSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#93C5FD',
     textTransform: 'capitalize',
   },
@@ -1319,7 +1319,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(148,163,184,0.18)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.26)',
   },
   toggleOptionsBtn: {
@@ -1329,13 +1329,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(59,130,246,0.12)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59,130,246,0.35)',
   },
   paintBtnActive: {
     backgroundColor: 'rgba(59,130,246,0.18)',
     borderColor: 'rgba(59,130,246,0.55)',
-    borderWidth: 1,
+    borderWidth: 0.5,
   },
   loadingContainer: {
     flex: 1,
@@ -1358,7 +1358,7 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(239, 68, 68, 0.45)',
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1367,7 +1367,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     color: '#FCA5A5',
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 12,
   },
   scrollView: {
@@ -1386,7 +1386,7 @@ const styles = StyleSheet.create({
   },
   sectionEyebrow: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#9CA3AF',
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -1394,7 +1394,7 @@ const styles = StyleSheet.create({
   },
   quickBarTitle: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#6B7280',
     marginBottom: 8,
     marginTop: 8,
@@ -1407,25 +1407,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    borderWidth: 2,
+    borderWidth: 1,
     minHeight: 42,
     justifyContent: 'center',
   },
   quickBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modeHint: {
     fontSize: 12,
     color: '#F59E0B',
     marginTop: 10,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modeHintGreen: {
     fontSize: 12,
     color: '#10B981',
     marginTop: 10,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   cycleButtons: {
     flexDirection: 'row',
@@ -1444,7 +1444,7 @@ const styles = StyleSheet.create({
   },
   cycleBtnText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#9CA3AF',
   },
   cycleBtnTextActive: {
@@ -1456,7 +1456,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginHorizontal: 12,
     marginBottom: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.1)',
   },
   optionsOverlay: {
@@ -1473,7 +1473,7 @@ const styles = StyleSheet.create({
     padding: 12,
     width: '100%',
     maxHeight: '60%',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.1)',
     zIndex: 50,
     elevation: 8,
@@ -1498,7 +1498,7 @@ const styles = StyleSheet.create({
   },
   optionsSectionTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#E5E7EB',
     marginBottom: 8,
   },
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
     textTransform: 'capitalize',
   },
@@ -1533,7 +1533,7 @@ const styles = StyleSheet.create({
   },
   weekdayText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#6B7280',
   },
   daysGrid: {},
@@ -1549,7 +1549,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   todayCell: {
-    borderWidth: 1.5,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.9)',
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 0 },
@@ -1565,14 +1565,14 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 8,
     backgroundColor: '#10B981',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   gratifiedChipText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '500',
     color: '#FFFFFF',
     lineHeight: 11,
   },
@@ -1581,7 +1581,7 @@ const styles = StyleSheet.create({
     margin: 2,
     minHeight: 64,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.22)',
     backgroundColor: 'rgba(148,163,184,0.08)',
     padding: 6,
@@ -1594,30 +1594,30 @@ const styles = StyleSheet.create({
   },
   gridTodayCell: {
     borderColor: '#3B82F6',
-    borderWidth: 1.5,
+    borderWidth: 0.5,
   },
   gridDayNum: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '500',
   },
   gridBody: {
     marginTop: 6,
   },
   gridShiftLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '500',
     letterSpacing: 0.4,
   },
   gridNoteText: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#94A3B8',
     letterSpacing: 0.4,
     marginTop: 2,
   },
   gridHolidayText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#EF4444',
     letterSpacing: 0.4,
   },
@@ -1632,38 +1632,38 @@ const styles = StyleSheet.create({
   },
   cycleStartCell: {
     backgroundColor: 'rgba(245, 158, 11, 0.3)',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#F59E0B',
   },
   inCycleRangeCell: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
   },
   selectableCell: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.3)',
     margin: 1,
   },
   dayText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   shiftDayText: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   todayText: {
     color: '#3B82F6',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   holidayText: {
     color: '#EF4444',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   cycleStartText: {
     color: '#F59E0B',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   shiftNameBadge: {
     paddingHorizontal: 2,
@@ -1674,7 +1674,7 @@ const styles = StyleSheet.create({
   },
   shiftNameText: {
     fontSize: 7,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -1693,7 +1693,7 @@ const styles = StyleSheet.create({
   },
   holidayBadgeText: {
     fontSize: 7,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#EF4444',
   },
   emptyBadge: {
@@ -1704,14 +1704,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#3B82F6',
     backgroundColor: 'rgba(59,130,246,0.12)',
     alignSelf: 'center',
   },
   eventBadgeText: {
     fontSize: 7,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#60A5FA',
   },
   modalOverlay: {
@@ -1753,7 +1753,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
     textTransform: 'capitalize',
   },
@@ -1786,7 +1786,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderRadius: 12,
     backgroundColor: 'rgba(59, 130, 246, 0.07)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.18)',
   },
   copyWeekIcon: {
@@ -1799,7 +1799,7 @@ const styles = StyleSheet.create({
   },
   copyWeekLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#E2E8F0',
     marginBottom: 2,
   },
@@ -1809,12 +1809,12 @@ const styles = StyleSheet.create({
   },
   multiSelectedCell: {
     backgroundColor: 'rgba(59, 130, 246, 0.22)',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#3B82F6',
   },
   multiSelectedDayText: {
     color: '#93C5FD',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   multiCheckWrap: {
     position: 'absolute',
@@ -1828,7 +1828,7 @@ const styles = StyleSheet.create({
     right: 12,
     backgroundColor: '#0B1120',
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.35)',
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1849,7 +1849,7 @@ const styles = StyleSheet.create({
   },
   multiSelectCount: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   multiSelectActions: {
@@ -1861,12 +1861,12 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 10,
     backgroundColor: 'rgba(148,163,184,0.18)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.26)',
   },
   multiSelectClearText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#94A3B8',
   },
   multiSelectApplyBtn: {
@@ -1880,7 +1880,7 @@ const styles = StyleSheet.create({
   },
   multiSelectApplyText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#fff',
   },
   multiSelectHint: {
@@ -1888,7 +1888,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.2)',
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -1897,7 +1897,7 @@ const styles = StyleSheet.create({
   },
   multiSelectHintText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#60A5FA',
   },
   multiPickerChip: {
@@ -1907,7 +1907,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     backgroundColor: 'rgba(148,163,184,0.10)',
   },
   multiPickerDot: {
@@ -1917,7 +1917,7 @@ const styles = StyleSheet.create({
   },
   multiPickerName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   multiPickerTime: {

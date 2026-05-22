@@ -153,7 +153,7 @@ export function DayShiftEditor({
                       {!active && (
                         <View style={[styles.chipDot, { backgroundColor: st.color }]} />
                       )}
-                      <Text style={[styles.chipText, isLight && !active && { color: th.textSecondary }, active && { color: '#fff', fontWeight: '700' }]}>
+                      <Text style={[styles.chipText, isLight && !active && { color: th.textSecondary }, active && { color: '#fff', fontWeight: '500' }]}>
                         {st.name}
                       </Text>
                     </TouchableOpacity>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B1120',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderBottomWidth: 0,
     borderColor: 'rgba(59,130,246,0.15)',
     maxHeight: '85%',
@@ -292,14 +292,14 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   headerDate: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#F1F5F9',
     marginTop: 2,
     textTransform: 'capitalize',
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 0.5,
     borderColor: 'rgba(255,255,255,0.12)',
     backgroundColor: 'rgba(148,163,184,0.18)',
   },
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#94A3B8',
   },
   noTypesHint: {
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 0.5,
     backgroundColor: 'rgba(148,163,184,0.10)',
     marginBottom: 16,
   },
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   selectedName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   toggleRow: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#050816',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.26)',
     borderRadius: 10,
     paddingHorizontal: 14,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#fff',
   },
   deleteBtn: {
@@ -433,12 +433,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     backgroundColor: 'rgba(239,68,68,0.07)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(239,68,68,0.18)',
   },
   deleteBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#EF4444',
   },
 });

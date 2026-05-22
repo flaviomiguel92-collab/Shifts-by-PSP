@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     backgroundColor: '#0B1120',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59,130,246,0.2)',
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 8 },
@@ -275,12 +275,12 @@ const styles = StyleSheet.create({
   kbdHint: {
     backgroundColor: 'rgba(148,163,184,0.22)',
     borderRadius: 5,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  kbdText: { color: '#475569', fontSize: 10, fontWeight: '600' },
+  kbdText: { color: '#475569', fontSize: 10, fontWeight: '500' },
   list: { maxHeight: 420 },
   empty: {
     alignItems: 'center',
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   groupLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     flex: 1,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   groupCount: {
     color: '#334155',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   resultRow: {
     flexDirection: 'row',
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   resultText: { flex: 1 },
-  resultTitle: { color: '#E2E8F0', fontSize: 13, fontWeight: '600' },
+  resultTitle: { color: '#E2E8F0', fontSize: 13, fontWeight: '500' },
   resultSub: { color: '#475569', fontSize: 11, marginTop: 1 },
-  resultMeta: { fontSize: 12, fontWeight: '700', flexShrink: 0 },
+  resultMeta: { fontSize: 12, fontWeight: '500', flexShrink: 0 },
 });

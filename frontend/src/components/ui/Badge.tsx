@@ -46,11 +46,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0.5,
     alignSelf: 'flex-start',
   },
   text: {
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 0.3,
   },
 });

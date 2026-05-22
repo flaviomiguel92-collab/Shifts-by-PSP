@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B1120',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderBottomWidth: 0,
     borderColor: 'rgba(59,130,246,0.15)',
     maxHeight: '80%',
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   closeBtn: {
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 12,
     backgroundColor: 'rgba(148,163,184,0.18)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.22)',
   },
   typeDot: {
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   },
   typeName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   typeTime: {
@@ -514,13 +514,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59,130,246,0.25)',
     backgroundColor: 'rgba(59,130,246,0.07)',
   },
   addTypeBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#60A5FA',
   },
   // Selected state
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     backgroundColor: 'rgba(148,163,184,0.18)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.22)',
   },
   actionRowDanger: {
@@ -561,13 +561,13 @@ const styles = StyleSheet.create({
   actionText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#E2E8F0',
   },
   // Form
   fieldLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#050816',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.26)',
     borderRadius: 10,
     paddingHorizontal: 14,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'transparent',
   },
   colorDotSelected: {
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   },
   savePrimaryText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#fff',
   },
   saveSecondaryBtn: {
@@ -640,12 +640,12 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.26)',
   },
   saveSecondaryText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#94A3B8',
   },
 });

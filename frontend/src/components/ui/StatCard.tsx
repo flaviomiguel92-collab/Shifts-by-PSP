@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.glass,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: COLORS.glassBorder,
     padding: 14,
     ...SHADOWS.card,
@@ -82,16 +82,16 @@ const styles = StyleSheet.create({
   },
   trendText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   value: {
-    fontWeight: '800',
+    fontWeight: '500',
     letterSpacing: -0.5,
     color: COLORS.textPrimary,
     marginBottom: 4,
   },
   label: {
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,

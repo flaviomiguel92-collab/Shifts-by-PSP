@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     width: POPUP_W,
     backgroundColor: CARD_BG,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59,130,246,0.22)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#E2E8F0',
     textTransform: 'capitalize',
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   shiftName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   shiftTime: {
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#94A3B8',
   },
   sep: {

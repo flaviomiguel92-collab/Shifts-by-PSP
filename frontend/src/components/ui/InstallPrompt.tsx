@@ -72,14 +72,14 @@ const styles = StyleSheet.create({
   installBtn: {
     backgroundColor: 'rgba(59, 130, 246, 0.18)',
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.35)',
     paddingHorizontal: 14,
     paddingVertical: 5,
   },
   installText: {
     color: '#60A5FA',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 12,
   },
   closeBtn: {

@@ -227,13 +227,13 @@ const styles = StyleSheet.create({
   title: {
     color: 'white',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   sectionTitle: {
     color: '#9CA3AF',
     marginTop: 12,
     marginBottom: 6,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   input: {
     backgroundColor: 'transparent',
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     flex: 1,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#374151',
   },
   row: {
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: '#111827',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#374151',
   },
   templateChipActive: {
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   templateChipText: {
     color: '#9CA3AF',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 12,
   },
   templateChipTextActive: {
@@ -277,13 +277,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
     borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#374151',
   },
   valueBig: {
     color: '#10B981',
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '500',
   },
   valueMeta: {
     color: '#9CA3AF',
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   breakValue: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 12,
   },
   saveBtn: {
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '500',
     fontSize: 15,
   },
 });

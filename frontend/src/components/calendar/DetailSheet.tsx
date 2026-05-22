@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   kindLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
-  title: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
+  title: { color: '#FFFFFF', fontSize: 20, fontWeight: '500' },
   subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: 13, marginTop: 1 },
   body: { padding: 18, gap: 10 },
   infoRow: {
@@ -146,14 +146,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#111827',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#374151',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
   infoLabel: { color: '#9CA3AF' },
-  infoValue: { color: '#F1F5F9', fontWeight: '700' },
+  infoValue: { color: '#F1F5F9', fontWeight: '500' },
   actions: { flexDirection: 'row', gap: 12, paddingHorizontal: 18, paddingTop: 18 },
   editBtn: {
     flex: 1,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
   },
-  editText: { color: '#F1F5F9', fontWeight: '700' },
+  editText: { color: '#F1F5F9', fontWeight: '500' },
   removeBtn: {
     flex: 1,
     backgroundColor: '#EF4444',
@@ -170,6 +170,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
   },
-  removeText: { color: '#FFFFFF', fontWeight: '800' },
+  removeText: { color: '#FFFFFF', fontWeight: '500' },
   note: { color: '#64748B', fontSize: 12, textAlign: 'center', paddingHorizontal: 24, paddingTop: 14 },
 });

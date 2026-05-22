@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   wrapper: { gap: 6 },
   label: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     color: COLORS.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(5, 8, 22, 0.6)',
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: COLORS.borderLight,
     paddingHorizontal: 14,
     height: 48,

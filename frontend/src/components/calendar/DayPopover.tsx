@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#0B1120',
     borderRadius: 28,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59,130,246,0.22)',
     paddingVertical: 16,
     maxHeight: '70%',
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   dayMain: {
     color: '#FFFFFF',
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '500',
     textTransform: 'capitalize',
     marginTop: 2,
   },
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemTitle: { color: '#F1F5F9', fontSize: 16, fontWeight: '600' },
+  itemTitle: { color: '#F1F5F9', fontSize: 16, fontWeight: '500' },
   itemTime: { color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 1 },
   itemTrailing: { color: 'rgba(255,255,255,0.55)', fontSize: 14 },
   empty: {
@@ -210,6 +210,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 4,
   },
-  actionLabel: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
+  actionLabel: { color: '#94A3B8', fontSize: 12, fontWeight: '500' },
   sep: { width: 1, backgroundColor: 'rgba(148,163,184,0.26)', marginVertical: 10 },
 });

@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.md,
     marginHorizontal: SPACING.lg,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: COLORS.borderLight,
   },
   header: {

@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(5, 8, 22, 0.96)',
     borderRadius: 22,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.18)',
     paddingVertical: 8,
     paddingHorizontal: 6,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#475569',
     letterSpacing: 0.2,
   },

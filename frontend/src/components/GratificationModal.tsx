@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '500',
     color: COLORS.textPrimary,
   },
   closeBtn: {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textTertiary,
     marginBottom: 12,
     marginTop: 8,
@@ -219,13 +219,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: COLORS.backgroundTertiary,
     backgroundColor: COLORS.background,
   },
   typeButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textTertiary,
   },
   typeButtonTextSelected: {
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     padding: 14,
     color: COLORS.textPrimary,
     fontSize: 16,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: COLORS.backgroundTertiary,
   },
   valueContainer: {
@@ -246,14 +246,14 @@ const styles = StyleSheet.create({
   },
   currencySymbol: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#10B981',
     marginRight: 12,
   },
   valueInput: {
     flex: 1,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   noteInput: {
     minHeight: 80,
@@ -272,14 +272,14 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(239, 68, 68, 0.3)',
     gap: 8,
   },
   deleteText: {
     color: '#EF4444',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   saveBtn: {
     flex: 2,
@@ -294,6 +294,6 @@ const styles = StyleSheet.create({
   saveText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

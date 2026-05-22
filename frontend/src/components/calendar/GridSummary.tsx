@@ -113,13 +113,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
   },
-  cardValue: { fontSize: 22, fontWeight: '800' },
+  cardValue: { fontSize: 22, fontWeight: '500' },
   cardLabel: {
     color: '#94A3B8',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: 1,
     marginTop: 2,
   },
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 3 },
-  legendLabel: { color: '#CBD5E1', fontSize: 11, fontWeight: '600' },
+  legendLabel: { color: '#CBD5E1', fontSize: 11, fontWeight: '500' },
   euroChip: {
     minWidth: 16,
     height: 16,
@@ -146,5 +146,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  euroChipText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
+  euroChipText: { color: '#FFFFFF', fontSize: 10, fontWeight: '500' },
 });

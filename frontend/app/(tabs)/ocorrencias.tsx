@@ -490,7 +490,7 @@ export default function OcorrenciasScreen() {
                       key={s}
                       style={[
                         styles.statusOption,
-                        isLight && { backgroundColor: th.bg, borderColor: th.borderStrong, borderWidth: 1 },
+                        isLight && { backgroundColor: th.bg, borderColor: th.borderStrong, borderWidth: 0.5 },
                         selectedOccurrence.status === s && { backgroundColor: OCCURRENCE_STATUS_COLORS[s] },
                       ]}
                       onPress={() => handleUpdateStatus(s)}
@@ -658,13 +658,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '500',
     color: '#F1F5F9',
     letterSpacing: -0.3,
   },
   addButton: {
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.35)',
     width: 44,
     height: 44,
@@ -687,12 +687,12 @@ const styles = StyleSheet.create({
     padding: 60,
     backgroundColor: 'rgba(11, 17, 32, 0.75)',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.1)',
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#475569',
     marginTop: 16,
   },
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   occCard: {
     backgroundColor: 'rgba(11, 17, 32, 0.75)',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.1)',
     padding: 16,
     marginBottom: 12,
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#FFFFFF',
   },
   occDate: {
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   },
   occClassification: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#F1F5F9',
     marginBottom: 4,
   },
@@ -783,14 +783,14 @@ const styles = StyleSheet.create({
   },
   pdfBtn: {
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(16, 185, 129, 0.3)',
     padding: 8,
     borderRadius: 10,
   },
   detailTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   detailBody: {
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(16, 185, 129, 0.25)',
     padding: 16,
     borderRadius: 14,
@@ -811,13 +811,13 @@ const styles = StyleSheet.create({
   },
   generatePdfBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#10B981',
   },
   detailSection: {
     backgroundColor: 'rgba(11, 17, 32, 0.75)',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.1)',
     padding: 16,
     marginBottom: 12,
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
   },
   detailSectionTitle: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#475569',
     letterSpacing: 1,
     marginBottom: 12,
@@ -851,12 +851,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.22)',
   },
   statusOptionText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#94A3B8',
   },
   infoRow: {
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(59, 130, 246, 0.3)',
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
   },
   addSmallBtnText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#60A5FA',
   },
   photosRow: {
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   personCard: {
     backgroundColor: 'rgba(5, 8, 22, 0.5)',
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: 'rgba(148,163,184,0.22)',
     padding: 12,
     marginBottom: 8,
@@ -927,12 +927,12 @@ const styles = StyleSheet.create({
   },
   roleBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFFFFF',
   },
   personName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#F1F5F9',
   },
   personDoc: {

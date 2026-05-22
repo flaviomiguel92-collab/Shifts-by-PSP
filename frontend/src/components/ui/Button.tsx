@@ -34,7 +34,7 @@ const VARIANT_STYLES = {
   secondary: {
     container: {
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: 'rgba(59, 130, 246, 0.3)',
     },
     text: { color: COLORS.primaryLight },
@@ -44,7 +44,7 @@ const VARIANT_STYLES = {
   ghost: {
     container: {
       backgroundColor: 'rgba(148,163,184,0.18)',
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: COLORS.borderLight,
     },
     text: { color: COLORS.textTertiary },
@@ -54,7 +54,7 @@ const VARIANT_STYLES = {
   danger: {
     container: {
       backgroundColor: 'rgba(239, 68, 68, 0.1)',
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: 'rgba(239, 68, 68, 0.2)',
     },
     text: { color: COLORS.error },
@@ -64,7 +64,7 @@ const VARIANT_STYLES = {
   success: {
     container: {
       backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: 'rgba(16, 185, 129, 0.25)',
     },
     text: { color: COLORS.success },
@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   text: {
-    fontWeight: '700',
+    fontWeight: '500',
   },
 });
