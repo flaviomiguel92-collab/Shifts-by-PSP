@@ -354,6 +354,56 @@ export const useDataStore = create<DataStore>((set, get) => ({
       gratifications: Array.isArray(payload.gratifications) ? payload.gratifications as Gratification[] : get().gratifications,
     });
     await get().saveData();
+
+    // Sync server-backed collections to the API so data survives the next fetch.
+    // Best-effort: log warnings but never throw — local restore already succeeded.
+    try {
+      if (Array.isArray(payload.shifts) && (payload.shifts as Shift[]).length > 0) {
+        await api.resetShifts();
+        await api.bulkUpsertShifts(
+          (payload.shifts as Shift[]).map((s) => ({
+            date: s.date,
+            shift_type: s.shift_type,
+            start_time: s.start_time ?? null,
+            end_time: s.end_time ?? null,
+          })),
+        );
+      }
+    } catch (e) {
+      console.warn('[restoreFromBackup] shifts sync failed:', e);
+    }
+
+    try {
+      if (Array.isArray(payload.gratifiedEntries) && (payload.gratifiedEntries as GratifiedEntry[]).length > 0) {
+        await api.resetGratifiedEntries();
+        for (const entry of payload.gratifiedEntries as GratifiedEntry[]) {
+          const date = String(entry.date ?? '');
+          const name = String((entry as Record<string, unknown>).name ?? '');
+          if (!date || !name) continue;
+          await api.createGratifiedEntryApi({
+            date,
+            name,
+            start_time: (entry as Record<string, unknown>).start_time as string | undefined,
+            end_time: (entry as Record<string, unknown>).end_time as string | undefined,
+            value: (entry as Record<string, unknown>).value as number | undefined,
+            note: entry.note as string | undefined,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[restoreFromBackup] gratifiedEntries sync failed:', e);
+    }
+
+    try {
+      if (Array.isArray(payload.cycles) && (payload.cycles as Cycle[]).length > 0) {
+        await api.resetCycles();
+        for (const cycle of payload.cycles as Cycle[]) {
+          await api.createCycleApi({ name: cycle.name, pattern: cycle.pattern });
+        }
+      }
+    } catch (e) {
+      console.warn('[restoreFromBackup] cycles sync failed:', e);
+    }
   },
 
   // ==================== SHIFT TYPES ====================
