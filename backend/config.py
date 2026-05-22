@@ -32,10 +32,14 @@ try:
 except ValueError:
     SESSION_TTL_DAYS = 30
 
-CORS_ORIGINS = os.environ.get(
-    'CORS_ORIGINS',
-    'https://shifts-by-psp.vercel.app,http://localhost:3000,http://localhost:8000'
-).split(',')
+CORS_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        'CORS_ORIGINS',
+        'https://shifts-by-psp.vercel.app,http://localhost:3000,http://localhost:8000'
+    ).split(',')
+    if o.strip()
+]
 
 # ── Date/format regexes (anti-NoSQL-injection) ────────────────────────────────
 MONTH_RE = re.compile(r'^\d{4}-(?:0[1-9]|1[0-2])$')

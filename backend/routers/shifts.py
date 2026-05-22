@@ -114,7 +114,7 @@ async def update_shift(shift_id: str, shift_data: ShiftUpdate, user: User = Depe
     update_data = {k: v for k, v in shift_data.model_dump().items() if v is not None}
     if update_data:
         await _db.db.shifts.update_one({"id": shift_id, "user_id": user.user_id}, {"$set": update_data})
-    updated = await _db.db.shifts.find_one({"id": shift_id}, {"_id": 0})
+    updated = await _db.db.shifts.find_one({"id": shift_id, "user_id": user.user_id}, {"_id": 0})
     return updated
 
 

@@ -61,7 +61,7 @@ async def update_gratification(grat_id: str, grat_data: GratificationUpdate, use
     update_data = {k: v for k, v in grat_data.model_dump().items() if v is not None}
     if update_data:
         await _db.db.gratifications.update_one({"id": grat_id, "user_id": user.user_id}, {"$set": update_data})
-    updated = await _db.db.gratifications.find_one({"id": grat_id}, {"_id": 0})
+    updated = await _db.db.gratifications.find_one({"id": grat_id, "user_id": user.user_id}, {"_id": 0})
     return updated
 
 

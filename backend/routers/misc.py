@@ -32,6 +32,8 @@ async def cleanup_all_data(request: Request, user: User = Depends(require_header
         occurrences_deleted = await _db.db.occurrences.delete_many(user_filter)
         gratifications_deleted = await _db.db.gratifications.delete_many(user_filter)
         gratified_entries_deleted = await _db.db.gratified_entries.delete_many(user_filter)
+        await _db.db.shift_types.delete_many(user_filter)
+        await _db.db.events.delete_many(user_filter)
         return {
             "message": "User data cleaned successfully",
             "shifts_deleted": shifts_deleted.deleted_count,

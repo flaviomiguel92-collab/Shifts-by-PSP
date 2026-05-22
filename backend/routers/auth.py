@@ -153,6 +153,7 @@ async def delete_account(request: Request, user: User = Depends(require_header_a
             "gratifications",
             "gratified_entries",
             "shift_types",
+            "events",
         ):
             await _db.db[coll].delete_many({"user_id": user.user_id})
         await _db.db.user_sessions.delete_many({"user_id": user.user_id})
