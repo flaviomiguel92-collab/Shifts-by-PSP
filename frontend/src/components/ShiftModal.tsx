@@ -30,8 +30,6 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 }) => {
   const th = useTheme();
   const isLight = !th.isDark;
-  const inputLight = isLight ? { color: th.textPrimary } : null;
-  const placeholderLight = isLight ? th.textMuted : '#334155';
   const { shiftTypes, createShiftType } = useDataStore() as any;
 
   const [selectedType, setSelectedType] = useState('');
@@ -78,32 +76,60 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     });
   };
 
+  // ── Theme tokens ────────────────────────────────────────────────────────────
+  const sheetBg    = isLight ? '#FFFFFF'                      : '#0B1120';
+  const sheetBd    = isLight ? '#E8EBF0'                      : 'rgba(59,130,246,0.15)';
+  const sheetBdW   = isLight ? 0.5                            : 1;
+  const headerBd   = isLight ? '#E8EBF0'                      : 'rgba(148,163,184,0.18)';
+  const handleBg   = isLight ? '#CBD5E1'                      : 'rgba(255,255,255,0.1)';
+  const titleC     = isLight ? '#1E293B'                      : '#F1F5F9';
+  const dateC      = isLight ? '#64748B'                      : '#475569';
+  const closeBg    = isLight ? 'rgba(15,23,42,0.06)'          : 'rgba(148,163,184,0.18)';
+  const closeC     = isLight ? '#64748B'                      : '#94A3B8';
+  const labelC     = isLight ? '#6B5BD9'                      : '#334155';
+  const chipBg     = isLight ? '#F8FAFC'                      : 'rgba(148,163,184,0.10)';
+  const chipBd     = isLight ? '#E8EBF0'                      : 'rgba(148,163,184,0.26)';
+  const chipTextC  = isLight ? '#334155'                      : '#94A3B8';
+  const inputBg    = isLight ? '#F8FAFC'                      : 'rgba(5,8,22,0.6)';
+  const inputBd    = isLight ? '#E2E8F0'                      : 'rgba(148,163,184,0.22)';
+  const inputFocBd = isLight ? '#6B5BD9'                      : 'rgba(59,130,246,0.4)';
+  const inputC     = isLight ? '#1E293B'                      : '#F1F5F9';
+  const phC        = isLight ? '#94A3B8'                      : '#334155';
+  const iconC      = (focused: boolean) =>
+    isLight ? (focused ? '#6B5BD9' : '#94A3B8') : (focused ? '#60A5FA' : '#475569');
+  const sepC       = isLight ? '#94A3B8'                      : '#475569';
+  const actionsBd  = isLight ? '#E8EBF0'                      : 'rgba(148,163,184,0.18)';
+  const saveColors = isLight
+    ? (['#4A3FA8', '#6B5BD9'] as const)
+    : (['#3B82F6', '#1D4ED8'] as const);
+  const saveShadow = isLight ? 'rgba(107,91,217,0.35)'        : '#3B82F6';
+
   return (
     <Modal visible={visible} animationType="slide" transparent statusBarTranslucent>
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.sheet, isLight && { backgroundColor: th.surfaceAlt }]}>
-          {/* Drag handle */}
-          <View style={[styles.handle, isLight && { backgroundColor: th.borderStrong }]} />
+        <View style={[styles.sheet, { backgroundColor: sheetBg, borderColor: sheetBd, borderTopWidth: sheetBdW, borderLeftWidth: sheetBdW, borderRightWidth: sheetBdW }]}>
 
-          {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.handle, { backgroundColor: handleBg }]} />
+
+          <View style={[styles.header, { borderBottomColor: headerBd, borderBottomWidth: isLight ? 0.5 : 1 }]}>
             <View>
-              <Text style={[styles.title, isLight && { color: th.textPrimary }]}>{existingShift ? 'Editar Turno' : 'Novo Turno'}</Text>
+              <Text style={[styles.title, { color: titleC }]}>{existingShift ? 'Editar turno' : 'Novo turno'}</Text>
               {!!date && (
-                <Text style={[styles.dateText, isLight && { color: th.textMuted }]}>{formatDate(date, 'EEEE, d MMMM yyyy')}</Text>
+                <Text style={[styles.dateText, { color: dateC }]}>{formatDate(date, 'EEEE, d MMMM yyyy')}</Text>
               )}
             </View>
-            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, isLight && { backgroundColor: 'rgba(15,23,42,0.06)' }]}>
-              <Ionicons name="close" size={18} color={isLight ? th.textSecondary : '#94A3B8'} />
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: closeBg }]}>
+              <Ionicons name="close" size={18} color={closeC} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+
             {/* Existing types */}
             {shiftTypes.length > 0 && (
               <>
-                <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>TURNOS EXISTENTES</Text>
+                <Text style={[styles.sectionLabel, { color: labelC }]}>TURNOS EXISTENTES</Text>
                 <View style={styles.typeGrid}>
                   {shiftTypes.map((shift: any) => {
                     const isSelected = selectedType === shift.name;
@@ -112,7 +138,8 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                         key={shift.id}
                         style={[
                           styles.typeChip,
-                          isSelected && { backgroundColor: shift.color || '#3B82F6', borderColor: 'transparent' },
+                          { backgroundColor: chipBg, borderColor: chipBd },
+                          isSelected && { backgroundColor: shift.color || '#6B5BD9', borderColor: 'transparent' },
                         ]}
                         onPress={() => {
                           setSelectedType(shift.name);
@@ -122,8 +149,12 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                         }}
                         activeOpacity={0.75}
                       >
-                        <View style={[styles.typeChipDot, { backgroundColor: shift.color || '#3B82F6' }, isSelected && { backgroundColor: 'rgba(255,255,255,0.5)' }]} />
-                        <Text style={[styles.typeChipText, isSelected && styles.typeChipTextSelected]}>
+                        <View style={[
+                          styles.typeChipDot,
+                          { backgroundColor: shift.color || '#6B5BD9' },
+                          isSelected && { backgroundColor: 'rgba(255,255,255,0.5)' },
+                        ]} />
+                        <Text style={[styles.typeChipText, { color: chipTextC }, isSelected && styles.typeChipTextSelected]}>
                           {shift.name}
                         </Text>
                       </TouchableOpacity>
@@ -134,13 +165,13 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             )}
 
             {/* Create new */}
-            <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>CRIAR NOVO TURNO</Text>
-            <View style={[styles.inputWrap, nameFocused && styles.inputWrapFocused]}>
-              <Ionicons name="add-circle-outline" size={16} color={nameFocused ? '#60A5FA' : '#475569'} style={{ marginRight: 8 }} />
+            <Text style={[styles.sectionLabel, { color: labelC }]}>CRIAR NOVO TURNO</Text>
+            <View style={[styles.inputWrap, { backgroundColor: inputBg, borderColor: nameFocused ? inputFocBd : inputBd }]}>
+              <Ionicons name="add-circle-outline" size={16} color={iconC(nameFocused)} style={{ marginRight: 8 }} />
               <TextInput
-                style={[styles.input, inputLight]}
+                style={[styles.input, { color: inputC }]}
                 placeholder="Nome do turno"
-                placeholderTextColor={placeholderLight}
+                placeholderTextColor={phC}
                 value={newShiftName}
                 onChangeText={(text) => { setNewShiftName(text); if (text) setSelectedType(''); }}
                 onFocus={() => setNameFocused(true)}
@@ -154,11 +185,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                 <TouchableOpacity
                   key={color}
                   onPress={() => setNewShiftColor(color)}
-                  style={[
-                    styles.colorSwatch,
-                    { backgroundColor: color },
-                    newShiftColor === color && styles.colorSwatchSelected,
-                  ]}
+                  style={[styles.colorSwatch, { backgroundColor: color }, newShiftColor === color && styles.colorSwatchSelected]}
                   activeOpacity={0.8}
                 >
                   {newShiftColor === color && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -167,31 +194,31 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             </View>
 
             {/* Time */}
-            <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>HORÁRIO</Text>
+            <Text style={[styles.sectionLabel, { color: labelC }]}>HORÁRIO</Text>
             <View style={styles.timeRow}>
-              <View style={[styles.inputWrap, { flex: 1 }, startFocused && styles.inputWrapFocused]}>
-                <Ionicons name="time-outline" size={15} color={startFocused ? '#60A5FA' : '#475569'} style={{ marginRight: 8 }} />
+              <View style={[styles.inputWrap, { flex: 1, backgroundColor: inputBg, borderColor: startFocused ? inputFocBd : inputBd }]}>
+                <Ionicons name="time-outline" size={15} color={iconC(startFocused)} style={{ marginRight: 8 }} />
                 <TextInput
-                  style={[styles.input, inputLight]}
+                  style={[styles.input, { color: inputC }]}
                   value={startTime}
                   onChangeText={setStartTime}
                   placeholder="08:00"
-                  placeholderTextColor={placeholderLight}
+                  placeholderTextColor={phC}
                   onFocus={() => setStartFocused(true)}
                   onBlur={() => setStartFocused(false)}
                 />
               </View>
               <View style={styles.timeSeparator}>
-                <Text style={styles.timeSepText}>–</Text>
+                <Text style={[styles.timeSepText, { color: sepC }]}>–</Text>
               </View>
-              <View style={[styles.inputWrap, { flex: 1 }, endFocused && styles.inputWrapFocused]}>
-                <Ionicons name="time-outline" size={15} color={endFocused ? '#60A5FA' : '#475569'} style={{ marginRight: 8 }} />
+              <View style={[styles.inputWrap, { flex: 1, backgroundColor: inputBg, borderColor: endFocused ? inputFocBd : inputBd }]}>
+                <Ionicons name="time-outline" size={15} color={iconC(endFocused)} style={{ marginRight: 8 }} />
                 <TextInput
-                  style={[styles.input, inputLight]}
+                  style={[styles.input, { color: inputC }]}
                   value={endTime}
                   onChangeText={setEndTime}
                   placeholder="16:00"
-                  placeholderTextColor={placeholderLight}
+                  placeholderTextColor={phC}
                   onFocus={() => setEndFocused(true)}
                   onBlur={() => setEndFocused(false)}
                 />
@@ -199,29 +226,30 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             </View>
 
             {/* Note */}
-            <Text style={[styles.sectionLabel, isLight && { color: th.textMuted }]}>NOTA</Text>
-            <View style={[styles.inputWrap, { height: 80, alignItems: 'flex-start', paddingTop: 12 }]}>
+            <Text style={[styles.sectionLabel, { color: labelC }]}>NOTA</Text>
+            <View style={[styles.inputWrap, { height: 80, alignItems: 'flex-start', paddingTop: 12, backgroundColor: inputBg, borderColor: inputBd }]}>
               <TextInput
-                style={[styles.input, inputLight, { flex: 1, textAlignVertical: 'top' }]}
+                style={[styles.input, { color: inputC, flex: 1, textAlignVertical: 'top' }]}
                 value={note}
                 onChangeText={setNote}
                 placeholder="Opcional..."
-                placeholderTextColor={placeholderLight}
+                placeholderTextColor={phC}
                 multiline
               />
             </View>
+
           </ScrollView>
 
           {/* Actions */}
-          <View style={styles.actions}>
+          <View style={[styles.actions, { borderTopColor: actionsBd, borderTopWidth: isLight ? 0.5 : 1 }]}>
             {onDelete && (
               <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.8}>
                 <Ionicons name="trash-outline" size={18} color="#EF4444" />
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.saveBtn, { shadowColor: saveShadow }]} onPress={handleSave} activeOpacity={0.85}>
               <LinearGradient
-                colors={['#3B82F6', '#1D4ED8']}
+                colors={saveColors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.saveBtnGradient}
@@ -231,6 +259,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               </LinearGradient>
             </TouchableOpacity>
           </View>
+
         </View>
       </View>
     </Modal>
@@ -238,39 +267,16 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-  },
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
-    backgroundColor: '#0B1120',
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.15)',
     maxHeight: '88%',
     paddingBottom: Platform.OS === 'ios' ? 36 : 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
     elevation: 24,
   },
-  handle: {
-    width: 36,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 4,
-  },
+  handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -278,139 +284,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(148,163,184,0.18)',
   },
-  title: { color: '#F1F5F9', fontSize: 18, fontWeight: '800' },
-  dateText: { color: '#475569', fontSize: 12, marginTop: 3, textTransform: 'capitalize' },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(148,163,184,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 0,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#334155',
-    letterSpacing: 1.2,
-    marginBottom: 10,
-    marginTop: 16,
-  },
-  typeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 4,
-  },
+  title: { fontSize: 18, fontWeight: '500' },
+  dateText: { fontSize: 12, marginTop: 3, textTransform: 'capitalize' },
+  closeBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  body: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  sectionLabel: { fontSize: 10, fontWeight: '500', letterSpacing: 1.2, marginBottom: 10, marginTop: 16 },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   typeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.26)',
-    backgroundColor: 'rgba(148,163,184,0.10)',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1,
   },
   typeChipDot: { width: 8, height: 8, borderRadius: 4 },
-  typeChipText: { color: '#94A3B8', fontSize: 13, fontWeight: '500' },
-  typeChipTextSelected: { color: '#fff', fontWeight: '700' },
+  typeChipText: { fontSize: 13, fontWeight: '500' },
+  typeChipTextSelected: { color: '#fff' },
   inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(5, 8, 22, 0.6)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.22)',
-    paddingHorizontal: 14,
-    height: 48,
-    marginBottom: 0,
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 12, borderWidth: 1,
+    paddingHorizontal: 14, height: 48,
   },
-  inputWrapFocused: {
-    borderColor: 'rgba(59, 130, 246, 0.4)',
-  },
-  input: {
-    flex: 1,
-    color: '#F1F5F9',
-    fontSize: 14,
-    backgroundColor: 'transparent',
-  },
-  colorRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
-    marginBottom: 4,
-    flexWrap: 'wrap',
-  },
-  colorSwatch: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  colorSwatchSelected: {
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 0,
-  },
-  timeSeparator: {
-    width: 32,
-    alignItems: 'center',
-  },
-  timeSepText: { color: '#475569', fontSize: 18, fontWeight: '300' },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(148,163,184,0.18)',
-  },
+  input: { flex: 1, fontSize: 14, backgroundColor: 'transparent' },
+  colorRow: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 4, flexWrap: 'wrap' },
+  colorSwatch: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  colorSwatchSelected: { borderWidth: 2, borderColor: '#fff' },
+  timeRow: { flexDirection: 'row', alignItems: 'center' },
+  timeSeparator: { width: 32, alignItems: 'center' },
+  timeSepText: { fontSize: 18, fontWeight: '400' },
+  actions: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingTop: 14 },
   deleteBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 14,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)',
+    alignItems: 'center', justifyContent: 'center',
   },
   saveBtn: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#3B82F6',
+    flex: 1, borderRadius: 14, overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.35, shadowRadius: 10, elevation: 8,
   },
   saveBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', gap: 8, paddingVertical: 14,
   },
-  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '500' },
 });
