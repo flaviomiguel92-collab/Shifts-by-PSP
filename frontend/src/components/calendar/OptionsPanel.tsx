@@ -59,7 +59,7 @@ export function OptionsPanel({
           ]}
         >
           <Pressable onPress={() => {}}>
-            <View style={styles.optionsHandle} />
+            <View style={[styles.optionsHandle, isLight && { backgroundColor: t.borderStrong }]} />
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.optionsPanelContent}

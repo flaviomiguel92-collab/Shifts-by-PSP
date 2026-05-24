@@ -329,7 +329,7 @@ export function ShiftTypePicker({
                 <Switch
                   value={form.allDay}
                   onValueChange={(v) => setForm((f) => ({ ...f, allDay: v }))}
-                  trackColor={{ false: '#374151', true: '#3B82F6' }}
+                  trackColor={{ false: isLight ? th.borderStrong : '#374151', true: '#3B82F6' }}
                   thumbColor="#fff"
                 />
               </View>
@@ -367,7 +367,7 @@ export function ShiftTypePicker({
                 <Switch
                   value={form.isWorking}
                   onValueChange={(v) => setForm((f) => ({ ...f, isWorking: v }))}
-                  trackColor={{ false: '#374151', true: '#3B82F6' }}
+                  trackColor={{ false: isLight ? th.borderStrong : '#374151', true: '#3B82F6' }}
                   thumbColor="#fff"
                 />
               </View>

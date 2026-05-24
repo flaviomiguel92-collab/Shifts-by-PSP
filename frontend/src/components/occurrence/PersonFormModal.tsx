@@ -156,10 +156,10 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={[styles.content, { maxHeight: '90%' }, isLight && { backgroundColor: th.surfaceAlt }]}>
-          <View style={styles.header}>
+          <View style={[styles.header, isLight && { borderBottomColor: th.border }]}>
             <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Adicionar Pessoa</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#9CA3AF" />
+              <Ionicons name="close" size={24} color={isLight ? th.textSecondary : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.body}>
@@ -168,10 +168,10 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
               {ROLES.map((r) => (
                 <TouchableOpacity
                   key={r}
-                  style={[styles.roleBtn, role === r && styles.roleBtnActive]}
+                  style={[styles.roleBtn, isLight && role !== r && { backgroundColor: th.bg, borderColor: th.borderStrong }, role === r && styles.roleBtnActive]}
                   onPress={() => setRole(r)}
                 >
-                  <Text style={[styles.roleBtnText, role === r && styles.roleBtnTextActive]}>
+                  <Text style={[styles.roleBtnText, isLight && role !== r && { color: th.textSecondary }, role === r && styles.roleBtnTextActive]}>
                     {PERSON_ROLE_LABELS[r]}
                   </Text>
                 </TouchableOpacity>
@@ -193,10 +193,10 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
                 {DOC_TYPES.map((d) => (
                   <TouchableOpacity
                     key={d}
-                    style={[styles.docTypeBtn, docType === d && styles.docTypeBtnActive]}
+                    style={[styles.docTypeBtn, isLight && docType !== d && { backgroundColor: th.bg, borderColor: th.borderStrong }, docType === d && styles.docTypeBtnActive]}
                     onPress={() => setDocType(d)}
                   >
-                    <Text style={[styles.docTypeBtnText, docType === d && styles.docTypeBtnTextActive]}>
+                    <Text style={[styles.docTypeBtnText, isLight && docType !== d && { color: th.textSecondary }, docType === d && styles.docTypeBtnTextActive]}>
                       {DOCUMENT_TYPE_LABELS[d]}
                     </Text>
                   </TouchableOpacity>

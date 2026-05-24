@@ -166,7 +166,7 @@ export function DayShiftEditor({
             </ScrollView>
 
             {selectedType ? (
-              <View style={[styles.selectedBadge, { borderColor: getTypeColor(selectedType) + '44' }]}>
+              <View style={[styles.selectedBadge, isLight && { backgroundColor: th.bg }, { borderColor: getTypeColor(selectedType) + '44' }]}>
                 <View style={[styles.selectedDot, { backgroundColor: getTypeColor(selectedType) }]} />
                 <Text style={[styles.selectedName, isLight && { color: th.textPrimary }]}>{selectedType}</Text>
               </View>
@@ -179,7 +179,7 @@ export function DayShiftEditor({
               <Switch
                 value={allDay}
                 onValueChange={setAllDay}
-                trackColor={{ false: '#374151', true: '#3B82F6' }}
+                trackColor={{ false: isLight ? th.borderStrong : '#374151', true: '#3B82F6' }}
                 thumbColor="#fff"
               />
             </View>

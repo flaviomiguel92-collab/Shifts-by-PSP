@@ -26,8 +26,8 @@ export function MultiSelectBar({ visible, selectedCount, isLight, t, onApply, on
             </Text>
           </View>
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-              <Text style={styles.cancelText}>Cancelar</Text>
+            <TouchableOpacity style={[styles.cancelBtn, isLight && { backgroundColor: t.bg, borderColor: t.border }]} onPress={onCancel}>
+              <Text style={[styles.cancelText, isLight && { color: t.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.applyBtn, selectedCount === 0 && { opacity: 0.4 }]}
