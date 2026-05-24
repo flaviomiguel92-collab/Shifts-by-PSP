@@ -43,11 +43,11 @@ class Occurrence(BaseModel):
 
 class OccurrenceCreate(BaseModel):
     date: str
-    time: Optional[str] = None
-    location: str
-    description: str
-    classification: str
-    status: Optional[str] = "rascunho"
+    time: Optional[str] = Field(default=None, max_length=10)
+    location: str = Field(max_length=300)
+    description: str = Field(max_length=5000)
+    classification: str = Field(max_length=100)
+    status: Optional[str] = Field(default="rascunho", max_length=50)
     photos: Optional[List[str]] = []
 
     @field_validator('photos')
@@ -73,18 +73,18 @@ class OccurrenceUpdate(BaseModel):
 
 
 class PersonCreate(BaseModel):
-    role: str
-    full_name: str
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    tax_id: Optional[str] = None
-    document_type: str
-    document_number: Optional[str] = None
-    document_issue_date: Optional[str] = None
-    document_expiry_date: Optional[str] = None
+    role: str = Field(max_length=50)
+    full_name: str = Field(max_length=200)
+    address: Optional[str] = Field(default=None, max_length=400)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    email: Optional[str] = Field(default=None, max_length=200)
+    tax_id: Optional[str] = Field(default=None, max_length=30)
+    document_type: str = Field(max_length=50)
+    document_number: Optional[str] = Field(default=None, max_length=50)
+    document_issue_date: Optional[str] = Field(default=None, max_length=10)
+    document_expiry_date: Optional[str] = Field(default=None, max_length=10)
     photos: Optional[List[str]] = []
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=1000)
 
     @field_validator('photos')
     @classmethod

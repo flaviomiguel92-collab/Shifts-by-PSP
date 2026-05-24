@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pymongo.errors import DuplicateKeyError
 
+import audit
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
 from config import _AUTH_RATE, _IS_PRODUCTION, SESSION_TTL_DAYS, limiter
@@ -53,6 +54,11 @@ async def register(data: RegisterRequest, request: Request, response: Response):
         "created_at": datetime.now(timezone.utc),
     }
     await _db.db.user_sessions.insert_one(session)
+    await audit.log("register", user_id, ip=audit._ip_from_request(request), detail=data.email)
+    response.set_cookie(
+        key="session_token", value=session_token, httponly=True,
+        max_age=SESSION_TTL_DAYS * 86400, path="/", **_cookie_flags(),
+    )
     return {
         "user": {
             "user_id": user_id,
@@ -85,6 +91,11 @@ async def login(data: LoginRequest, request: Request, response: Response):
         "created_at": datetime.now(timezone.utc),
     }
     await _db.db.user_sessions.insert_one(session)
+    await audit.log("login", user_id, ip=audit._ip_from_request(request), detail=data.email)
+    response.set_cookie(
+        key="session_token", value=session_token, httponly=True,
+        max_age=SESSION_TTL_DAYS * 86400, path="/", **_cookie_flags(),
+    )
     return {
         "user": {
             "user_id": user_id,
@@ -105,10 +116,26 @@ async def get_me(user: User = Depends(get_current_user)):
 @router.post("/auth/logout")
 async def logout(request: Request, response: Response):
     auth_header = request.headers.get("Authorization")
-    session_token = auth_header[7:] if auth_header and auth_header.startswith("Bearer ") else None
-    if session_token:
-        token_hash = hashlib.sha256(session_token.encode()).hexdigest()
-        await _db.db.user_sessions.delete_many({"session_token": token_hash})
+    if auth_header and auth_header.startswith("Bearer "):
+        session_token = auth_header[7:]
+    elif request.headers.get("X-Requested-By") == "shift-olama":
+        # Web cookie flow: custom header is CSRF-safe (browsers can't forge it in cross-origin requests)
+        cookie_token = request.cookies.get("session_token")
+        if not cookie_token:
+            response.delete_cookie(key="session_token", path="/", **_cookie_flags())
+            return {"message": "Logged out successfully"}
+        session_token = cookie_token
+    else:
+        response.delete_cookie(key="session_token", path="/", **_cookie_flags())
+        raise HTTPException(status_code=403, detail="Authorization header obrigatório")
+    token_hash = hashlib.sha256(session_token.encode()).hexdigest()
+    session_doc = await _db.db.user_sessions.find_one({"session_token": token_hash}, {"user_id": 1})
+    await _db.db.user_sessions.delete_many({"session_token": token_hash})
+    await audit.log(
+        "logout",
+        session_doc["user_id"] if session_doc else None,
+        ip=audit._ip_from_request(request),
+    )
     response.delete_cookie(key="session_token", path="/", **_cookie_flags())
     return {"message": "Logged out successfully"}
 
@@ -158,6 +185,7 @@ async def delete_account(request: Request, user: User = Depends(require_header_a
             await _db.db[coll].delete_many({"user_id": user.user_id})
         await _db.db.user_sessions.delete_many({"user_id": user.user_id})
         await _db.db.users.delete_one({"user_id": user.user_id})
+        await audit.log("delete_account", user.user_id, ip=audit._ip_from_request(request))
         return {"message": "Account deleted", "user_id": user.user_id}
     except Exception:
         logger.exception("delete_account failed")

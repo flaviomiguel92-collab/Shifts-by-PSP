@@ -25,9 +25,15 @@ export default function RegisterScreen() {
   const [focused, setFocused] = useState('');
   const register = useAuthStore((s) => s.register);
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
       setError('Por favor preencha todos os campos');
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Introduza um endereço de email válido');
       return;
     }
     if (password !== confirmPassword) {

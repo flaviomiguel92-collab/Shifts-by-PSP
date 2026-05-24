@@ -21,7 +21,7 @@ class Gratification(BaseModel):
 class GratificationCreate(BaseModel):
     date: str
     gratification_type: str
-    value: float = Field(ge=0)
+    value: float = Field(ge=0, le=999_999.99)
     note: Optional[str] = None
     shift_id: Optional[str] = None
 
@@ -60,8 +60,8 @@ class GratifiedCalendarEntryCreate(BaseModel):
     name: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
-    value: Optional[float] = Field(default=None, ge=0)
-    subtotal: Optional[float] = Field(default=None, ge=0)
+    value: Optional[float] = Field(default=None, ge=0, le=999_999.99)
+    subtotal: Optional[float] = Field(default=None, ge=0, le=999_999.99)
     discount_percent: Optional[float] = Field(default=None, ge=0, le=100)
     is_holiday_or_weekend: Optional[bool] = None
     note: Optional[str] = None

@@ -20,10 +20,10 @@ class Shift(BaseModel):
 
 class ShiftCreate(BaseModel):
     date: str
-    shift_type: str
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    note: Optional[str] = None
+    shift_type: str = Field(max_length=100)
+    start_time: Optional[str] = Field(default=None, max_length=10)
+    end_time: Optional[str] = Field(default=None, max_length=10)
+    note: Optional[str] = Field(default=None, max_length=500)
 
     @field_validator('date')
     @classmethod

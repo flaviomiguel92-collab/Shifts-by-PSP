@@ -404,7 +404,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       if (Array.isArray(payload.cycles) && (payload.cycles as Cycle[]).length > 0) {
         await api.resetCycles();
         for (const cycle of payload.cycles as Cycle[]) {
-          await api.createCycleApi({ name: cycle.name, pattern: cycle.pattern });
+          await api.createCycleApi({ name: cycle.name ?? '', pattern: cycle.pattern });
         }
       }
     } catch (e) {

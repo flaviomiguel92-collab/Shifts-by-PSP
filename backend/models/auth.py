@@ -36,7 +36,7 @@ class UserSession(BaseModel):
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    name: str
+    name: str = Field(max_length=100)
 
     @field_validator('password')
     @classmethod

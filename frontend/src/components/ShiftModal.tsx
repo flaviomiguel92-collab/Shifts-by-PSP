@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '../utils/helpers';
 import { useDataStore } from '../store/dataStore';
 import { useTheme } from '../theme/themes';
+import { ShiftTypeConfig } from '../types';
 
 interface ShiftModalProps {
   visible: boolean;
@@ -30,7 +31,8 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 }) => {
   const th = useTheme();
   const isLight = !th.isDark;
-  const { shiftTypes, createShiftType } = useDataStore() as any;
+  const shiftTypes = useDataStore((s) => s.shiftTypes);
+  const createShiftType = useDataStore((s) => s.createShiftType);
 
   const [selectedType, setSelectedType] = useState('');
   const [newShiftName, setNewShiftName] = useState('');
@@ -61,8 +63,13 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   const handleSave = async () => {
     let finalType = selectedType;
     if (newShiftName.trim()) {
-      await createShiftType({ name: newShiftName.trim(), color: newShiftColor, startTime, endTime });
-      finalType = newShiftName.trim();
+      try {
+        await createShiftType({ name: newShiftName.trim(), color: newShiftColor, startTime, endTime });
+        finalType = newShiftName.trim();
+      } catch {
+        Alert.alert('Erro', 'Não foi possível criar o tipo de turno. Tenta de novo.');
+        return;
+      }
     }
     if (!finalType) {
       Alert.alert('Aviso', 'Por favor, seleciona ou cria um tipo de turno');
@@ -131,7 +138,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               <>
                 <Text style={[styles.sectionLabel, { color: labelC }]}>TURNOS EXISTENTES</Text>
                 <View style={styles.typeGrid}>
-                  {shiftTypes.map((shift: any) => {
+                  {shiftTypes.map((shift: ShiftTypeConfig) => {
                     const isSelected = selectedType === shift.name;
                     return (
                       <TouchableOpacity

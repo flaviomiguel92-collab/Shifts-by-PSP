@@ -22,8 +22,12 @@ const handleUnauthorized = async (): Promise<void> => {
 };
 
 const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
-  const headers = { ...(init.headers || {}), ...(await getHeaders()) };
-  const response = await fetch(url, { ...init, headers });
+  const headers = {
+    ...(init.headers || {}),
+    ...(await getHeaders()),
+    'X-Requested-By': 'shift-olama',
+  };
+  const response = await fetch(url, { ...init, headers, credentials: 'include' });
   if (response.status === 401) {
     await handleUnauthorized();
   }

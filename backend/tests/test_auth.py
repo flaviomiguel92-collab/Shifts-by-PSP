@@ -177,6 +177,48 @@ async def test_delete_account_requires_bearer(http, user_a):
     assert resp.status_code == 403
 
 
+@pytest.mark.asyncio
+async def test_logout_without_bearer_returns_403(http):
+    """Logout with no Authorization header must return 403 (Fix A-3).
+
+    The session must remain active — a subsequent authenticated request
+    should still succeed.
+    """
+    resp = await http.post("/api/auth/logout")
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_logout_with_cookie_only_returns_403(http, user_a):
+    """Cookie-only logout (no Bearer) must be rejected — prevents CSRF erasure."""
+    resp = await http.post(
+        "/api/auth/logout",
+        cookies={"session_token": user_a["token"]},
+    )
+    assert resp.status_code == 403
+    # Session is still valid
+    me = await http.get("/api/auth/me", headers=auth(user_a["token"]))
+    assert me.status_code == 200
+
+
+def test_encrypt_failure_raises_runtime_error(monkeypatch):
+    """encrypt() must raise RuntimeError rather than silently returning plaintext (Fix A-1)."""
+    from cryptography.fernet import Fernet
+    from security import crypto
+
+    monkeypatch.setenv("PII_ENC_KEY", Fernet.generate_key().decode())
+    crypto._fernet_cache = crypto._UNSET
+
+    # Corrupt the cached Fernet instance so its encrypt() throws
+    bad_fernet = object()  # has no .encrypt() method
+    crypto._fernet_cache = bad_fernet  # type: ignore[assignment]
+
+    with pytest.raises(RuntimeError, match="Falha ao encriptar"):
+        crypto.encrypt("sensitive value")
+
+    crypto._fernet_cache = crypto._UNSET
+
+
 def test_pii_crypto_roundtrip_and_legacy_passthrough(monkeypatch):
     """PII layer: no-op without key; encrypt/decrypt round-trips; legacy plaintext passes through."""
     import importlib

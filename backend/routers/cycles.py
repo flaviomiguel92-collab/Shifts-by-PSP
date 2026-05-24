@@ -39,7 +39,7 @@ async def update_cycle(cycle_id: str, data: CustomCycleUpdate, user: User = Depe
     update_fields = {k: v for k, v in data.model_dump().items() if v is not None}
     if update_fields:
         await _db.db.cycles.update_one({"id": cycle_id, "user_id": user.user_id}, {"$set": update_fields})
-    updated = await _db.db.cycles.find_one({"id": cycle_id}, {"_id": 0})
+    updated = await _db.db.cycles.find_one({"id": cycle_id, "user_id": user.user_id}, {"_id": 0})
     return updated
 
 

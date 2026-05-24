@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
-from config import validate_month_format, limiter
+from config import _GET_RATE, month_last_day, validate_month_format, limiter
 from models.auth import User
 from models.shifts import BulkShiftsRequest, Shift, ShiftCreate, ShiftUpdate
 
@@ -12,7 +12,9 @@ router = APIRouter()
 
 
 @router.get("/shifts", response_model=List[dict])
+@limiter.limit(_GET_RATE)
 async def get_shifts(
+    request: Request,
     month: Optional[str] = None,
     page: int = 1,
     per_page: int = 100,
@@ -23,7 +25,7 @@ async def get_shifts(
     query = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
-        query["date"] = {"$gte": f"{month}-01", "$lte": f"{month}-31"}
+        query["date"] = {"$gte": f"{month}-01", "$lte": month_last_day(month)}
     skip = (page - 1) * per_page if page > 0 else 0
     shifts = await _db.db.shifts.find(query, {"_id": 0}).sort("date", 1).skip(skip).limit(per_page).to_list(length=None)
     return shifts

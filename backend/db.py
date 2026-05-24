@@ -90,6 +90,12 @@ async def _dedupe_users_by_email(collection):
 
 @asynccontextmanager
 async def lifespan(app):
+    if os.environ.get("ENVIRONMENT", "").lower() == "production" and not os.environ.get("PII_ENC_KEY"):
+        raise RuntimeError(
+            "PII_ENC_KEY é obrigatória em ENVIRONMENT=production. "
+            "Gere uma chave com: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\" "
+            "e defina a variável de ambiente antes de iniciar o servidor."
+        )
     if os.environ.get("RUN_INDEX_MIGRATION") == "1":
         # --- Migration mode: destructive, run once, never on normal deploys ---
         logger.warning(
@@ -103,23 +109,25 @@ async def lifespan(app):
         await _ensure_index(db.user_sessions, "session_token", unique=True)
         # Non-unique indexes can also go through the safe helper here, but for
         # consistency during an explicit migration run we use _ensure_index.
-        await _ensure_index(db.shifts, [("user_id", 1), ("date", 1)])
+        await _ensure_index(db.shifts, [("user_id", 1), ("date", 1)], unique=True)
         await _ensure_index(db.occurrences, "user_id")
         await _ensure_index(db.gratifications, [("user_id", 1), ("date", 1)])
         await _ensure_index(db.shift_types, "user_id")
         await _ensure_index(db.cycles, "user_id")
         await _ensure_index(db.gratified_entries, [("user_id", 1), ("date", 1)])
         await _ensure_index(db.events, [("user_id", 1), ("date", 1)])
+        await _ensure_index(db.audit_logs, [("user_id", 1), ("ts", -1)])
     else:
         # --- Normal startup: idempotent, never drops anything ---
         await _ensure_index_safe(db.users, "email", unique=True)
         await _ensure_index_safe(db.user_sessions, "session_token", unique=True)
-        await _ensure_index_safe(db.shifts, [("user_id", 1), ("date", 1)])
+        await _ensure_index_safe(db.shifts, [("user_id", 1), ("date", 1)], unique=True)
         await _ensure_index_safe(db.occurrences, "user_id")
         await _ensure_index_safe(db.gratifications, [("user_id", 1), ("date", 1)])
         await _ensure_index_safe(db.shift_types, "user_id")
         await _ensure_index_safe(db.cycles, "user_id")
         await _ensure_index_safe(db.gratified_entries, [("user_id", 1), ("date", 1)])
         await _ensure_index_safe(db.events, [("user_id", 1), ("date", 1)])
+        await _ensure_index_safe(db.audit_logs, [("user_id", 1), ("ts", -1)])
     yield
     client.close()

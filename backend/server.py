@@ -36,6 +36,9 @@ async def _security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    if _IS_PRODUCTION:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     # The API only ever returns JSON or file downloads, never executable HTML.
     # Skip docs paths so the local-dev Swagger UI keeps working.
     path = request.url.path
@@ -79,9 +82,9 @@ async def _request_context(request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept", "Origin"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-By"],
 )
 
 for _router in (auth, shifts, cycles, events, gratifications, stats, occurrences, shift_types, misc):

@@ -10,7 +10,10 @@ values, so rollout and rollback need no data migration.
 Pure functions only; no FastAPI imports.
 """
 
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 # Sentinel prefix lets us cheaply tell ciphertext apart from legacy plaintext.
 _PREFIX = "enc::"
@@ -74,8 +77,9 @@ def encrypt(value):
     try:
         token = f.encrypt(value.encode("utf-8")).decode("ascii")
         return _PREFIX + token
-    except Exception:
-        return value
+    except Exception as exc:
+        logger.error("PII encryption failed — recusando guardar dados em plaintext: %s", exc)
+        raise RuntimeError("Falha ao encriptar dados PII") from exc
 
 
 def decrypt(value):

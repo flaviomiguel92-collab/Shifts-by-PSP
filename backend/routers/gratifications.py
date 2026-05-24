@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
-from config import validate_date_format, validate_month_format, validate_year_format, limiter
+from config import _GET_RATE, month_last_day, validate_date_format, validate_month_format, validate_year_format, limiter
 from models.auth import User
 from models.gratifications import (
     Gratification,
@@ -18,7 +18,9 @@ router = APIRouter()
 
 
 @router.get("/gratifications", response_model=List[dict])
+@limiter.limit(_GET_RATE)
 async def get_gratifications(
+    request: Request,
     month: Optional[str] = None,
     year: Optional[str] = None,
     page: int = 1,
@@ -30,7 +32,7 @@ async def get_gratifications(
     query = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
-        query["date"] = {"$gte": f"{month}-01", "$lte": f"{month}-31"}
+        query["date"] = {"$gte": f"{month}-01", "$lte": month_last_day(month)}
     elif year:
         validate_year_format(year)
         query["date"] = {"$gte": f"{year}-01-01", "$lte": f"{year}-12-31"}
@@ -74,7 +76,9 @@ async def delete_gratification(grat_id: str, user: User = Depends(get_current_us
 
 
 @router.get("/gratified-entries", response_model=List[dict])
+@limiter.limit(_GET_RATE)
 async def get_gratified_entries(
+    request: Request,
     month: Optional[str] = None,
     page: int = 1,
     per_page: int = 100,
@@ -85,7 +89,7 @@ async def get_gratified_entries(
     query: dict = {"user_id": user.user_id}
     if month:
         validate_month_format(month)
-        query["date"] = {"$gte": f"{month}-01", "$lte": f"{month}-31"}
+        query["date"] = {"$gte": f"{month}-01", "$lte": month_last_day(month)}
     skip = (page - 1) * per_page if page > 0 else 0
     entries = await _db.db.gratified_entries.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(per_page).to_list(length=None)
     return entries

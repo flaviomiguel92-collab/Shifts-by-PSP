@@ -6,8 +6,8 @@ export const storage = {
   async getItem(key: string): Promise<string | null> {
     try {
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          return window.localStorage.getItem(key);
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          return window.sessionStorage.getItem(key);
         }
         return null;
       }
@@ -21,8 +21,8 @@ export const storage = {
   async setItem(key: string, value: string): Promise<void> {
     try {
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem(key, value);
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem(key, value);
         }
         return;
       }
@@ -35,8 +35,8 @@ export const storage = {
   async removeItem(key: string): Promise<void> {
     try {
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.removeItem(key);
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.removeItem(key);
         }
         return;
       }

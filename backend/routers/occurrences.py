@@ -1,8 +1,12 @@
 import base64
+import io
+import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+logger = logging.getLogger(__name__)
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 import db as _db
 from auth.dependencies import get_current_user, require_header_auth
@@ -20,6 +24,29 @@ from models.occurrences import (
 from security import crypto
 
 router = APIRouter()
+
+
+def _strip_exif(photo_b64: str) -> str:
+    """Remove EXIF/metadata from an image to prevent leaking GPS or device info.
+
+    Uses Pillow when available. On any failure returns the original bytes
+    unchanged so the upload never fails due to metadata stripping.
+    """
+    try:
+        from PIL import Image  # lazy — Pillow may not be installed in tests
+
+        raw = base64.b64decode(photo_b64)
+        img = Image.open(io.BytesIO(raw))
+        fmt = (img.format or "JPEG").upper()
+        out = io.BytesIO()
+        if fmt == "JPEG":
+            img.save(out, format="JPEG", quality=92, exif=b"")
+        else:
+            img.save(out, format=fmt)
+        return base64.b64encode(out.getvalue()).decode("ascii")
+    except Exception as exc:
+        logger.warning("EXIF strip failed — saving original: %s", exc)
+        return photo_b64
 
 
 def _decrypt_occurrence(occ: dict) -> dict:
@@ -46,16 +73,37 @@ async def reset_all_occurrences(request: Request, user: User = Depends(require_h
 
 @router.get("/occurrences", response_model=List[dict])
 async def get_occurrences(
+    response: Response,
     status: Optional[str] = None,
     classification: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
     user: User = Depends(get_current_user),
 ):
-    query = {"user_id": user.user_id}
+    page = max(1, page)
+    limit = min(max(1, limit), 100)
+    skip = (page - 1) * limit
+
+    query: dict = {"user_id": user.user_id}
     if status:
         query["status"] = status
     if classification:
         query["classification"] = classification
-    occurrences = await _db.db.occurrences.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+
+    total = await _db.db.occurrences.count_documents(query)
+    occurrences = (
+        await _db.db.occurrences.find(query, {"_id": 0})
+        .sort("created_at", -1)
+        .skip(skip)
+        .limit(limit)
+        .to_list(limit)
+    )
+
+    response.headers["X-Total-Count"] = str(total)
+    response.headers["X-Page"] = str(page)
+    response.headers["X-Limit"] = str(limit)
+    response.headers["X-Total-Pages"] = str((total + limit - 1) // limit)
+
     return [_decrypt_occurrence(o) for o in occurrences]
 
 
@@ -199,8 +247,10 @@ async def add_photo_to_occurrence(
     if current_photo_count >= _MAX_PHOTOS:
         raise HTTPException(status_code=400, detail=f"Máximo de {_MAX_PHOTOS} fotos permitidas")
 
+    clean_photo = _strip_exif(photo_base64)
+
     await _db.db.occurrences.update_one(
         {"id": occurrence_id, "user_id": user.user_id},
-        {"$push": {"photos": photo_base64}, "$set": {"updated_at": datetime.now(timezone.utc)}},
+        {"$push": {"photos": clean_photo}, "$set": {"updated_at": datetime.now(timezone.utc)}},
     )
     return {"message": "Photo added successfully"}

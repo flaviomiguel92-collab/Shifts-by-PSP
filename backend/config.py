@@ -1,6 +1,8 @@
 """Application-wide constants, rate-limit config, and input validation helpers."""
+import calendar as _calendar
 import os
 import re
+from datetime import date as _date
 
 from fastapi import HTTPException
 from slowapi import Limiter, _rate_limit_exceeded_handler  # noqa: F401
@@ -10,6 +12,7 @@ from slowapi.util import get_remote_address
 # ── Rate limiting ──────────────────────────────────────────────────────────────
 _TESTING = os.environ.get('TESTING', '') == 'true'
 _AUTH_RATE = "9999/minute" if _TESTING else "5/minute"
+_GET_RATE  = "9999/minute" if _TESTING else "60/minute"
 
 # Behind Render's reverse proxy, request.client.host is the proxy IP for every user, not the real client.
 def _client_ip_key(request) -> str:
@@ -47,6 +50,17 @@ YEAR_RE = re.compile(r'^\d{4}$')
 DATE_RE = re.compile(r'^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$')
 
 
+def month_last_day(month: str) -> str:
+    """Return the last calendar day of a YYYY-MM string as YYYY-MM-DD.
+
+    Replaces the old hard-coded '-31' upper bound that would include
+    non-existent dates (e.g. Feb 30) in MongoDB string comparisons.
+    """
+    year, mon = int(month[:4]), int(month[5:7])
+    last = _calendar.monthrange(year, mon)[1]
+    return f"{month}-{last:02d}"
+
+
 def validate_month_format(month: str) -> None:
     if not MONTH_RE.match(month):
         raise HTTPException(status_code=400, detail=f"Formato de mês inválido: {month}. Use YYYY-MM")
@@ -60,3 +74,7 @@ def validate_year_format(year: str) -> None:
 def validate_date_format(date: str) -> None:
     if not DATE_RE.match(date):
         raise HTTPException(status_code=400, detail=f"Formato de data inválido: {date}. Use YYYY-MM-DD")
+    try:
+        _date.fromisoformat(date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Data inválida (não existe no calendário): {date}")

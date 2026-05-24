@@ -29,9 +29,15 @@ export default function LoginScreen() {
   const th = useTheme();
   const isLight = !th.isDark;
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Por favor preencha todos os campos');
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Introduza um endereço de email válido');
       return;
     }
     setIsLoading(true);

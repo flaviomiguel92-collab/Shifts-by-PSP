@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { storage } from '../utils/storage';
 import { User } from '../types';
@@ -92,6 +93,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
+      // Web: rely on HttpOnly cookie — no sessionStorage lookup needed
+      if (Platform.OS === 'web') {
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-By': 'shift-olama' },
+        });
+        if (response.status === 401) {
+          useDataStore.getState().clearSyncedCollections();
+          set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
+          return false;
+        }
+        if (!response.ok) {
+          console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
+          set({ isAuthenticated: true, isLoading: false });
+          return true;
+        }
+        const userData = await response.json();
+        set({ user: userData, isAuthenticated: true, isLoading: false });
+        return true;
+      }
+
+      // Native: Bearer token from AsyncStorage
       const storedToken = await storage.getItem('session_token');
 
       if (!storedToken) {
@@ -109,7 +132,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (response.status === 401) {
-        // Token genuinamente inválido — limpar
         await storage.removeItem('session_token');
         useDataStore.getState().clearSyncedCollections();
         set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
@@ -117,29 +139,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!response.ok) {
-        // Erro do servidor (503, 502, etc.) — cold start do Render ou
-        // indisponibilidade temporária. NÃO deslogar: manter a sessão (o
-        // token continua a ser validado pelo servidor em cada pedido). O
-        // utilizador só sai com logout explícito ou token inválido (401).
         console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
         set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
         return true;
       }
 
       const userData = await response.json();
-      set({
-        user: userData,
-        isAuthenticated: true,
-        isLoading: false,
-        sessionToken: storedToken,
-      });
+      set({ user: userData, isAuthenticated: true, isLoading: false, sessionToken: storedToken });
       return true;
     } catch (error) {
-      // Erro de rede (offline, timeout) — manter token, não deslogar
       console.warn('[checkAuth] Network error — a manter sessão:', error);
-      const storedToken = await storage.getItem('session_token');
-      if (storedToken) {
-        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
+      if (Platform.OS !== 'web') {
+        const storedToken = await storage.getItem('session_token');
+        if (storedToken) {
+          set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
+          return true;
+        }
+      } else {
+        // Web: assume cookie still valid on network error
+        set({ isAuthenticated: true, isLoading: false });
         return true;
       }
       set({ user: null, isAuthenticated: false, isLoading: false });
@@ -168,8 +186,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = await response.json();
 
-      // Store session token
-      await storage.setItem('session_token', data.session_token);
+      // Web: HttpOnly cookie set by server; no sessionStorage needed.
+      // Native: store in AsyncStorage for Bearer auth.
+      if (Platform.OS !== 'web') {
+        await storage.setItem('session_token', data.session_token);
+      }
       await initializeData();
 
       set({
@@ -215,8 +236,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = await response.json();
 
-      // Store session token
-      await storage.setItem('session_token', data.session_token);
+      // Web: HttpOnly cookie set by server; no sessionStorage needed.
+      // Native: store in AsyncStorage for Bearer auth.
+      if (Platform.OS !== 'web') {
+        await storage.setItem('session_token', data.session_token);
+      }
       await initializeData();
 
       set({
@@ -239,12 +263,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedToken = await storage.getItem('session_token');
 
       // Fire backend logout without awaiting — don't block on cold start / slow network.
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 5000);
       if (storedToken) {
-        const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 5000);
+        // Native: Bearer token from AsyncStorage
         fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${storedToken}` },
+          credentials: 'include',
+          signal: controller.signal,
+        })
+          .catch(() => {})
+          .finally(() => clearTimeout(t));
+      } else {
+        // Web: no stored token — use HttpOnly cookie + custom header (CSRF-safe)
+        fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'X-Requested-By': 'shift-olama' },
+          credentials: 'include',
           signal: controller.signal,
         })
           .catch(() => {})

@@ -49,21 +49,31 @@ async def _validate_session(session_token: str) -> User:
 
 async def get_current_user(request: Request) -> User:
     auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return await _validate_session(auth_header[7:])
+    if auth_header and auth_header.startswith("Bearer "):
+        return await _validate_session(auth_header[7:])
+    # Web fallback: HttpOnly session cookie
+    cookie_token = request.cookies.get("session_token")
+    if cookie_token:
+        return await _validate_session(cookie_token)
+    raise HTTPException(status_code=401, detail="Not authenticated")
 
 
 async def require_header_auth(request: Request) -> User:
-    """Like get_current_user but only accepts Authorization header — rejects cookie-only auth.
+    """Like get_current_user but requires proof that the request was intentional.
 
-    Applied to destructive/reset endpoints to prevent CSRF: a cross-origin form POST
-    can send cookies automatically, but cannot set a custom Authorization header.
+    On native: requires Authorization: Bearer <token> (can't be forged by CSRF).
+    On web: requires X-Requested-By: shift-olama custom header + HttpOnly cookie.
+    A cross-origin CSRF form POST cannot set custom headers, so this is CSRF-safe.
     """
     auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=403,
-            detail="Este endpoint requer o header Authorization: Bearer <token>",
-        )
-    return await _validate_session(auth_header[7:])
+    if auth_header and auth_header.startswith("Bearer "):
+        return await _validate_session(auth_header[7:])
+    # Web: custom header (CSRF-safe) + cookie
+    if request.headers.get("X-Requested-By") == "shift-olama":
+        cookie_token = request.cookies.get("session_token")
+        if cookie_token:
+            return await _validate_session(cookie_token)
+    raise HTTPException(
+        status_code=403,
+        detail="Este endpoint requer o header Authorization: Bearer <token>",
+    )
