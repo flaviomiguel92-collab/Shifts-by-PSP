@@ -174,6 +174,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -224,6 +225,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ name, email, password }),
       });
 

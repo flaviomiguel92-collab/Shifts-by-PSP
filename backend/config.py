@@ -39,7 +39,7 @@ CORS_ORIGINS = [
     o.strip()
     for o in os.environ.get(
         'CORS_ORIGINS',
-        'https://shifts-by-psp.vercel.app,http://localhost:3000,http://localhost:8000'
+        'https://shifts-by-psp.vercel.app,http://localhost:3000,http://localhost:8000,http://localhost:8081'
     ).split(',')
     if o.strip()
 ]

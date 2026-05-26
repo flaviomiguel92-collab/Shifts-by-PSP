@@ -179,22 +179,51 @@ export function pickAndReadJsonWeb(): Promise<BackupPayload> {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json,application/json';
+    input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(input);
+
+    let settled = false;
+    const cleanup = () => {
+      if (document.body.contains(input)) document.body.removeChild(input);
+    };
+
+    // Detect cancel: window regains focus without a file being selected
+    const onWindowFocus = () => {
+      setTimeout(() => {
+        if (!settled && !input.files?.length) {
+          settled = true;
+          cleanup();
+          reject(new Error('Nenhum ficheiro selecionado'));
+        }
+      }, 400);
+    };
+    window.addEventListener('focus', onWindowFocus, { once: true });
+
     input.onchange = () => {
+      if (settled) return;
+      window.removeEventListener('focus', onWindowFocus);
       const file = input.files?.[0];
-      if (!file) { reject(new Error('No file selected')); return; }
+      cleanup();
+      if (!file) {
+        settled = true;
+        reject(new Error('Nenhum ficheiro selecionado'));
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
+        settled = true;
         try {
           const parsed = JSON.parse(e.target?.result as string) as BackupPayload;
-          if (parsed.version !== 1) throw new Error('Formato de backup inválido');
+          if (parsed.version !== 1) throw new Error('Formato de backup inválido (version !== 1)');
           resolve(parsed);
         } catch (err) {
           reject(err);
         }
       };
-      reader.onerror = () => reject(new Error('Erro ao ler ficheiro'));
+      reader.onerror = () => { settled = true; reject(new Error('Erro ao ler ficheiro')); };
       reader.readAsText(file);
     };
+
     input.click();
   });
 }
