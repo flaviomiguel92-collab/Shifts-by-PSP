@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { storage } from '../utils/storage';
 import { User } from '../types';
@@ -93,33 +92,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Web: rely on HttpOnly cookie — no sessionStorage lookup needed
-      if (Platform.OS === 'web') {
-        const response = await fetch(`${API_URL}/api/auth/me`, {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json', 'X-Requested-By': 'shift-olama' },
-        });
-        if (response.status === 401) {
-          useDataStore.getState().clearSyncedCollections();
-          set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
-          return false;
-        }
-        if (!response.ok) {
-          console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
-          set({ isAuthenticated: true, isLoading: false });
-          return true;
-        }
-        const userData = await response.json();
-        set({ user: userData, isAuthenticated: true, isLoading: false });
-        return true;
-      }
-
-      // Native: Bearer token from AsyncStorage
+      // Bearer token from storage (localStorage on web, AsyncStorage on native).
+      // This is the proven, working flow — cookies are unreliable cross-origin
+      // (Vercel <-> Render) due to third-party cookie restrictions in modern browsers.
       const storedToken = await storage.getItem('session_token');
 
       if (!storedToken) {
         useDataStore.getState().clearSyncedCollections();
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
         return false;
       }
 
@@ -139,6 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!response.ok) {
+        // Render cold start / temporary outage — keep session, retry on next call.
         console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
         set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
         return true;
@@ -149,15 +130,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return true;
     } catch (error) {
       console.warn('[checkAuth] Network error — a manter sessão:', error);
-      if (Platform.OS !== 'web') {
-        const storedToken = await storage.getItem('session_token');
-        if (storedToken) {
-          set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
-          return true;
-        }
-      } else {
-        // Web: assume cookie still valid on network error
-        set({ isAuthenticated: true, isLoading: false });
+      const storedToken = await storage.getItem('session_token');
+      if (storedToken) {
+        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
         return true;
       }
       set({ user: null, isAuthenticated: false, isLoading: false });
@@ -187,11 +162,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = await response.json();
 
-      // Web: HttpOnly cookie set by server; no sessionStorage needed.
-      // Native: store in AsyncStorage for Bearer auth.
-      if (Platform.OS !== 'web') {
-        await storage.setItem('session_token', data.session_token);
-      }
+      // Always store the session token for Bearer auth on every platform.
+      // Web uses localStorage (persists across tabs/restarts); native uses AsyncStorage.
+      await storage.setItem('session_token', data.session_token);
       await initializeData();
 
       set({
@@ -238,11 +211,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = await response.json();
 
-      // Web: HttpOnly cookie set by server; no sessionStorage needed.
-      // Native: store in AsyncStorage for Bearer auth.
-      if (Platform.OS !== 'web') {
-        await storage.setItem('session_token', data.session_token);
-      }
+      // Always store the session token for Bearer auth on every platform.
+      await storage.setItem('session_token', data.session_token);
       await initializeData();
 
       set({
@@ -265,24 +235,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedToken = await storage.getItem('session_token');
 
       // Fire backend logout without awaiting — don't block on cold start / slow network.
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 5000);
       if (storedToken) {
-        // Native: Bearer token from AsyncStorage
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 5000);
         fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${storedToken}` },
-          credentials: 'include',
-          signal: controller.signal,
-        })
-          .catch(() => {})
-          .finally(() => clearTimeout(t));
-      } else {
-        // Web: no stored token — use HttpOnly cookie + custom header (CSRF-safe)
-        fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: { 'X-Requested-By': 'shift-olama' },
-          credentials: 'include',
           signal: controller.signal,
         })
           .catch(() => {})
