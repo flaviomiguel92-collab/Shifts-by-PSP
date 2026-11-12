@@ -112,3 +112,37 @@ class PersonCreate(BaseModel):
                 if len(photo) > _MAX_PHOTO_CHARS:
                     raise ValueError("Cada foto não pode exceder 2 MB")
         return v
+
+
+class PersonUpdate(BaseModel):
+    role: Optional[str] = Field(default=None, max_length=50)
+    full_name: Optional[str] = Field(default=None, max_length=200)
+    address: Optional[str] = Field(default=None, max_length=400)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    email: Optional[str] = Field(default=None, max_length=200)
+    tax_id: Optional[str] = Field(default=None, max_length=30)
+    nacionalidade: Optional[str] = Field(default=None, max_length=100)
+    naturalidade: Optional[str] = Field(default=None, max_length=200)
+    profissao: Optional[str] = Field(default=None, max_length=200)
+    habilitacoes_literarias: Optional[str] = Field(default=None, max_length=200)
+    estado_civil: Optional[str] = Field(default=None, max_length=50)
+    date_of_birth: Optional[str] = Field(default=None, max_length=10)
+    mother_name: Optional[str] = Field(default=None, max_length=200)
+    father_name: Optional[str] = Field(default=None, max_length=200)
+    document_type: Optional[str] = Field(default=None, max_length=50)
+    document_number: Optional[str] = Field(default=None, max_length=50)
+    document_issue_date: Optional[str] = Field(default=None, max_length=10)
+    document_expiry_date: Optional[str] = Field(default=None, max_length=10)
+    photos: Optional[List[str]] = None
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator('photos')
+    @classmethod
+    def validate_photos(cls, v):
+        if v and len(v) > _MAX_PHOTOS:
+            raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
+        if v:
+            for photo in v:
+                if len(photo) > _MAX_PHOTO_CHARS:
+                    raise ValueError("Cada foto não pode exceder 2 MB")
+        return v

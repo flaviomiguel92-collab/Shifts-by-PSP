@@ -46,6 +46,8 @@ export default function OcorrenciasScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [showPersonModal, setShowPersonModal] = useState(false);
+  const [personModalMode, setPersonModalMode] = useState<'create' | 'edit'>('create');
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [localPhotos, setLocalPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
@@ -81,9 +83,42 @@ export default function OcorrenciasScreen() {
     setShowDetailModal(true);
   };
 
-  const handlePersonAdded = async (updated: Occurrence) => {
-    setSelectedOccurrence(updated);
+  const handlePersonAdded = async (updated: Partial<Occurrence> | Person) => {
+    if (!selectedOccurrence) {
+      await fetchOccurrences();
+      return;
+    }
+
+    if ('full_name' in updated && 'id' in updated) {
+      try {
+        const token = await storage.getItem('session_token');
+        const response = await fetch(`${API_URL}/api/occurrences/${selectedOccurrence.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const refreshed = await response.json();
+          setSelectedOccurrence(refreshed);
+        }
+      } catch (error) {
+        console.error('Refresh selected occurrence after person save error:', error);
+      }
+    } else if (updated && 'id' in updated) {
+      setSelectedOccurrence(updated as Occurrence);
+    }
+
     await fetchOccurrences();
+  };
+
+  const openCreatePersonModal = () => {
+    setEditingPerson(null);
+    setPersonModalMode('create');
+    setShowPersonModal(true);
+  };
+
+  const openEditPersonModal = (person: Person) => {
+    setEditingPerson(person);
+    setPersonModalMode('edit');
+    setShowPersonModal(true);
   };
 
   // Compress image using ImageManipulator and convert to smaller base64
@@ -584,7 +619,7 @@ export default function OcorrenciasScreen() {
                   <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Pessoas Envolvidas</Text>
                   <TouchableOpacity
                     style={styles.addSmallBtn}
-                    onPress={() => setShowPersonModal(true)}
+                    onPress={openCreatePersonModal}
                   >
                     <Ionicons name="person-add" size={18} color="#FFFFFF" />
                     <Text style={styles.addSmallBtnText}>Adicionar</Text>
@@ -592,7 +627,12 @@ export default function OcorrenciasScreen() {
                 </View>
                 {getAllPersons(selectedOccurrence).length > 0 ? (
                   getAllPersons(selectedOccurrence).map((person, i) => (
-                    <View key={i} style={[styles.personCard, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}>
+                    <TouchableOpacity
+                      key={person.id || i}
+                      activeOpacity={0.8}
+                      onPress={() => openEditPersonModal(person)}
+                      style={[styles.personCard, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }]}
+                    >
                       <View style={styles.personHeader}>
                         <View style={[styles.roleBadge, {
                           backgroundColor: person.role === 'suspeito' ? '#EF4444' :
@@ -619,7 +659,7 @@ export default function OcorrenciasScreen() {
                       {person.email && (
                         <Text style={[styles.personContact, isLight && { color: th.textMuted }]}>Email: {person.email}</Text>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   ))
                 ) : (
                   <Text style={[styles.emptySubtext, isLight && { color: th.textMuted }]}>Nenhuma pessoa adicionada</Text>
@@ -634,7 +674,13 @@ export default function OcorrenciasScreen() {
         visible={showPersonModal}
         occurrenceId={selectedOccurrence?.id ?? ''}
         apiUrl={API_URL}
-        onClose={() => setShowPersonModal(false)}
+        mode={personModalMode}
+        initialPerson={editingPerson}
+        onClose={() => {
+          setShowPersonModal(false);
+          setEditingPerson(null);
+          setPersonModalMode('create');
+        }}
         onPersonAdded={handlePersonAdded}
       />
     </SafeAreaView>

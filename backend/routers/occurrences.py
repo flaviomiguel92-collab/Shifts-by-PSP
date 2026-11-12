@@ -18,6 +18,7 @@ from models.occurrences import (
     OccurrenceUpdate,
     PersonCreate,
     PersonInOccurrence,
+    PersonUpdate,
     _MAX_PHOTOS,
     _MAX_PHOTO_CHARS,
 )
@@ -195,6 +196,83 @@ async def add_person_to_occurrence(
     )
     updated = await _db.db.occurrences.find_one({"id": occurrence_id, "user_id": user.user_id}, {"_id": 0})
     return _decrypt_occurrence(updated)
+
+
+@router.put("/occurrences/{occurrence_id}/persons/{person_id}", response_model=dict)
+async def update_person_in_occurrence(
+    occurrence_id: str,
+    person_id: str,
+    person_data: PersonUpdate,
+    user: User = Depends(get_current_user),
+):
+    existing = await _db.db.occurrences.find_one({"id": occurrence_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Occurrence not found")
+
+    role_map = {"suspeito": "suspects", "testemunha": "witnesses", "lesado": "victims"}
+    person = None
+    current_array = None
+    current_index = -1
+
+    for array_name in ("suspects", "witnesses", "victims"):
+        for index, candidate in enumerate(existing.get(array_name, [])):
+            if candidate.get("id") == person_id:
+                person = candidate
+                current_array = array_name
+                current_index = index
+                break
+        if person is not None:
+            break
+
+    if person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    update_data = person_data.model_dump(exclude_unset=True)
+    merged = {**person, **update_data}
+    merged["id"] = person_id
+    merged["role"] = person_data.role or person.get("role", "testemunha")
+    merged["full_name"] = person_data.full_name or person.get("full_name", "")
+    merged["document_type"] = person_data.document_type or person.get("document_type", "cartao_cidadao")
+    merged["photos"] = person_data.photos if person_data.photos is not None else person.get("photos", [])
+
+    encrypted = crypto.encrypt_person(merged)
+    target_array = role_map.get(merged["role"], "suspects")
+    updated_arrays = {
+        "suspects": existing.get("suspects", []),
+        "witnesses": existing.get("witnesses", []),
+        "victims": existing.get("victims", []),
+    }
+
+    if current_array is not None:
+        updated_arrays[current_array] = [
+            item for item in updated_arrays[current_array] if item.get("id") != person_id
+        ]
+
+    if target_array == current_array:
+        updated_arrays[target_array].insert(current_index, encrypted)
+    else:
+        updated_arrays[target_array].append(encrypted)
+
+    await _db.db.occurrences.update_one(
+        {"id": occurrence_id, "user_id": user.user_id},
+        {
+            "$set": {
+                "suspects": updated_arrays["suspects"],
+                "witnesses": updated_arrays["witnesses"],
+                "victims": updated_arrays["victims"],
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    refreshed = await _db.db.occurrences.find_one({"id": occurrence_id, "user_id": user.user_id}, {"_id": 0})
+    decrypted = _decrypt_occurrence(refreshed)
+    target_array_name = role_map.get(merged["role"], "suspects")
+    person_list = decrypted.get(target_array_name, [])
+    updated_person = next((item for item in person_list if item.get("id") == person_id), None)
+    if updated_person is None:
+        raise HTTPException(status_code=404, detail="Person not found after update")
+    return updated_person
 
 
 @router.delete("/occurrences/{occurrence_id}/persons/{person_id}")

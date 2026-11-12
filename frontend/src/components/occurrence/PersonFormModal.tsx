@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -35,11 +35,13 @@ interface Props {
   visible: boolean;
   occurrenceId: string;
   apiUrl: string;
+  mode?: 'create' | 'edit';
+  initialPerson?: Person | null;
   onClose: () => void;
   onPersonAdded: (updatedOccurrence: Occurrence) => void;
 }
 
-export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPersonAdded }: Props) {
+export function PersonFormModal({ visible, occurrenceId, apiUrl, mode = 'create', initialPerson = null, onClose, onPersonAdded }: Props) {
   const th = useTheme();
   const isLight = !th.isDark;
   const inputLight = isLight ? { color: th.textPrimary, backgroundColor: th.bg, borderColor: th.borderStrong } : null;
@@ -65,6 +67,7 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const isEditMode = mode === 'edit' && !!initialPerson;
 
   const reset = () => {
     setRole('testemunha');
@@ -88,6 +91,34 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
     setNotes('');
     setPhotos([]);
   };
+
+  useEffect(() => {
+    if (!visible) return;
+    if (isEditMode && initialPerson) {
+      setRole(initialPerson.role);
+      setName(initialPerson.full_name || '');
+      setAddress(initialPerson.address || '');
+      setPhone(initialPerson.phone || '');
+      setEmail(initialPerson.email || '');
+      setNif(initialPerson.tax_id || '');
+      setNacionalidade(initialPerson.nacionalidade || '');
+      setNaturalidade(initialPerson.naturalidade || '');
+      setProfissao(initialPerson.profissao || '');
+      setHabilitacoesLiterarias(initialPerson.habilitacoes_literarias || '');
+      setEstadoCivil(initialPerson.estado_civil || '');
+      setDateOfBirth(initialPerson.date_of_birth || '');
+      setMotherName(initialPerson.mother_name || '');
+      setFatherName(initialPerson.father_name || '');
+      setDocType((initialPerson.document_type || 'cartao_cidadao') as DocumentType);
+      setDocNumber(initialPerson.document_number || '');
+      setDocIssue(initialPerson.document_issue_date || '');
+      setDocExpiry(initialPerson.document_expiry_date || '');
+      setNotes(initialPerson.notes || '');
+      setPhotos(initialPerson.photos || []);
+      return;
+    }
+    reset();
+  }, [visible, isEditMode, initialPerson]);
 
   const compressToBase64 = async (uri: string): Promise<string | null> => {
     try {
@@ -155,8 +186,11 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
         notes: notes || undefined,
         photos: photos.length > 0 ? photos : undefined,
       };
-      const response = await fetch(`${apiUrl}/api/occurrences/${occurrenceId}/persons`, {
-        method: 'POST',
+      const url = isEditMode && initialPerson
+        ? `${apiUrl}/api/occurrences/${occurrenceId}/persons/${initialPerson.id}`
+        : `${apiUrl}/api/occurrences/${occurrenceId}/persons`;
+      const response = await fetch(url, {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -164,15 +198,15 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
         body: JSON.stringify(person),
       });
       if (response.ok) {
-        const updated: Occurrence = await response.json();
+        const updated = await response.json();
         reset();
-        onPersonAdded(updated);
+        onPersonAdded(updated as unknown as Occurrence);
         onClose();
       } else {
-        Alert.alert('Erro', 'Não foi possível adicionar a pessoa');
+        Alert.alert('Erro', isEditMode ? 'Não foi possível guardar as alterações' : 'Não foi possível adicionar a pessoa');
       }
     } catch {
-      Alert.alert('Erro', 'Não foi possível adicionar a pessoa');
+      Alert.alert('Erro', isEditMode ? 'Não foi possível guardar as alterações' : 'Não foi possível adicionar a pessoa');
     }
   };
 
@@ -181,7 +215,7 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
       <View style={styles.overlay}>
         <View style={[styles.content, { maxHeight: '90%' }, isLight && { backgroundColor: th.surfaceAlt }]}>
           <View style={[styles.header, isLight && { borderBottomColor: th.border }]}>
-            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>Adicionar Pessoa</Text>
+            <Text style={[styles.title, isLight && { color: th.textPrimary }]}>{isEditMode ? 'Editar Pessoa' : 'Adicionar Pessoa'}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={isLight ? th.textSecondary : '#9CA3AF'} />
             </TouchableOpacity>
