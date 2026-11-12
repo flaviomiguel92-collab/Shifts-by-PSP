@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { storage } from '../../utils/storage';
-import { Occurrence, OCCURRENCE_CLASSIFICATIONS } from '../../types/occurrence';
+import {
+  Occurrence,
+  getOccurrenceClassifications,
+  saveOccurrenceClassifications,
+  sortOccurrenceClassifications,
+} from '../../types/occurrence';
 import { useTheme } from '../../theme/themes';
 
 interface Props {
@@ -32,6 +37,87 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [classification, setClassification] = useState('');
+  const [savedClassifications, setSavedClassifications] = useState<string[]>([]);
+  const [newClassification, setNewClassification] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const loadClassifications = async () => {
+      const list = await getOccurrenceClassifications();
+      if (!active) return;
+      setSavedClassifications(list);
+    };
+
+    loadClassifications();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const syncClassifications = async (items: string[]) => {
+    const normalized = sortOccurrenceClassifications([...new Set(items.map((item) => item.trim()).filter(Boolean))]);
+    setSavedClassifications(normalized);
+    await saveOccurrenceClassifications(normalized);
+  };
+
+  const handleRenameClassification = (oldValue: string) => {
+    Alert.prompt(
+      'Renomear tipificação',
+      'Escolha o nome da tipificação',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Guardar',
+          onPress: async (newValue: string | undefined) => {
+            const cleanValue = (newValue || '').trim();
+            if (!cleanValue) {
+              Alert.alert('Erro', 'O nome não pode ficar vazio.');
+              return;
+            }
+            if (oldValue === cleanValue) {
+              return;
+            }
+            const next = savedClassifications.map((item) => (item === oldValue ? cleanValue : item));
+            await syncClassifications(next);
+            if (classification === oldValue) {
+              setClassification(cleanValue);
+            }
+          },
+        },
+      ],
+      'plain-text',
+      oldValue,
+    );
+  };
+
+  const handleAddClassification = async () => {
+    const value = newClassification.trim();
+    if (!value) {
+      Alert.alert('Erro', 'Escreve uma tipificação antes de adicionar.');
+      return;
+    }
+
+    const exists = savedClassifications.some((item) => item.toLowerCase() === value.toLowerCase());
+    if (exists) {
+      setClassification(value);
+      setNewClassification('');
+      return;
+    }
+
+    const next = [...savedClassifications, value];
+    await syncClassifications(next);
+    setClassification(value);
+    setNewClassification('');
+  };
+
+  const handleRemoveClassification = async (value: string) => {
+    const next = savedClassifications.filter((item) => item !== value);
+    await syncClassifications(next);
+    if (classification === value) {
+      setClassification('');
+    }
+  };
 
   const reset = () => {
     const now = new Date();
@@ -40,6 +126,7 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
     setLocation('');
     setDescription('');
     setClassification('');
+    setNewClassification('');
   };
 
   const handleSubmit = async () => {
@@ -109,21 +196,38 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
             />
 
             <Text style={[styles.label, isLight && { color: th.textMuted }]}>Tipificação *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.classificationManager}>
+              <TextInput
+                style={[styles.input, styles.classificationInput, inputLight]}
+                value={newClassification}
+                onChangeText={setNewClassification}
+                placeholder="Adicionar tipificação"
+                placeholderTextColor={placeholderLight}
+              />
+              <TouchableOpacity style={styles.addClassificationBtn} onPress={handleAddClassification}>
+                <Text style={styles.addClassificationBtnText}>Adicionar</Text>
+              </TouchableOpacity>
+            </View>
+
+            {savedClassifications.length > 0 ? (
               <View style={styles.classificationGrid}>
-                {OCCURRENCE_CLASSIFICATIONS.map((c) => (
-                  <TouchableOpacity
-                    key={c}
-                    style={[styles.classificationBtn, isLight && { backgroundColor: th.bg, borderColor: th.borderStrong }, classification === c && styles.classificationBtnActive]}
-                    onPress={() => setClassification(c)}
-                  >
-                    <Text style={[styles.classificationBtnText, isLight && classification !== c && { color: th.textSecondary }, classification === c && styles.classificationBtnTextActive]}>
-                      {c}
-                    </Text>
-                  </TouchableOpacity>
+                {savedClassifications.map((c) => (
+                  <View key={c} style={[styles.classificationChip, classification === c && styles.classificationChipActive]}>
+                    <TouchableOpacity onPress={() => setClassification(c)} style={styles.classificationChipLabel}>
+                      <Text style={[styles.classificationChipText, classification === c && styles.classificationChipTextActive]}>{c}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleRenameClassification(c)} style={styles.classificationAction} hitSlop={8}>
+                      <Ionicons name="pencil" size={14} color={classification === c ? '#E2E8F0' : '#94A3B8'} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleRemoveClassification(c)} style={styles.classificationAction} hitSlop={8}>
+                      <Ionicons name="close-circle" size={16} color={classification === c ? '#E2E8F0' : '#94A3B8'} />
+                    </TouchableOpacity>
+                  </View>
                 ))}
               </View>
-            </ScrollView>
+            ) : (
+              <Text style={[styles.emptyText, isLight && { color: th.textMuted }]}>Sem tipificações guardadas. Adicione a primeira e ela ficará disponível para reutilizar.</Text>
+            )}
 
             <Text style={[styles.label, isLight && { color: th.textMuted }]}>Descrição *</Text>
             <TextInput
@@ -185,18 +289,47 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(148,163,184,0.22)',
   },
   textArea: { minHeight: 100 },
-  classificationGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  classificationBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(148,163,184,0.18)',
+  classificationManager: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
   },
-  classificationBtnActive: { backgroundColor: '#1D4ED8', borderColor: '#3B82F6' },
-  classificationBtnText: { color: '#94A3B8', fontSize: 13 },
-  classificationBtnTextActive: { color: '#FFFFFF' },
+  classificationInput: { flex: 1 },
+  addClassificationBtn: {
+    backgroundColor: '#1D4ED8',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  addClassificationBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+  classificationGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  classificationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(148,163,184,0.18)',
+    paddingLeft: 12,
+    paddingRight: 6,
+    paddingVertical: 6,
+  },
+  classificationChipActive: { backgroundColor: '#1D4ED8', borderColor: '#3B82F6' },
+  classificationChipLabel: { paddingRight: 6 },
+  classificationChipText: { color: '#E2E8F0', fontSize: 12 },
+  classificationChipTextActive: { color: '#FFFFFF' },
+  classificationAction: { justifyContent: 'center', alignItems: 'center', marginLeft: 2 },
+  emptyText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 12,
+    lineHeight: 18,
+  },
   submitBtn: {
     backgroundColor: '#3B82F6',
     margin: 16,

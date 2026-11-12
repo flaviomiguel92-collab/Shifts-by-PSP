@@ -1,3 +1,5 @@
+import { storage } from '../utils/storage';
+
 // Occurrence/Incident Types
 export interface Occurrence {
   id: string;
@@ -57,22 +59,45 @@ export interface Person {
   notes?: string;
 }
 
-export const OCCURRENCE_CLASSIFICATIONS = [
-  'Furto',
-  'Roubo',
-  'Agressão',
-  'Dano',
-  'Ameaça',
-  'Injúria',
-  'Acidente de Viação',
-  'Violência Doméstica',
-  'Burla',
-  'Tráfico',
-  'Posse de Arma',
-  'Desordem Pública',
-  'Vandalismo',
-  'Outro',
-];
+export const OCCURRENCE_CLASSIFICATIONS_STORAGE_KEY = 'occurrence_classifications';
+export const DEFAULT_OCCURRENCE_CLASSIFICATIONS: string[] = [];
+
+export const normalizeOccurrenceClassification = (value: string): string =>
+  value.trim().replace(/\s+/g, ' ');
+
+export const sortOccurrenceClassifications = (items: string[]): string[] =>
+  [...items].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+export const getOccurrenceClassifications = async (): Promise<string[]> => {
+  const raw = await storage.getItem(OCCURRENCE_CLASSIFICATIONS_STORAGE_KEY);
+
+  if (!raw) {
+    return [...DEFAULT_OCCURRENCE_CLASSIFICATIONS];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [...DEFAULT_OCCURRENCE_CLASSIFICATIONS];
+    }
+
+    const normalized = sortOccurrenceClassifications(
+      [...new Set(parsed.map((item) => normalizeOccurrenceClassification(String(item))).filter(Boolean))],
+    );
+    return normalized;
+  } catch {
+    return [...DEFAULT_OCCURRENCE_CLASSIFICATIONS];
+  }
+};
+
+export const saveOccurrenceClassifications = async (items: string[]): Promise<void> => {
+  const normalized = sortOccurrenceClassifications(
+    [...new Set(items.map((item) => normalizeOccurrenceClassification(String(item))).filter(Boolean))],
+  );
+  await storage.setItem(OCCURRENCE_CLASSIFICATIONS_STORAGE_KEY, JSON.stringify(normalized));
+};
+
+export const OCCURRENCE_CLASSIFICATIONS: string[] = DEFAULT_OCCURRENCE_CLASSIFICATIONS;
 
 export const OCCURRENCE_STATUS_LABELS: Record<string, string> = {
   rascunho: 'Rascunho',
