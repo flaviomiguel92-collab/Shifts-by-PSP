@@ -77,10 +77,11 @@ export default function OcorrenciasScreen() {
   };
 
   const handleOccurrenceCreated = async (newOcc: Occurrence) => {
-    await fetchOccurrences();
+    setOccurrences(prev => [newOcc, ...prev]);
     setSelectedOccurrence(newOcc);
     setLocalPhotos(newOcc.photos || []);
     setShowDetailModal(true);
+    await fetchOccurrences();
   };
 
   const handlePersonAdded = async (updated: Partial<Occurrence> | Person) => {

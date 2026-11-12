@@ -39,6 +39,7 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
   const [classification, setClassification] = useState('');
   const [savedClassifications, setSavedClassifications] = useState<string[]>([]);
   const [newClassification, setNewClassification] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -130,10 +131,13 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!location || !description || !classification) {
       Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
       return;
     }
+
+    setIsSubmitting(true);
     try {
       const token = await storage.getItem('session_token');
       const response = await fetch(`${apiUrl}/api/occurrences`, {
@@ -154,6 +158,8 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
       }
     } catch {
       Alert.alert('Erro', 'Não foi possível criar a ocorrência');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -240,8 +246,8 @@ export function CreateOccurrenceModal({ visible, apiUrl, onClose, onCreated }: P
               numberOfLines={4}
             />
           </ScrollView>
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-            <Text style={styles.submitBtnText}>Criar Ocorrência</Text>
+          <TouchableOpacity style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={isSubmitting}>
+            <Text style={styles.submitBtnText}>{isSubmitting ? 'A criar...' : 'Criar Ocorrência'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -336,6 +342,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     alignItems: 'center',
+  },
+  submitBtnDisabled: {
+    backgroundColor: '#475569',
+    opacity: 0.8,
   },
   submitBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '500' },
 });
