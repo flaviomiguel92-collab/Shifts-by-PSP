@@ -50,6 +50,14 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [nif, setNif] = useState('');
+  const [nacionalidade, setNacionalidade] = useState('');
+  const [naturalidade, setNaturalidade] = useState('');
+  const [profissao, setProfissao] = useState('');
+  const [habilitacoesLiterarias, setHabilitacoesLiterarias] = useState('');
+  const [estadoCivil, setEstadoCivil] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [motherName, setMotherName] = useState('');
+  const [fatherName, setFatherName] = useState('');
   const [docType, setDocType] = useState<DocumentType>('cartao_cidadao');
   const [docNumber, setDocNumber] = useState('');
   const [docIssue, setDocIssue] = useState('');
@@ -65,6 +73,14 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
     setPhone('');
     setEmail('');
     setNif('');
+    setNacionalidade('');
+    setNaturalidade('');
+    setProfissao('');
+    setHabilitacoesLiterarias('');
+    setEstadoCivil('');
+    setDateOfBirth('');
+    setMotherName('');
+    setFatherName('');
     setDocType('cartao_cidadao');
     setDocNumber('');
     setDocIssue('');
@@ -124,6 +140,14 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
         phone: phone || undefined,
         email: email || undefined,
         tax_id: nif || undefined,
+        nacionalidade: nacionalidade || undefined,
+        naturalidade: naturalidade || undefined,
+        profissao: profissao || undefined,
+        habilitacoes_literarias: habilitacoesLiterarias || undefined,
+        estado_civil: estadoCivil || undefined,
+        date_of_birth: dateOfBirth || undefined,
+        mother_name: motherName || undefined,
+        father_name: fatherName || undefined,
         document_type: docType,
         document_number: docNumber || undefined,
         document_issue_date: docIssue || undefined,
@@ -187,7 +211,103 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
               placeholderTextColor={placeholderLight}
             />
 
-            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Documento de Identificação</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textPrimary }]}>Dados Pessoais</Text>
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>NIF</Text>
+                <TextInput
+                  style={[styles.input, inputLight]}
+                  value={nif}
+                  onChangeText={setNif}
+                  placeholder="NIF"
+                  placeholderTextColor={placeholderLight}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.half}>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Data de Nascimento</Text>
+                <TextInput
+                  style={[styles.input, inputLight]}
+                  value={dateOfBirth}
+                  onChangeText={setDateOfBirth}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={placeholderLight}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Nacionalidade</Text>
+                <TextInput
+                  style={[styles.input, inputLight]}
+                  value={nacionalidade}
+                  onChangeText={setNacionalidade}
+                  placeholder="Nacionalidade"
+                  placeholderTextColor={placeholderLight}
+                />
+              </View>
+              <View style={styles.half}>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Naturalidade</Text>
+                <TextInput
+                  style={[styles.input, inputLight]}
+                  value={naturalidade}
+                  onChangeText={setNaturalidade}
+                  placeholder="Naturalidade"
+                  placeholderTextColor={placeholderLight}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Profissão</Text>
+                <TextInput
+                  style={[styles.input, inputLight]}
+                  value={profissao}
+                  onChangeText={setProfissao}
+                  placeholder="Profissão"
+                  placeholderTextColor={placeholderLight}
+                />
+              </View>
+              <View style={styles.half}>
+                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Estado Civil</Text>
+                <TextInput
+                  style={[styles.input, inputLight]}
+                  value={estadoCivil}
+                  onChangeText={setEstadoCivil}
+                  placeholder="Estado civil"
+                  placeholderTextColor={placeholderLight}
+                />
+              </View>
+            </View>
+
+            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Habilitações Literárias</Text>
+            <TextInput
+              style={[styles.input, inputLight]}
+              value={habilitacoesLiterarias}
+              onChangeText={setHabilitacoesLiterarias}
+              placeholder="Ex.: Ensino secundário, licenciatura..."
+              placeholderTextColor={placeholderLight}
+            />
+
+            <Text style={[styles.sectionTitle, isLight && { color: th.textPrimary }]}>Filiação</Text>
+            <TextInput
+              style={[styles.input, inputLight]}
+              value={motherName}
+              onChangeText={setMotherName}
+              placeholder="Nome da mãe"
+              placeholderTextColor={placeholderLight}
+            />
+            <TextInput
+              style={[styles.input, inputLight, { marginTop: 8 }]}
+              value={fatherName}
+              onChangeText={setFatherName}
+              placeholder="Nome do pai"
+              placeholderTextColor={placeholderLight}
+            />
+
+            <Text style={[styles.sectionTitle, isLight && { color: th.textPrimary }]}>Documentos</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.docTypeButtons}>
                 {DOC_TYPES.map((d) => (
@@ -236,41 +356,29 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, onClose, onPers
               </View>
             </View>
 
-            <Text style={[styles.label, isLight && { color: th.textMuted }]}>NIF</Text>
-            <TextInput
-              style={[styles.input, inputLight]}
-              value={nif}
-              onChangeText={setNif}
-              placeholder="Número de Identificação Fiscal"
-              placeholderTextColor={placeholderLight}
-              keyboardType="numeric"
-            />
-
-            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Morada</Text>
+            <Text style={[styles.sectionTitle, isLight && { color: th.textPrimary }]}>Contacto</Text>
             <TextInput
               style={[styles.input, inputLight]}
               value={address}
               onChangeText={setAddress}
-              placeholder="Endereço completo"
+              placeholder="Morada"
               placeholderTextColor={placeholderLight}
             />
 
-            <Text style={[styles.label, isLight && { color: th.textMuted }]}>Telemóvel</Text>
             <TextInput
-              style={[styles.input, inputLight]}
+              style={[styles.input, inputLight, { marginTop: 8 }]}
               value={phone}
               onChangeText={setPhone}
-              placeholder="Contacto telefónico"
+              placeholder="Telemóvel"
               placeholderTextColor={placeholderLight}
               keyboardType="phone-pad"
             />
 
-            <Text style={[styles.label, isLight && { color: th.textMuted }]}>E-mail</Text>
             <TextInput
-              style={[styles.input, inputLight]}
+              style={[styles.input, inputLight, { marginTop: 8 }]}
               value={email}
               onChangeText={setEmail}
-              placeholder="Endereço de e-mail"
+              placeholder="E-mail"
               placeholderTextColor={placeholderLight}
               keyboardType="email-address"
             />
@@ -357,6 +465,15 @@ const styles = StyleSheet.create({
   textArea: { minHeight: 80 },
   row: { flexDirection: 'row', gap: 12 },
   half: { flex: 1 },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    letterSpacing: 1,
+    marginTop: 18,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
   roleButtons: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   roleBtn: {
     paddingHorizontal: 14,

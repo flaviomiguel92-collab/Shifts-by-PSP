@@ -16,6 +16,14 @@ class PersonInOccurrence(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     tax_id: Optional[str] = None
+    nacionalidade: Optional[str] = None
+    naturalidade: Optional[str] = None
+    profissao: Optional[str] = None
+    habilitacoes_literarias: Optional[str] = None
+    estado_civil: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    mother_name: Optional[str] = None
+    father_name: Optional[str] = None
     document_type: str
     document_number: Optional[str] = None
     document_issue_date: Optional[str] = None
@@ -79,6 +87,14 @@ class PersonCreate(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=30)
     email: Optional[str] = Field(default=None, max_length=200)
     tax_id: Optional[str] = Field(default=None, max_length=30)
+    nacionalidade: Optional[str] = Field(default=None, max_length=100)
+    naturalidade: Optional[str] = Field(default=None, max_length=200)
+    profissao: Optional[str] = Field(default=None, max_length=200)
+    habilitacoes_literarias: Optional[str] = Field(default=None, max_length=200)
+    estado_civil: Optional[str] = Field(default=None, max_length=50)
+    date_of_birth: Optional[str] = Field(default=None, max_length=10)
+    mother_name: Optional[str] = Field(default=None, max_length=200)
+    father_name: Optional[str] = Field(default=None, max_length=200)
     document_type: str = Field(max_length=50)
     document_number: Optional[str] = Field(default=None, max_length=50)
     document_issue_date: Optional[str] = Field(default=None, max_length=10)

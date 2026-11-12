@@ -51,15 +51,32 @@ async def test_add_person_to_occurrence(http, user_a):
         json={
             "role": "suspeito",
             "full_name": "João Teste",
+            "nacionalidade": "Portuguesa",
+            "naturalidade": "Lisboa",
+            "profissao": "Operador de logística",
+            "habilitacoes_literarias": "Ensino secundário",
+            "estado_civil": "Solteiro",
             "document_type": "CC",
             "document_number": "12345678",
+            "date_of_birth": "1998-05-12",
+            "mother_name": "Maria Teste",
+            "father_name": "Pedro Teste",
         },
         headers={"Authorization": f"Bearer {user_a['token']}"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["suspects"]) == 1
-    assert data["suspects"][0]["full_name"] == "João Teste"
+    person = data["suspects"][0]
+    assert person["full_name"] == "João Teste"
+    assert person["nacionalidade"] == "Portuguesa"
+    assert person["naturalidade"] == "Lisboa"
+    assert person["profissao"] == "Operador de logística"
+    assert person["habilitacoes_literarias"] == "Ensino secundário"
+    assert person["estado_civil"] == "Solteiro"
+    assert person["date_of_birth"] == "1998-05-12"
+    assert person["mother_name"] == "Maria Teste"
+    assert person["father_name"] == "Pedro Teste"
 
 
 @pytest.mark.asyncio

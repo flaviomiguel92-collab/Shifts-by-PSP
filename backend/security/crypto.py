@@ -19,7 +19,22 @@ logger = logging.getLogger(__name__)
 _PREFIX = "enc::"
 
 # Person dict keys that hold sensitive PII. Everything else is left untouched.
-_PII_KEYS = ("full_name", "tax_id", "document_number", "phone", "email", "address")
+_PII_KEYS = (
+    "full_name",
+    "tax_id",
+    "document_number",
+    "phone",
+    "email",
+    "address",
+    "nacionalidade",
+    "naturalidade",
+    "profissao",
+    "habilitacoes_literarias",
+    "estado_civil",
+    "date_of_birth",
+    "mother_name",
+    "father_name",
+)
 
 # Module-global cache so the Fernet instance is built at most once.
 # Sentinel object distinguishes "not yet computed" from "computed as None".

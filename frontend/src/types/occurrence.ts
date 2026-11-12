@@ -41,6 +41,14 @@ export interface Person {
   phone?: string;
   email?: string;
   tax_id?: string; // NIF
+  nacionalidade?: string;
+  naturalidade?: string;
+  profissao?: string;
+  habilitacoes_literarias?: string;
+  estado_civil?: string;
+  date_of_birth?: string;
+  mother_name?: string;
+  father_name?: string;
   document_type: DocumentType;
   document_number?: string;
   document_issue_date?: string;
