@@ -30,20 +30,25 @@ export const getCalendarDays = (monthStr: string): (Date | null)[] => {
   const days = getMonthDays(monthStr);
   const firstDay = days[0];
   const startPadding = getDay(firstDay);
-  
-  // Adjust for Monday start (0 = Monday, 6 = Sunday)
+
+  // Ajusta para começar na segunda-feira (0 = segunda, 6 = domingo)
   const adjustedPadding = startPadding === 0 ? 6 : startPadding - 1;
-  
+
   const paddedDays: (Date | null)[] = [];
-  
-  // Add empty days for padding
+
   for (let i = 0; i < adjustedPadding; i++) {
     paddedDays.push(null);
   }
-  
-  // Add actual days
+
   paddedDays.push(...days);
-  
+
+  // Garante que a última semana também fique completa, evitando que o último dia
+  // do mês (por exemplo, domingo) fique com largura total da linha.
+  const totalCells = Math.ceil(paddedDays.length / 7) * 7;
+  while (paddedDays.length < totalCells) {
+    paddedDays.push(null);
+  }
+
   return paddedDays;
 };
 
