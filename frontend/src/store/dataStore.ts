@@ -3,6 +3,7 @@ import * as api from '../services/api';
 import { storage } from '../utils/storage';
 import { ShiftTypeConfig, Shift, Gratification, CalendarEvent } from '../types';
 import { Occurrence } from '../types/occurrence';
+import { getCurrentMonth, getCurrentYear } from '../utils/helpers';
 
 const STORAGE_KEY = 'app_data';
 
@@ -171,8 +172,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
   gratifiedConfig: DEFAULT_GRATIFIED_CONFIG,
   gratifiedTemplates: [],
   gratifiedEntries: [],
-  currentMonth: new Date().toISOString().slice(0, 7),
-  currentYear: new Date().getFullYear().toString(),
+  currentMonth: getCurrentMonth(),
+  currentYear: getCurrentYear(),
 
   setCurrentMonth: (month) => set({ currentMonth: month }),
   setCurrentYear: (year) => set({ currentYear: year }),

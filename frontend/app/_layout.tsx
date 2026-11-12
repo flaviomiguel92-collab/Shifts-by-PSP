@@ -1,84 +1,17 @@
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
 import { usePreferencesStore } from '../src/store/preferencesStore';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Animated, StyleSheet, Image } from 'react-native';
-import { COLORS } from '../src/theme/colors';
 import { ToastContainer } from '../src/components/ui/Toast';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { InstallPrompt } from '../src/components/ui/InstallPrompt';
-import { useFonts } from 'expo-font';
-import { Ionicons } from '@expo/vector-icons';
-
-const logoImage = require('../assets/images/icon.png');
-
-function SplashScreen() {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.82)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(opacity, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
-    ]).start(() => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.06, duration: 1000, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        ])
-      ).start();
-    });
-  }, [opacity, scale, pulse]);
-
-  return (
-    <View style={splashStyles.container}>
-      <Animated.View style={[splashStyles.logoWrap, { opacity, transform: [{ scale }] }]}>
-        <Animated.View style={[splashStyles.logoGlow, { transform: [{ scale: pulse }] }]} />
-        <Image source={logoImage} style={splashStyles.logoImage} resizeMode="contain" />
-        <Text style={splashStyles.tagline}>Gestão de turnos profissional</Text>
-      </Animated.View>
-    </View>
-  );
-}
-
-const splashStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#050816',
-  },
-  logoWrap: {
-    alignItems: 'center',
-  },
-  logoGlow: {
-    position: 'absolute',
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: 'rgba(107, 91, 217, 0.14)',
-  },
-  logoImage: {
-    width: 300,
-    height: 300,
-  },
-  tagline: {
-    marginTop: 16,
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#64748B',
-    letterSpacing: 0.4,
-  },
-});
 
 export default function RootLayout() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [fontsLoaded] = useFonts(Ionicons.font);
 
   // Inicialização - corre só uma vez
   useEffect(() => {
@@ -138,10 +71,6 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isInitialized, router]);
-
-  if (!isInitialized || !fontsLoaded) {
-    return <SplashScreen />;
-  }
 
   return (
     <>

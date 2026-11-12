@@ -63,8 +63,9 @@ export function CalendarGrid({
 
             if (isGridTheme) {
               const shiftColor = shift ? getShiftDisplayColor(shift.shift_type) : null;
-              const numColor = shiftColor
-                || (isToday ? '#3B82F6' : holiday ? '#EF4444' : (isLight ? t.textPrimary : '#E2E8F0'));
+              const numColor = isToday
+                ? '#FFFFFF'
+                : shiftColor || (holiday ? '#EF4444' : (isLight ? t.textPrimary : '#E2E8F0'));
               return (
                 <TouchableOpacity
                   key={dateStr}
@@ -88,9 +89,11 @@ export function CalendarGrid({
                   onLongPress={() => onDayLongPress(dateStr)}
                   delayLongPress={350}
                 >
-                  <Text style={[styles.gridDayNum, { color: numColor }]}>
-                    {format(day, 'd')}
-                  </Text>
+                  <View style={[styles.gridDayNumWrap, isToday && styles.todayNumWrap]}>
+                    <Text style={[styles.gridDayNum, { color: numColor }, isToday && styles.todayNumText]}>
+                      {format(day, 'd')}
+                    </Text>
+                  </View>
 
                   {isMultiSelected ? (
                     <View style={styles.multiCheckWrap}>
@@ -155,16 +158,18 @@ export function CalendarGrid({
                 onLongPress={() => onDayLongPress(dateStr)}
                 delayLongPress={350}
               >
-                <Text style={[
-                  styles.dayText,
-                  isToday && styles.todayText,
-                  holiday && styles.holidayText,
-                  isCycleStart && styles.cycleStartText,
-                  shift && !isMultiSelected && styles.shiftDayText,
-                  isMultiSelected && styles.multiSelectedDayText,
-                ]}>
-                  {format(day, 'd')}
-                </Text>
+                <View style={[styles.dayNumWrap, isToday && styles.todayNumWrap]}>
+                  <Text style={[
+                    styles.dayText,
+                    holiday && styles.holidayText,
+                    isCycleStart && styles.cycleStartText,
+                    shift && !isMultiSelected && styles.shiftDayText,
+                    isMultiSelected && styles.multiSelectedDayText,
+                    isToday && styles.todayNumText,
+                  ]}>
+                    {format(day, 'd')}
+                  </Text>
+                </View>
 
                 {isMultiSelected && (
                   <View style={styles.multiCheckWrap}>
@@ -227,12 +232,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   todayCell: {
-    borderWidth: 0.5,
+    borderWidth: 1.5,
     borderColor: 'rgba(59, 130, 246, 0.9)',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gratifiedChip: {
     position: 'absolute',
@@ -272,7 +279,38 @@ const styles = StyleSheet.create({
   },
   gridTodayCell: {
     borderColor: '#3B82F6',
-    borderWidth: 0.5,
+    borderWidth: 1.5,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  gridDayNumWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  dayNumWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  todayNumWrap: {
+    backgroundColor: '#3B82F6',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.85)',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 6,
+    elevation: 3,
   },
   gridDayNum: {
     fontSize: 13,
@@ -331,8 +369,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '500',
   },
-  todayText: {
-    color: '#3B82F6',
+  todayNumText: {
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   holidayText: {
