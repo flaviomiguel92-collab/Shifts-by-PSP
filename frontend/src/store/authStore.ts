@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { session } from '../services/session';
 import { storage } from '../utils/storage';
 import { User } from '../types';
 import { useDataStore } from './dataStore';
@@ -27,6 +28,8 @@ function extractDetail(error: { detail?: unknown }): string {
 }
 
 interface AuthState {
+  status: 'checking' | 'authenticated' | 'anonymous' | 'unavailable';
+  sessionError: string | null;
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -49,36 +52,11 @@ export function validatePassword(password: string): string | null {
   return null;
 }
 
-async function initializeData(): Promise<void> {
-  useDataStore.getState().clearSyncedCollections();
-  try {
-    await useDataStore.getState().loadData();
-  } catch (e) {
-    console.warn('[auth] loadData error:', e);
-  }
-  try {
-    await useDataStore.getState().fetchShiftTypes();
-  } catch (e) {
-    console.warn('[auth] fetchShiftTypes error:', e);
-  }
-  try {
-    await useDataStore.getState().fetchCycles();
-  } catch (e) {
-    console.warn('[auth] fetchCycles error:', e);
-  }
-  try {
-    await useDataStore.getState().fetchGratifiedEntries();
-  } catch (e) {
-    console.warn('[auth] fetchGratifiedEntries error:', e);
-  }
-  try {
-    await useDataStore.getState().fetchEvents();
-  } catch (e) {
-    console.warn('[auth] fetchEvents error:', e);
-  }
-}
+let authCheck: Promise<boolean> | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
+  status: 'checking',
+  sessionError: null,
   user: null,
   isLoading: true,
   isAuthenticated: false,
@@ -88,56 +66,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
   setSessionToken: (sessionToken) => set({ sessionToken }),
 
-  checkAuth: async () => {
-    try {
-      set({ isLoading: true });
-
-      // Bearer token from storage (localStorage on web, AsyncStorage on native).
-      // This is the proven, working flow — cookies are unreliable cross-origin
-      // (Vercel <-> Render) due to third-party cookie restrictions in modern browsers.
-      const storedToken = await storage.getItem('session_token');
-
-      if (!storedToken) {
-        useDataStore.getState().clearSyncedCollections();
-        set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
-        return false;
-      }
-
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${storedToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.status === 401) {
-        await storage.removeItem('session_token');
-        useDataStore.getState().clearSyncedCollections();
-        set({ user: null, isAuthenticated: false, isLoading: false, sessionToken: null });
-        return false;
-      }
-
-      if (!response.ok) {
-        // Render cold start / temporary outage — keep session, retry on next call.
-        console.warn(`[checkAuth] Server error ${response.status} — a manter sessão`);
-        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
+  checkAuth: () => {
+    if (authCheck) return authCheck;
+    const revision = session.revision;
+    authCheck = (async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        set({ isLoading: true, sessionError: null });
+        const token = await session.read();
+        if (revision !== session.revision) return get().isAuthenticated;
+        if (!token) {
+          useDataStore.getState().clearSyncedCollections();
+          set({ user: null, isAuthenticated: false, sessionToken: null, status: 'anonymous' });
+          return false;
+        }
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        if (revision !== session.revision) return get().isAuthenticated;
+        if (response.status === 401) {
+          await session.invalidate(token);
+          return get().isAuthenticated;
+        }
+        if (!response.ok) throw new Error('Servidor temporariamente indisponível.');
+        assertJsonResponse(response);
+        const user = await response.json();
+        if (!user?.user_id) throw new Error('Resposta de sessão inválida.');
+        if (revision !== session.revision) return get().isAuthenticated;
+        set({ user, sessionToken: token, isAuthenticated: true, status: 'authenticated', sessionError: null });
         return true;
+      } catch {
+        if (revision === session.revision) {
+          // Keep credentials, but never authorize a cold start without a valid profile.
+          set({ status: 'unavailable', sessionError: 'Não foi possível confirmar a sessão. Verifique a ligação e tente novamente.' });
+        }
+        return get().isAuthenticated;
+      } finally {
+        clearTimeout(timeout);
+        set({ isLoading: false });
       }
-
-      const userData = await response.json();
-      set({ user: userData, isAuthenticated: true, isLoading: false, sessionToken: storedToken });
-      return true;
-    } catch (error) {
-      console.warn('[checkAuth] Network error — a manter sessão:', error);
-      const storedToken = await storage.getItem('session_token');
-      if (storedToken) {
-        set({ isAuthenticated: true, isLoading: false, sessionToken: storedToken });
-        return true;
-      }
-      set({ user: null, isAuthenticated: false, isLoading: false });
-      return false;
-    }
+    })().finally(() => { authCheck = null; });
+    return authCheck;
   },
 
   login: async (email: string, password: string) => {
@@ -164,10 +135,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Always store the session token for Bearer auth on every platform.
       // Web uses localStorage (persists across tabs/restarts); native uses AsyncStorage.
-      await storage.setItem('session_token', data.session_token);
-      await initializeData();
+      await session.save(data.session_token);
+      useDataStore.getState().clearSyncedCollections();
 
       set({
+        status: 'authenticated',
+        sessionError: null,
         user: data.user,
         isAuthenticated: true,
         isLoading: false,
@@ -212,10 +185,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await response.json();
 
       // Always store the session token for Bearer auth on every platform.
-      await storage.setItem('session_token', data.session_token);
-      await initializeData();
+      await session.save(data.session_token);
+      useDataStore.getState().clearSyncedCollections();
 
       set({
+        status: 'authenticated',
+        sessionError: null,
         user: data.user,
         isAuthenticated: true,
         isLoading: false,
@@ -248,17 +223,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Clear local state immediately — never wait for the server.
-      await storage.removeItem('session_token');
+      const token = get().sessionToken || await session.read();
+      if (token) await session.invalidate(token);
       await storage.removeItem('device_id');
       useDataStore.getState().clearSyncedCollections();
-      set({ user: null, isAuthenticated: false, sessionToken: null });
+      set({ user: null, isAuthenticated: false, sessionToken: null, status: 'anonymous', sessionError: null });
     } catch (error) {
       console.error('[auth] Logout error:', error);
       try {
-        await storage.removeItem('session_token');
+        const token = get().sessionToken || await session.read();
+        if (token) await session.invalidate(token);
         await storage.removeItem('device_id');
         useDataStore.getState().clearSyncedCollections();
-        set({ user: null, isAuthenticated: false, sessionToken: null });
+        set({ user: null, isAuthenticated: false, sessionToken: null, status: 'anonymous', sessionError: null });
       } catch (e) {
         console.error('[auth] Failed to clear storage:', e);
       }
@@ -270,9 +247,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Must succeed server-side before clearing local state, so the user
     // gets a real error if erasure failed (unlike fire-and-forget logout).
     await apiDeleteAccount();
-    await storage.removeItem('session_token');
+    const token = get().sessionToken || await session.read();
+    if (token) await session.invalidate(token);
     await storage.removeItem('device_id');
     useDataStore.getState().clearSyncedCollections();
-    set({ user: null, isAuthenticated: false, sessionToken: null });
+    set({ user: null, isAuthenticated: false, sessionToken: null, status: 'anonymous', sessionError: null });
   },
 }));
+
+session.subscribe(() => {
+  useDataStore.getState().clearSyncedCollections();
+  useAuthStore.setState({ user: null, isAuthenticated: false, sessionToken: null, status: 'anonymous', sessionError: null, isLoading: false });
+});

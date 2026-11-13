@@ -1,4 +1,4 @@
-import { storage } from '../utils/storage';
+import { session } from './session';
 import { ShiftTypeConfig, Shift, Gratification, CalendarEvent } from '../types';
 import { Occurrence } from '../types/occurrence';
 
@@ -8,29 +8,27 @@ if (!process.env.EXPO_PUBLIC_API_URL) {
 const API_ROOT = process.env.EXPO_PUBLIC_API_URL || '';
 const API_BASE_URL = API_ROOT + '/api';
 
-const getHeaders = async () => {
-  const token = await storage.getItem('session_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
-
-const handleUnauthorized = async (): Promise<void> => {
-  console.warn('[api] 401 Unauthorized - clearing token');
-  await storage.removeItem('session_token');
-};
-
 const apiFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
+  const token = await session.read();
   const headers = {
     ...(init.headers || {}),
-    ...(await getHeaders()),
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     'X-Requested-By': 'shift-olama',
   };
   const response = await fetch(url, { ...init, headers, credentials: 'include' });
-  if (response.status === 401) {
-    await handleUnauthorized();
-  }
+  if (response.status === 401 && token) await session.invalidate(token);
+  const ensureCurrent = async () => {
+    if (await session.read() !== token) throw new Error('A sessão mudou durante o pedido.');
+  };
+  await ensureCurrent();
+  // Data stores must not receive results from a previous account after logout/login.
+  const json = response.json.bind(response);
+  response.json = async () => {
+    const result = await json();
+    await ensureCurrent();
+    return result;
+  };
   return response;
 };
 

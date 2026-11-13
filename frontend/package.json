@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test:session": "node --test tests/session.test.cjs",
     "start": "expo start",
     "build": "expo export --platform web",
     "reset-project": "node ./scripts/reset-project.js",

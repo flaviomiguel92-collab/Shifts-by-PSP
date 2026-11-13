@@ -1,5 +1,6 @@
 """Auth flow: register, login, logout, token expiry, duplicate email."""
 import uuid
+import hashlib
 from datetime import datetime, timezone, timedelta
 
 import pytest
@@ -116,13 +117,33 @@ async def test_expired_token_returns_401(http, mock_db):
     await mock_db.user_sessions.insert_one({
         "session_id": str(uuid.uuid4()),
         "user_id": user_id,
-        "session_token": token,
+        "session_token": hashlib.sha256(token.encode()).hexdigest(),
         "expires_at": datetime.now(timezone.utc) - timedelta(days=1),
         "created_at": datetime.now(timezone.utc),
     })
 
     resp = await http.get("/api/shifts", headers=auth(token))
     assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_active_session_is_renewed_and_renewal_is_throttled(http, mock_db, user_a):
+    from config import SESSION_TTL_DAYS
+
+    token_hash = hashlib.sha256(user_a["token"].encode()).hexdigest()
+    now = datetime.now(timezone.utc)
+    old_expiry = now + timedelta(days=SESSION_TTL_DAYS) - timedelta(hours=13)
+    await mock_db.user_sessions.update_one(
+        {"session_token": token_hash}, {"$set": {"expires_at": old_expiry}}
+    )
+    response = await http.get("/api/auth/me", headers=auth(user_a["token"]))
+    assert response.status_code == 200
+    renewed = await mock_db.user_sessions.find_one({"session_token": token_hash})
+    assert renewed["expires_at"].replace(tzinfo=timezone.utc) > old_expiry + timedelta(hours=12)
+    response = await http.get("/api/auth/me", headers=auth(user_a["token"]))
+    assert response.status_code == 200
+    unchanged = await mock_db.user_sessions.find_one({"session_token": token_hash})
+    assert unchanged["expires_at"] == renewed["expires_at"]
 
 
 @pytest.mark.asyncio

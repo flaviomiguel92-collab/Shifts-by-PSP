@@ -1,5 +1,15 @@
 # Inventário de funcionalidades
 
+### Restauro de sessão
+
+- Ao abrir a aplicação, o token persistente é validado antes de montar o login ou as páginas privadas.
+- Falhas de rede, timeout ou indisponibilidade do servidor mantêm as credenciais e permitem nova tentativa; num arranque sem perfil validado é apresentado um ecrã de recuperação.
+- Um `401` da sessão atual limpa credenciais, perfil e coleções sincronizadas. Respostas de uma sessão anterior não invalidam um login posterior nem alimentam os stores com dados dessa sessão.
+- Login e registo confirmam a persistência do token. O carregamento dos dados decorre separadamente da validação da sessão.
+- A sessão é revalidada ao regressar à aplicação e, na web, ao recuperar a ligação. O backend mantém a renovação automática e o limite configurável de inatividade (`SESSION_TTL_DAYS`, 30 dias por omissão).
+- Limpar o armazenamento ou reinstalar a aplicação pode exigir novo login. A persistência da sessão não acrescenta funcionamento integral offline.
+- Testes do cliente: `cd frontend` e `npm run test:session`.
+
 ## 1. Autenticação e sessão
 
 ### Implementação principal

@@ -172,6 +172,8 @@ Este módulo centraliza o acesso à API e empacota os endpoints em funções de 
 ## Fluxo de dados principal
 
 ### Fluxo de autenticação
+O layout usa rotas protegidas e um ecrã de recuperação (`frontend/app/session.tsx`) durante o restauro. O serviço `frontend/src/services/session.ts` serializa alterações ao token e notifica o store quando a sessão atual é invalidada. O cliente HTTP verifica a sessão associada às respostas antes de entregar dados aos consumidores. Falhas temporárias preservam as credenciais e permitem repetir a validação; apenas uma validação bem-sucedida recupera o perfil num arranque novo. O carregamento dos dados é independente da apresentação das rotas autenticadas.
+
 1. O frontend tenta ler o token em [frontend/src/utils/storage.ts](frontend/src/utils/storage.ts).
 2. [frontend/src/store/authStore.ts](frontend/src/store/authStore.ts) chama o endpoint `/api/auth/me`.
 3. O backend valida a sessão em [backend/auth/dependencies.py](backend/auth/dependencies.py).
