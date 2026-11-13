@@ -3,9 +3,7 @@ from typing import List, Optional
 import uuid
 
 from pydantic import BaseModel, Field, field_validator
-
-_MAX_PHOTOS = 5
-_MAX_PHOTO_CHARS = 3_000_000  # ~2 MB raw before base64 encoding
+from security.photos import MAX_PHOTOS as _MAX_PHOTOS, MAX_PHOTO_CHARS as _MAX_PHOTO_CHARS, normalize_photos
 
 
 class PersonInOccurrence(BaseModel):
@@ -61,13 +59,7 @@ class OccurrenceCreate(BaseModel):
     @field_validator('photos')
     @classmethod
     def validate_photos(cls, v):
-        if v and len(v) > _MAX_PHOTOS:
-            raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
-        if v:
-            for photo in v:
-                if len(photo) > _MAX_PHOTO_CHARS:
-                    raise ValueError("Cada foto não pode exceder 2 MB")
-        return v
+        return normalize_photos(v)
 
 
 class OccurrenceUpdate(BaseModel):
@@ -78,6 +70,11 @@ class OccurrenceUpdate(BaseModel):
     classification: Optional[str] = None
     status: Optional[str] = None
     photos: Optional[List[str]] = None
+
+    @field_validator('photos')
+    @classmethod
+    def validate_photos(cls, v):
+        return normalize_photos(v)
 
 
 class PersonCreate(BaseModel):
@@ -105,13 +102,7 @@ class PersonCreate(BaseModel):
     @field_validator('photos')
     @classmethod
     def validate_photos(cls, v):
-        if v and len(v) > _MAX_PHOTOS:
-            raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
-        if v:
-            for photo in v:
-                if len(photo) > _MAX_PHOTO_CHARS:
-                    raise ValueError("Cada foto não pode exceder 2 MB")
-        return v
+        return normalize_photos(v)
 
 
 class PersonUpdate(BaseModel):
@@ -139,10 +130,4 @@ class PersonUpdate(BaseModel):
     @field_validator('photos')
     @classmethod
     def validate_photos(cls, v):
-        if v and len(v) > _MAX_PHOTOS:
-            raise ValueError(f"Máximo de {_MAX_PHOTOS} fotos permitidas")
-        if v:
-            for photo in v:
-                if len(photo) > _MAX_PHOTO_CHARS:
-                    raise ValueError("Cada foto não pode exceder 2 MB")
-        return v
+        return normalize_photos(v)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,14 @@ import {
   RefreshControl,
   Modal,
   Alert,
-  Image,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { PhotoGallery } from '../../src/components/occurrence/PhotoGallery';
+import { updateOccurrence, deleteOccurrence } from '../../src/services/api';
+import { photoUri } from '../../src/utils/photos';
+import { useDataStore } from '../../src/store/dataStore';
 import { storage } from '../../src/utils/storage';
 import { formatDate } from '../../src/utils/helpers';
 import { HeaderWithBack } from '../../src/components/HeaderWithBack';
@@ -34,22 +34,20 @@ import {
 } from '../../src/types/occurrence';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_API_URL || '';
-const MAX_IMAGE_WIDTH = 800;  // Max width for compressed images
-const IMAGE_QUALITY = 0.6;    // Compression quality (0-1)
 
 export default function OcorrenciasScreen() {
   const th = useTheme();
   const isLight = !th.isDark;
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [savingPhotos, setSavingPhotos] = useState(false);
+  const activeOccurrence = useRef<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [personModalMode, setPersonModalMode] = useState<'create' | 'edit'>('create');
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
-  const [localPhotos, setLocalPhotos] = useState<string[]>([]);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const fetchOccurrences = async () => {
     try {
@@ -78,8 +76,8 @@ export default function OcorrenciasScreen() {
 
   const handleOccurrenceCreated = async (newOcc: Occurrence) => {
     setOccurrences(prev => [newOcc, ...prev]);
+    activeOccurrence.current = newOcc.id;
     setSelectedOccurrence(newOcc);
-    setLocalPhotos(newOcc.photos || []);
     setShowDetailModal(true);
     await fetchOccurrences();
   };
@@ -122,69 +120,17 @@ export default function OcorrenciasScreen() {
     setShowPersonModal(true);
   };
 
-  // Compress image using ImageManipulator and convert to smaller base64
-  const compressAndConvertToBase64 = async (uri: string): Promise<string | null> => {
+  const savePhotos = async (photos: string[]) => {
+    if (!selectedOccurrence) return;
+    const id = selectedOccurrence.id;
+    setSavingPhotos(true);
     try {
-      // Resize and compress the image
-      const manipulatedImage = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: MAX_IMAGE_WIDTH } }],
-        { 
-          compress: IMAGE_QUALITY, 
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: true 
-        }
-      );
-
-      if (manipulatedImage.base64) {
-        return `data:image/jpeg;base64,${manipulatedImage.base64}`;
-      }
-      return null;
-    } catch (error) {
-      console.error('Image compression error:', error);
-      return null;
-    }
-  };
-
-  const handleAddPhoto = async () => {
-    try {
-      setIsUploadingPhoto(true);
-      
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1, // Full quality - we'll compress it ourselves
-        aspect: [4, 3],
-      });
-
-      if (!result.canceled && result.assets[0].uri) {
-        // Compress the image
-        const compressedBase64 = await compressAndConvertToBase64(result.assets[0].uri);
-        
-        if (compressedBase64) {
-          // Check size (base64 is ~33% larger than binary, so 1MB base64 ≈ 750KB binary)
-          const sizeInKB = (compressedBase64.length * 0.75) / 1024;
-          console.log(`Compressed image size: ${sizeInKB.toFixed(0)}KB`);
-          
-          if (sizeInKB > 500) {
-            // Still too large, warn user
-            Alert.alert(
-              'Imagem Grande',
-              `A imagem tem ${sizeInKB.toFixed(0)}KB. Pode demorar mais a processar.`
-            );
-          }
-          
-          setLocalPhotos(prev => [...prev, compressedBase64]);
-          Alert.alert('Sucesso', 'Foto adicionada!');
-        } else {
-          Alert.alert('Erro', 'Não foi possível processar a imagem');
-        }
-      }
-    } catch (error) {
-      console.error('Add photo error:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar a foto');
+      const updated = await updateOccurrence(id, { photos });
+      if (activeOccurrence.current !== id) return;
+      setSelectedOccurrence(updated);
+      setOccurrences((items) => items.map((item) => item.id === updated.id ? updated : item));
     } finally {
-      setIsUploadingPhoto(false);
+      setSavingPhotos(false);
     }
   };
 
@@ -213,38 +159,24 @@ export default function OcorrenciasScreen() {
   };
 
   const handleDelete = async () => {
-    if (!selectedOccurrence) return;
+    if (!selectedOccurrence || savingPhotos) return;
 
     const occurrenceId = selectedOccurrence.id;
 
     const executeDelete = async () => {
       try {
-        const token = await storage.getItem('session_token');
-        const response = await fetch(`${API_URL}/api/occurrences/${occurrenceId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          let detail = `Falha ao eliminar ocorrência (HTTP ${response.status})`;
-          try {
-            const errorBody = await response.json();
-            if (errorBody?.detail) {
-              detail = String(errorBody.detail);
-            }
-          } catch {
-            // Ignora parse de erro e mantém mensagem padrão
-          }
-          throw new Error(detail);
-        }
+        await deleteOccurrence(occurrenceId);
+        useDataStore.setState((state) => ({ occurrences: state.occurrences.filter((item) => item.id !== occurrenceId) }));
+        setEditingPerson(null);
+        setShowPersonModal(false);
 
         // Atualiza imediatamente a lista local para refletir a remoção
         setOccurrences(prev => prev.filter(occ => occ.id !== occurrenceId));
 
         // Fecha o detalhe (retorna à lista de ocorrências)
         setShowDetailModal(false);
+        activeOccurrence.current = null;
         setSelectedOccurrence(null);
-        setLocalPhotos([]);
 
         // Revalida dados no backend
         await fetchOccurrences();
@@ -286,7 +218,7 @@ export default function OcorrenciasScreen() {
 
     const occ = selectedOccurrence;
     const allPersons = getAllPersons(occ);
-    const allPhotos = [...(occ.photos || []), ...localPhotos];
+    const allPhotos = occ.photos || [];
 
     const personsHtml = allPersons.map(person => `
       <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
@@ -304,7 +236,7 @@ export default function OcorrenciasScreen() {
         ${person.photos && person.photos.length > 0 ? `
           <div style="margin-top: 10px;">
             <strong>Fotografias de Identificação:</strong><br/>
-            ${person.photos.map(p => `<img src="${p}" style="width: 150px; margin: 5px; border: 1px solid #ccc;" />`).join('')}
+            ${person.photos.map(p => `<img src="${photoUri(p)}" style="width: 150px; margin: 5px; border: 1px solid #ccc;" />`).join('')}
           </div>
         ` : ''}
       </div>
@@ -313,7 +245,7 @@ export default function OcorrenciasScreen() {
     const photosHtml = allPhotos.length > 0 ? `
       <h3>Fotografias da Ocorrência</h3>
       <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        ${allPhotos.map(p => `<img src="${p}" style="width: 200px; margin: 5px; border: 1px solid #ccc; border-radius: 8px;" />`).join('')}
+        ${allPhotos.map(p => `<img src="${photoUri(p)}" style="width: 200px; margin: 5px; border: 1px solid #ccc; border-radius: 8px;" />`).join('')}
       </div>
     ` : '';
 
@@ -406,8 +338,8 @@ export default function OcorrenciasScreen() {
   };
 
   const openOccurrence = (occ: Occurrence) => {
+    activeOccurrence.current = occ.id;
     setSelectedOccurrence(occ);
-    setLocalPhotos(occ.photos || []);
     setShowDetailModal(true);
   };
 
@@ -493,8 +425,9 @@ export default function OcorrenciasScreen() {
         <SafeAreaView style={[styles.detailContainer, isLight && { backgroundColor: th.bg }]}>
           <View style={[styles.detailHeader, isLight && { backgroundColor: th.bgAlt, borderBottomColor: th.border }]}>
             <TouchableOpacity onPress={() => {
+              activeOccurrence.current = null;
+              setSelectedOccurrence(null);
               setShowDetailModal(false);
-              setLocalPhotos([]);
             }}>
               <Ionicons name="arrow-back" size={24} color={isLight ? th.textPrimary : '#FFFFFF'} />
             </TouchableOpacity>
@@ -503,7 +436,7 @@ export default function OcorrenciasScreen() {
               <TouchableOpacity onPress={generatePDF} style={styles.pdfBtn}>
                 <Ionicons name="document" size={20} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete}>
+              <TouchableOpacity onPress={handleDelete} disabled={savingPhotos}>
                 <Ionicons name="trash-outline" size={24} color="#EF4444" />
               </TouchableOpacity>
             </View>
@@ -568,50 +501,8 @@ export default function OcorrenciasScreen() {
               <View style={[styles.detailSection, isLight && { backgroundColor: th.surface, borderColor: th.borderStrong }]}>
                 <View style={styles.sectionHeader}>
                   <Text style={[styles.detailSectionTitle, isLight && { color: th.textPrimary }]}>Fotografias</Text>
-                  <TouchableOpacity 
-                    style={[styles.addSmallBtn, isUploadingPhoto && styles.disabledBtn]} 
-                    onPress={handleAddPhoto}
-                    disabled={isUploadingPhoto}
-                  >
-                    {isUploadingPhoto ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Ionicons name="camera" size={18} color="#FFFFFF" />
-                        <Text style={styles.addSmallBtnText}>Adicionar</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
                 </View>
-                {localPhotos.length > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.photosRow}>
-                      {localPhotos.map((photo, i) => (
-                        <TouchableOpacity 
-                          key={i} 
-                          onLongPress={() => {
-                            Alert.alert(
-                              'Remover Foto',
-                              'Deseja remover esta foto?',
-                              [
-                                { text: 'Cancelar', style: 'cancel' },
-                                { 
-                                  text: 'Remover', 
-                                  style: 'destructive',
-                                  onPress: () => setLocalPhotos(prev => prev.filter((_, idx) => idx !== i))
-                                }
-                              ]
-                            );
-                          }}
-                        >
-                          <Image source={{ uri: photo }} style={styles.photoThumb} />
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
-                ) : (
-                  <Text style={[styles.emptySubtext, isLight && { color: th.textMuted }]}>Sem fotografias (pressione longo para remover)</Text>
-                )}
+                <PhotoGallery key={selectedOccurrence.id} photos={selectedOccurrence.photos || []} onChange={savePhotos} onBusyChange={setSavingPhotos} />
               </View>
 
               {/* Persons */}

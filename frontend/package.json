@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test:photos": "node --test tests/photos.test.cjs",
     "test:session": "node --test tests/session.test.cjs",
     "start": "expo start",
     "build": "expo export --platform web",

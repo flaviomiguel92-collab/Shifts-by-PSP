@@ -55,6 +55,40 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 const profile = () => json(user);
 const deferred = () => { let resolve; const promise = new Promise((r) => { resolve = r; }); return { promise, resolve }; };
 
+for (const platform of ['web', 'native']) {
+  test(`${platform} opens with saved credentials before the server responds`, async () => {
+    const started = deferred();
+    const response = deferred();
+    const a = app({ token: 'saved', platform, fetch: () => {
+      started.resolve();
+      return response.promise;
+    } });
+    const validation = a.store.getState().checkAuth();
+    await started.promise;
+    // The network promise is still unresolved, so this proves that opening the
+    // app is independent of server latency rather than merely a fast response.
+    assert.equal(a.store.getState().isAuthenticated, true);
+    assert.equal(a.store.getState().sessionToken, 'saved');
+    assert.equal(a.store.getState().user, null);
+    response.resolve(profile());
+    assert.equal(await validation, true);
+    assert.equal(a.store.getState().user.user_id, user.user_id);
+  });
+}
+
+test('background validation still rejects a revoked remembered session', async () => {
+  const response = deferred();
+  const started = deferred();
+  const a = app({ token: 'revoked', fetch: () => { started.resolve(); return response.promise; } });
+  const validation = a.store.getState().checkAuth();
+  await started.promise;
+  assert.equal(a.store.getState().isAuthenticated, true);
+  response.resolve(json({}, 401));
+  assert.equal(await validation, false);
+  assert.equal(a.store.getState().status, 'anonymous');
+  assert.equal(a.values.has('session_token'), false);
+});
+
 test('restores saved session and profile without login', async () => {
   const a = app({ token: 'saved', fetch: async (_, init) => {
     assert.equal(init.headers.Authorization, 'Bearer saved'); return profile();
@@ -78,11 +112,11 @@ test('web login reports blocked localStorage', async () => {
   await assert.rejects(a.store.getState().login('user@example.test', 'Password1'));
   assert.equal(a.store.getState().isAuthenticated, false);
 });
-test('timeout preserves saved credentials and exposes retry', async () => {
+test('timeout keeps the app open with saved credentials', async () => {
   const a = app({ token: 'saved', timeout: true, fetch: (_, init) => new Promise((_, reject) => {
     init.signal.addEventListener('abort', () => reject(Error('timeout')));
   }) });
-  assert.equal(await a.store.getState().checkAuth(), false);
+  assert.equal(await a.store.getState().checkAuth(), true);
   assert.equal(a.values.get('session_token'), 'saved');
   assert.equal(a.store.getState().status, 'unavailable');
   assert.equal(a.store.getState().isLoading, false);
@@ -91,10 +125,10 @@ for (const failure of [async () => json({}, 503), async () => { throw Error('off
   test('temporary failure preserves token and allows retry without login', async () => {
     let fail = true;
     const a = app({ token: 'saved', fetch: (...args) => fail ? failure(...args) : Promise.resolve(profile()) });
-    assert.equal(await a.store.getState().checkAuth(), false);
+    assert.equal(await a.store.getState().checkAuth(), true);
     assert.equal(a.values.get('session_token'), 'saved');
     assert.equal(a.store.getState().status, 'unavailable');
-    assert.equal(a.store.getState().isAuthenticated, false);
+    assert.equal(a.store.getState().isAuthenticated, true);
     fail = false;
     assert.equal(await a.store.getState().checkAuth(), true);
   });

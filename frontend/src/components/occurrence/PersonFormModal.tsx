@@ -8,12 +8,9 @@ import {
   TextInput,
   Modal,
   Alert,
-  Image,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { PhotoGallery } from './PhotoGallery';
 import { storage } from '../../utils/storage';
 import {
   Occurrence,
@@ -25,8 +22,6 @@ import {
 } from '../../types/occurrence';
 import { useTheme } from '../../theme/themes';
 
-const MAX_IMAGE_WIDTH = 800;
-const IMAGE_QUALITY = 0.6;
 
 const DOC_TYPES: DocumentType[] = ['cartao_cidadao', 'passaporte', 'titulo_residencia', 'carta_conducao'];
 const ROLES: PersonRole[] = ['suspeito', 'testemunha', 'lesado'];
@@ -66,7 +61,7 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, mode = 'create'
   const [docExpiry, setDocExpiry] = useState('');
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const isEditMode = mode === 'edit' && !!initialPerson;
 
   const reset = () => {
@@ -93,7 +88,7 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, mode = 'create'
   };
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) { reset(); return; }
     if (isEditMode && initialPerson) {
       setRole(initialPerson.role);
       setName(initialPerson.full_name || '');
@@ -119,43 +114,6 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, mode = 'create'
     }
     reset();
   }, [visible, isEditMode, initialPerson]);
-
-  const compressToBase64 = async (uri: string): Promise<string | null> => {
-    try {
-      const result = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: MAX_IMAGE_WIDTH } }],
-        { compress: IMAGE_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-      );
-      return result.base64 ? `data:image/jpeg;base64,${result.base64}` : null;
-    } catch {
-      return null;
-    }
-  };
-
-  const handleAddPhoto = async () => {
-    try {
-      setUploading(true);
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-        aspect: [3, 4],
-      });
-      if (!result.canceled && result.assets[0].uri) {
-        const compressed = await compressToBase64(result.assets[0].uri);
-        if (compressed) {
-          setPhotos((prev) => [...prev, compressed]);
-        } else {
-          Alert.alert('Erro', 'Não foi possível processar a imagem');
-        }
-      }
-    } catch {
-      Alert.alert('Erro', 'Não foi possível adicionar a foto');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!name) {
@@ -184,7 +142,7 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, mode = 'create'
         document_issue_date: docIssue || undefined,
         document_expiry_date: docExpiry || undefined,
         notes: notes || undefined,
-        photos: photos.length > 0 ? photos : undefined,
+        photos,
       };
       const url = isEditMode && initialPerson
         ? `${apiUrl}/api/occurrences/${occurrenceId}/persons/${initialPerson.id}`
@@ -428,29 +386,12 @@ export function PersonFormModal({ visible, occurrenceId, apiUrl, mode = 'create'
             />
 
             <View style={styles.photoSection}>
-              <View style={styles.sectionRow}>
-                <Text style={[styles.label, isLight && { color: th.textMuted }]}>Fotos de Identificação</Text>
-                <TouchableOpacity style={styles.addPhotoBtn} onPress={handleAddPhoto} disabled={uploading}>
-                  {uploading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="camera" size={16} color="#FFFFFF" />
-                  )}
-                </TouchableOpacity>
-              </View>
-              {photos.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.photosRow}>
-                    {photos.map((photo, i) => (
-                      <Image key={i} source={{ uri: photo }} style={styles.photoThumb} />
-                    ))}
-                  </View>
-                </ScrollView>
-              )}
+              <Text style={[styles.label, isLight && { color: th.textMuted }]}>Fotos de Identificação</Text>
+              {visible && <PhotoGallery photos={photos} onChange={setPhotos} onBusyChange={setPhotoBusy} hint="As alterações às fotografias são guardadas ao guardar a pessoa." />}
             </View>
           </ScrollView>
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-            <Text style={styles.submitBtnText}>Adicionar Pessoa</Text>
+          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={photoBusy}>
+            <Text style={styles.submitBtnText}>{isEditMode ? 'Guardar alterações' : 'Adicionar Pessoa'}</Text>
           </TouchableOpacity>
         </View>
       </View>

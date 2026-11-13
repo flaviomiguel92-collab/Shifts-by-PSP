@@ -44,6 +44,8 @@ Foco: turnos atribuídos por data.
 ### occurrences
 Foco: ocorrências e dados relacionados.
 
+As fotografias da ocorrência e das pessoas estão embutidas neste documento, em arrays `photos`. Novas gravações normalizam imagens JPEG, PNG, GIF e WebP para data URIs base64 validados e sem metadados EXIF. Leituras continuam compatíveis com base64 antigo sem prefixo. Remover uma fotografia substitui o array; eliminar a ocorrência elimina os dados embutidos, sem armazenamento de ficheiros separado ou migração de esquema.
+
 Índice principal:
 - `user_id`
 

@@ -1,9 +1,20 @@
 # Inventário de funcionalidades
 
+### Fotografias de ocorrências
+
+- A galeria grava adições, substituições e remoções na API antes de atualizar as fotografias da ocorrência. Falhas mantêm a versão anterior e apresentam uma mensagem no ecrã.
+- Tocar numa miniatura abre a imagem ampliada, com opções para guardar/partilhar, substituir e remover com confirmação. Na web é descarregado um ficheiro; em dispositivos nativos é usado o menu de partilha do sistema.
+- A mesma galeria está disponível nas pessoas envolvidas; nesse formulário, as alterações são persistidas ao guardar a pessoa, incluindo a remoção da última fotografia.
+- São aceites até cinco fotografias por ocorrência ou pessoa, com limite de 3.000.000 caracteres por imagem codificada. Novas imagens são comprimidas no cliente e validadas e normalizadas no servidor sem EXIF.
+- As fotografias permanecem embutidas no documento MongoDB da ocorrência. Eliminar a ocorrência remove também pessoas e fotografias. Não são guardadas no armazenamento persistente do frontend; ficheiros temporários de partilha são removidos após utilização. Cópias exportadas pelo utilizador permanecem no destino escolhido.
+- Fotografias antigas em base64 sem prefixo continuam a poder ser apresentadas. Fotografias nunca enviadas ao servidor antes desta correção não são recuperáveis.
+- Testes do cliente: `cd frontend` e `npm run test:photos`. É necessário publicar frontend e backend; não existe migração de base de dados.
+
 ### Restauro de sessão
 
-- Ao abrir a aplicação, o token persistente é validado antes de montar o login ou as páginas privadas.
-- Falhas de rede, timeout ou indisponibilidade do servidor mantêm as credenciais e permitem nova tentativa; num arranque sem perfil validado é apresentado um ecrã de recuperação.
+- Ao abrir a aplicação com token persistente, a interface principal é montada assim que o armazenamento local é lido. A validação da sessão e o carregamento dos dados decorrem em segundo plano, sem aguardar a rede para apresentar o calendário. Sem token é apresentado o login.
+- Falhas de rede, timeout ou indisponibilidade do servidor mantêm a interface aberta e as credenciais. A validação é repetida automaticamente, com intervalo crescente até 30 segundos, e os dados são recarregados quando a ligação é restabelecida. Falhas de acesso ao armazenamento local mantêm o ecrã de recuperação com novas tentativas automáticas.
+- O perfil permanece vazio até ser recebido do servidor. Não são guardados dados pessoais ou coleções de negócio adicionais no dispositivo. Abrir a interface com um token guardado não autoriza operações: todas as APIs continuam a validar a sessão no backend e um `401` termina a sessão local.
 - Um `401` da sessão atual limpa credenciais, perfil e coleções sincronizadas. Respostas de uma sessão anterior não invalidam um login posterior nem alimentam os stores com dados dessa sessão.
 - Login e registo confirmam a persistência do token. O carregamento dos dados decorre separadamente da validação da sessão.
 - A sessão é revalidada ao regressar à aplicação e, na web, ao recuperar a ligação. O backend mantém a renovação automática e o limite configurável de inatividade (`SESSION_TTL_DAYS`, 30 dias por omissão).

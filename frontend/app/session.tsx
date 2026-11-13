@@ -7,7 +7,7 @@ export default function SessionScreen() {
   return (
     <View style={styles.container}>
       {checking ? <ActivityIndicator size="large" color="#60A5FA" /> : null}
-      <Text style={styles.text}>{checking ? 'A recuperar a sessão…' : error}</Text>
+      <Text style={styles.text}>{checking ? 'A abrir…' : error}</Text>
       {!checking && (
         <Pressable style={styles.button} accessibilityRole="button" onPress={() => { void useAuthStore.getState().checkAuth(); }}>
           <Text style={styles.text}>Tentar novamente</Text>

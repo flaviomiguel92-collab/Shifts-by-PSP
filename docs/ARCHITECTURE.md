@@ -172,12 +172,12 @@ Este módulo centraliza o acesso à API e empacota os endpoints em funções de 
 ## Fluxo de dados principal
 
 ### Fluxo de autenticação
-O layout usa rotas protegidas e um ecrã de recuperação (`frontend/app/session.tsx`) durante o restauro. O serviço `frontend/src/services/session.ts` serializa alterações ao token e notifica o store quando a sessão atual é invalidada. O cliente HTTP verifica a sessão associada às respostas antes de entregar dados aos consumidores. Falhas temporárias preservam as credenciais e permitem repetir a validação; apenas uma validação bem-sucedida recupera o perfil num arranque novo. O carregamento dos dados é independente da apresentação das rotas autenticadas.
+O layout usa rotas protegidas e um ecrã de recuperação (`frontend/app/session.tsx`) apenas enquanto o armazenamento local é lido ou está indisponível. Um token guardado permite montar a interface principal imediatamente; a validação no servidor decorre em segundo plano, com timeout de 60 segundos. O serviço `frontend/src/services/session.ts` serializa alterações ao token e notifica o store quando a sessão atual é invalidada. O cliente HTTP verifica a sessão associada às respostas antes de entregar dados aos consumidores. Falhas temporárias preservam as credenciais e iniciam novas tentativas automáticas com intervalo crescente até 30 segundos. Apenas uma validação bem-sucedida recupera o perfil num arranque novo. O carregamento dos dados é independente da apresentação das rotas, e cada pedido continua sujeito à autorização do backend.
 
 1. O frontend tenta ler o token em [frontend/src/utils/storage.ts](frontend/src/utils/storage.ts).
 2. [frontend/src/store/authStore.ts](frontend/src/store/authStore.ts) chama o endpoint `/api/auth/me`.
 3. O backend valida a sessão em [backend/auth/dependencies.py](backend/auth/dependencies.py).
-4. Se a sessão for válida, o utilizador é colocado no estado e os dados do utilizador são carregados.
+4. A interface abre após ler o token; uma resposta válida preenche o perfil. Os dados são carregados separadamente e atualizados após recuperar a ligação.
 5. Em caso de 401, efetua limpeza local e sessão inválida.
 
 ### Fluxo de sincronização de dados

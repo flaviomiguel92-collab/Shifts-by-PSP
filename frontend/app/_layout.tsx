@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, StyleSheet, Text } from 'react-native';
 import { useAuthStore } from '../src/store/authStore';
 import { useDataStore } from '../src/store/dataStore';
@@ -17,6 +17,7 @@ export default function RootLayout() {
   const error = useAuthStore((s) => s.sessionError);
   const [loadingData, setLoadingData] = useState(false);
   const [dataAttempt, setDataAttempt] = useState(0);
+  const retryAttempt = useRef(0);
 
   useEffect(() => {
     void usePreferencesStore.getState().loadPreferences().catch(() => {});
@@ -24,7 +25,7 @@ export default function RootLayout() {
     const revalidate = () => {
       if (useAuthStore.getState().status !== 'anonymous') {
         void useAuthStore.getState().checkAuth().then((valid) => {
-          if (valid) setDataAttempt((attempt) => attempt + 1);
+          if (valid && useAuthStore.getState().status === 'authenticated') setDataAttempt((attempt) => attempt + 1);
         });
       }
     };
@@ -39,6 +40,20 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (status === 'authenticated' || status === 'anonymous') retryAttempt.current = 0;
+    if (status !== 'unavailable' || checking) return;
+    const delay = Math.min(30000, 1000 * 2 ** Math.min(retryAttempt.current++, 5));
+    const timer = setTimeout(() => {
+      void useAuthStore.getState().checkAuth().then((valid) => {
+        if (valid && useAuthStore.getState().status === 'authenticated') {
+          setDataAttempt((attempt) => attempt + 1);
+        }
+      });
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [status, checking]);
+
+  useEffect(() => {
     if (!authenticated || !token) return;
     let cancelled = false;
     const load = async () => {
@@ -49,6 +64,7 @@ export default function RootLayout() {
         if (cancelled) return;
         await Promise.allSettled([
           data.fetchShiftTypes(), data.fetchCycles(), data.fetchGratifiedEntries(), data.fetchEvents(),
+          data.fetchShifts(data.currentMonth), data.fetchGratifications(data.currentMonth, data.currentYear),
         ]);
       } finally {
         if (!cancelled) setLoadingData(false);
@@ -60,11 +76,11 @@ export default function RootLayout() {
 
   const retry = () => {
     void useAuthStore.getState().checkAuth().then((valid) => {
-      if (valid) setDataAttempt((attempt) => attempt + 1);
+      if (valid && useAuthStore.getState().status === 'authenticated') setDataAttempt((attempt) => attempt + 1);
     });
   };
-  // Mount the navigator immediately, but keep login and private screens unmounted
-  // until the saved session is resolved. No flash of login during restoration.
+  // Only local storage can hold up restoration. Network validation runs after
+  // the app opens with remembered credentials, without flashing the login page.
   const pending = !authenticated && (status === 'checking' || status === 'unavailable');
   return (
     <>

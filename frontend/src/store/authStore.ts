@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const revision = session.revision;
     authCheck = (async () => {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
       try {
         set({ isLoading: true, sessionError: null });
         const token = await session.read();
@@ -80,6 +80,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           useDataStore.getState().clearSyncedCollections();
           set({ user: null, isAuthenticated: false, sessionToken: null, status: 'anonymous' });
           return false;
+        }
+        // Restore the app shell from local credentials immediately. Every data
+        // request is still authenticated by the server; no private data is cached.
+        if (get().sessionToken !== token) {
+          useDataStore.getState().clearSyncedCollections();
+          set({ user: null, sessionToken: token, isAuthenticated: true });
         }
         const response = await fetch(`${API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -99,8 +105,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
       } catch {
         if (revision === session.revision) {
-          // Keep credentials, but never authorize a cold start without a valid profile.
-          set({ status: 'unavailable', sessionError: 'Não foi possível confirmar a sessão. Verifique a ligação e tente novamente.' });
+          // A slow/offline backend must not send a remembered session back to
+          // the recovery screen. The layout retries validation automatically.
+          set({ status: 'unavailable', sessionError: 'A ligação ao servidor está indisponível. A tentar novamente automaticamente…' });
         }
         return get().isAuthenticated;
       } finally {
